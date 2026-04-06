@@ -1,0 +1,31 @@
+# --- Java Compiled files ---
+*.class
+bin/
+target/
+exports/
+
+# --- Log files ---
+*.log
+
+# --- Package Files ---
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# --- Eclipse specific files (Cực kỳ quan trọng để tránh xung đột nhóm) ---
+.metadata/
+.settings/
+.project
+.classpath
+.factorypath
+
+# --- OS specific files ---
+.DS_Store
+Thumbs.db
+
+# --- Crash logs ---
+hs_err_pid*
+replay_pid*
