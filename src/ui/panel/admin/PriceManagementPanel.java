@@ -10,7 +10,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
 import java.awt.*;
 import java.util.List;
 
@@ -74,9 +73,9 @@ public class PriceManagementPanel extends JPanel {
     }
 
     private void initTable() {
-        String[] cols = {"M\u00E3 b\u1EA3ng gi\u00E1", "T\u00EAn b\u1EA3ng gi\u00E1", "Ng\u00E0y b\u1EAFt \u0111\u1EA7u", "Ng\u00E0y k\u1EBFt th\u00FAc", "Tr\u1EA1ng th\u00E1i", "Thao t\u00E1c"};
+        String[] cols = {"M\u00E3 b\u1EA3ng gi\u00E1", "T\u00EAn b\u1EA3ng gi\u00E1", "Ng\u00E0y b\u1EAFt \u0111\u1EA7u", "Ng\u00E0y k\u1EBFt th\u00FAc", "Tr\u1EA1ng th\u00E1i"};
         tableModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return c == 5; }
+            @Override public boolean isCellEditable(int r, int c) { return false; }
         };
 
         table = new JTable(tableModel);
@@ -88,9 +87,20 @@ public class PriceManagementPanel extends JPanel {
         
         table.setDefaultRenderer(Object.class, new ZebraRenderer());
         table.getColumnModel().getColumn(4).setCellRenderer(new StatusRenderer());
-        table.getColumnModel().getColumn(5).setCellRenderer(new ActionRenderer());
-        table.getColumnModel().getColumn(5).setCellEditor(new ActionEditor());
-        table.getColumnModel().getColumn(5).setPreferredWidth(180);
+        
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2 && table.getSelectedRow() != -1) {
+                    int row = table.getSelectedRow();
+                    // Re-fetch to ensure freshest data
+                    BangGia fresh = controller.getAllBangGia().stream()
+                        .filter(b -> b.getMaBangGia().equals(table.getValueAt(row, 0)))
+                        .findFirst().orElse(null);
+                    if (fresh != null) handleConfigPrices(fresh);
+                }
+            }
+        });
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(new LineBorder(new Color(230,230,230)));
@@ -107,8 +117,7 @@ public class PriceManagementPanel extends JPanel {
                 bg.getTenBangGia(),
                 bg.getNgayBatDau(),
                 bg.getNgayKetThuc() != null ? bg.getNgayKetThuc() : "V\u00F4 th\u1EDDi h\u1EA1n",
-                bg.isTrangThai(),
-                bg
+                bg.isTrangThai()
             });
         }
     }
@@ -118,10 +127,9 @@ public class PriceManagementPanel extends JPanel {
         bg.setMaBangGia(controller.generateNextMaBG());
         bg.setNgayBatDau(java.time.LocalDate.now());
         bg.setTrangThai(true);
-        // build dialog s\u1EBD l\u00E0 b\u01B0\u1EDBc ti\u1EBFp theo
-        ui.dialog.PriceDialog dlg = new ui.dialog.PriceDialog((Frame) SwingUtilities.getWindowAncestor(this), bg, false);
+        ui.dialog.PriceDetailDialog dlg = new ui.dialog.PriceDetailDialog((Frame) SwingUtilities.getWindowAncestor(this), bg, false);
         dlg.setVisible(true);
-        if (dlg.isConfirmed()) loadData();
+        loadData();
     }
 
     // --- RENDERERS & EDITORS ---
@@ -145,57 +153,8 @@ public class PriceManagementPanel extends JPanel {
         }
     }
 
-    class ActionRenderer extends DefaultTableCellRenderer {
-        @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
-            JPanel p = createActionPanel();
-            p.setBackground(isS ? t.getSelectionBackground() : (r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
-            return p;
-        }
-    }
-
-    class ActionEditor extends AbstractCellEditor implements TableCellEditor {
-        private JPanel p;
-        private BangGia current;
-        public ActionEditor() {
-            p = createActionPanel();
-            JButton btnEdit = (JButton) p.getComponent(0);
-            JButton btnConfig = (JButton) p.getComponent(1);
-            btnEdit.addActionListener(e -> { stopCellEditing(); handleEdit(current); });
-            btnConfig.addActionListener(e -> { stopCellEditing(); handleConfigPrices(current); });
-        }
-        @Override public Component getTableCellEditorComponent(JTable t, Object v, boolean isS, int r, int c) {
-            current = (BangGia) v;
-            p.setBackground(t.getSelectionBackground());
-            return p;
-        }
-        @Override public Object getCellEditorValue() { return current; }
-    }
-
-    private JPanel createActionPanel() {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        p.setOpaque(true);
-        p.add(createBtn(FontAwesome.COG, new Color(52, 152, 219))); // S\u1EEDa th\u00F4ng tin
-        p.add(createBtn(FontAwesome.LIST_ALT, new Color(155, 89, 182))); // Thi\u1EBFt l\u1EADp gi\u00E1
-        return p;
-    }
-
-    private JButton createBtn(FontAwesome icon, Color color) {
-        JButton b = new JButton(IconFontSwing.buildIcon(icon, 18, color));
-        b.setBorderPainted(false);
-        b.setContentAreaFilled(false);
-        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return b;
-    }
-
-    private void handleEdit(BangGia bg) {
-        ui.dialog.PriceDialog dlg = new ui.dialog.PriceDialog((Frame) SwingUtilities.getWindowAncestor(this), bg, true);
-        dlg.setVisible(true);
-        if (dlg.isConfirmed()) loadData();
-    }
-
     private void handleConfigPrices(BangGia bg) {
-        // H\u1ED9p tho\u1EA1i ch\u1EC9 nh s\u1EEDa Gi\u00E1 h\u00E0ng lo\u1EA1t
-        ui.dialog.PriceDetailDialog dlg = new ui.dialog.PriceDetailDialog((Frame) SwingUtilities.getWindowAncestor(this), bg);
+        ui.dialog.PriceDetailDialog dlg = new ui.dialog.PriceDetailDialog((Frame) SwingUtilities.getWindowAncestor(this), bg, true);
         dlg.setVisible(true);
         loadData();
     }

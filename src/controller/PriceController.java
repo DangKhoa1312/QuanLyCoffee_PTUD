@@ -90,10 +90,23 @@ public class PriceController {
     public void autoUpdateStatus() {
         LocalDate today = LocalDate.now();
         List<BangGia> all = bgDAO.findAll();
+        
+        // Find all price lists covering today
+        List<BangGia> validToday = all.stream()
+                .filter(bg -> !today.isBefore(bg.getNgayBatDau()) && 
+                             (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc())))
+                .sorted((b1, b2) -> {
+                    int res = b2.getNgayBatDau().compareTo(b1.getNgayBatDau()); // Latest start date first
+                    if (res == 0) return b2.getMaBangGia().compareTo(b1.getMaBangGia()); // Then by ID
+                    return res;
+                })
+                .toList();
+
+        // The first list in the sorted list is the winner
+        String activeMaBG = validToday.isEmpty() ? null : validToday.get(0).getMaBangGia();
+
         for (BangGia bg : all) {
-            boolean shouldBeActive = !today.isBefore(bg.getNgayBatDau()) && 
-                                   (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc()));
-            
+            boolean shouldBeActive = bg.getMaBangGia().equals(activeMaBG);
             if (bg.isTrangThai() != shouldBeActive) {
                 bg.setTrangThai(shouldBeActive);
                 bgDAO.update(bg);
