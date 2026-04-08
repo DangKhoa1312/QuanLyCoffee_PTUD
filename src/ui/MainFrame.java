@@ -254,7 +254,7 @@ public class MainFrame extends JFrame {
         contentPanel.add(new ui.panel.admin.PriceManagementPanel(), "ADMIN_GIA");
         contentPanel.add(createPlaceholderPanel("THIẾT LẬP Sơ đồ Bàn"), "ADMIN_BAN");
         contentPanel.add(new StaffManagementPanel(), "ADMIN_NHAN_VIEN");
-        contentPanel.add(createPlaceholderPanel("QUẢN LÝ KHO HÀNG"), "ADMIN_KHO");
+        contentPanel.add(new ui.panel.admin.WarehouseManagementPanel(), "ADMIN_KHO");
 
         add(contentPanel, BorderLayout.CENTER);
 

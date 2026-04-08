@@ -29,6 +29,6 @@ public class Kho {
 
     @Override
     public String toString() {
-        return "Kho{" + maKho + ", " + tenKho + ", quanLy=" + maNV + "}";
+        return tenKho;
     }
 }
