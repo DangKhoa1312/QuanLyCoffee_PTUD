@@ -255,7 +255,8 @@ public class OrderPanel extends JPanel {
 
         LoaiMon[] cats = menuController.getDanhMuc();
         for (int i = 0; i < cats.length; i++) {
-            tabCategories.addTab(cats[i].name(), null);
+            String title = (cats[i] == LoaiMon.DO_AN) ? "Đồ ăn" : "Đồ uống";
+            tabCategories.addTab(title, null);
             tabCategories.putClientProperty("cat_" + (i + 1), cats[i]);
         }
     }
@@ -390,7 +391,11 @@ public class OrderPanel extends JPanel {
             StringBuilder amountHtml = new StringBuilder("<html><table width='100%' border='0' cellspacing='0' cellpadding='1'>");
 
             // 1. Dòng chính (Món + Size)
-            String mainName = "<b>" + item.getMon().getTenMon() + "</b> (" + item.getSize().getTenSize() + ")";
+            String sizeLabel = item.getSize().getTenSize();
+            // Xử lý cả trường hợp "Thường" bị lỗi font thành "Thư?ng"
+            boolean isNormal = sizeLabel.equalsIgnoreCase("Thường") || sizeLabel.contains("Thư?");
+            String mainName = "<b>" + item.getMon().getTenMon() + "</b>" + 
+                             (isNormal ? "" : " (" + sizeLabel + ")");
             nameHtml.append("<tr><td style='font-family:Roboto; font-size:13px;'>").append(mainName).append("</td></tr>");
             priceHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:13px;'>").append(nf.format(item.getDonGiaSize())).append("đ</td></tr>");
             amountHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:13px;'>").append(nf.format(item.getDonGiaSize() * item.getSoLuong())).append("đ</td></tr>");
@@ -450,7 +455,7 @@ public class OrderPanel extends JPanel {
         if (ban == null || "MANG_VE".equals(ban.getMaBan())) {
             lblHeaderTitle.setText("🛍 Bán Mang Về");
         } else {
-            lblHeaderTitle.setText("🏠 Bàn số " + ban.getSoBan());
+            lblHeaderTitle.setText("🏠 " + ban.getSoBan());
         }
 
         // Load cart

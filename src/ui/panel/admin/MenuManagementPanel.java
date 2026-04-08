@@ -12,7 +12,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -110,9 +109,12 @@ public class MenuManagementPanel extends JPanel {
     }
 
     private void initTable() {
-        String[] cols = {"Mã món", "Tên món", "Loại", "Khoảng giá", "Trạng thái", "Thao tác"};
+        String[] cols = { "Mã món", "Tên món", "Loại", "Khoảng giá", "Trạng thái", "obj" };
         tableModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int row, int column) { return column == 5; }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
 
         table = new JTable(tableModel);
@@ -125,10 +127,23 @@ public class MenuManagementPanel extends JPanel {
 
         table.setDefaultRenderer(Object.class, new ZebraRenderer());
         table.getColumnModel().getColumn(4).setCellRenderer(new StatusRenderer());
-        
-        table.getColumnModel().getColumn(5).setCellRenderer(new ActionRenderer());
-        table.getColumnModel().getColumn(5).setCellEditor(new ActionEditor());
-        table.getColumnModel().getColumn(5).setPreferredWidth(120);
+
+        // Ẩn cột chứa đối tượng Mon (obj)
+        table.removeColumn(table.getColumnModel().getColumn(5));
+
+        // Sự kiện Double-click để sửa
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.getSelectedRow();
+                    if (row >= 0) {
+                        Mon m = (Mon) tableModel.getValueAt(table.convertRowIndexToModel(row), 5);
+                        handleEdit(m);
+                    }
+                }
+            }
+        });
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
@@ -146,7 +161,8 @@ public class MenuManagementPanel extends JPanel {
 
     private void addMonToTable(Mon m) {
         String priceRange = getPriceRange(m.getMaMon());
-        tableModel.addRow(new Object[]{m.getMaMon(), m.getTenMon(), m.getLoaiMon(), priceRange, m.isTrangThai(), m});
+        String loaiText = (m.getLoaiMon() == LoaiMon.DO_AN) ? "Đồ ăn" : "Đồ uống";
+        tableModel.addRow(new Object[] { m.getMaMon(), m.getTenMon(), loaiText, priceRange, m.isTrangThai(), m });
     }
 
     private String getPriceRange(String maMon) {
@@ -220,52 +236,11 @@ public class MenuManagementPanel extends JPanel {
         }
     }
 
-    class ActionRenderer extends DefaultTableCellRenderer {
-        @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
-            JPanel p = createActionPanel();
-            p.setBackground(isS ? t.getSelectionBackground() : (r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
-            return p;
-        }
-    }
-
-    class ActionEditor extends AbstractCellEditor implements TableCellEditor {
-        private JPanel p;
-        private Mon current;
-        public ActionEditor() {
-            p = createActionPanel();
-            JButton btnEdit = (JButton) p.getComponent(0);
-            JButton btnDel  = (JButton) p.getComponent(1);
-            btnEdit.addActionListener(e -> { stopCellEditing(); handleEdit(current); });
-            btnDel.addActionListener(e -> { stopCellEditing(); handleToggleStatus(current); });
-        }
-        @Override public Component getTableCellEditorComponent(JTable t, Object v, boolean isS, int r, int c) {
-            current = (Mon) v;
-            p.setBackground(t.getSelectionBackground());
-            return p;
-        }
-        @Override public Object getCellEditorValue() { return current; }
-    }
-
-    private JPanel createActionPanel() {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 15));
-        p.setOpaque(true);
-        p.add(createBtn(FontAwesome.PENCIL, new Color(52, 152, 219)));
-        p.add(createBtn(FontAwesome.TOGGLE_ON, new Color(149, 165, 166)));
-        return p;
-    }
-
-    private JButton createBtn(FontAwesome icon, Color color) {
-        JButton b = new JButton(IconFontSwing.buildIcon(icon, 18, color));
-        b.setBorderPainted(false);
-        b.setContentAreaFilled(false);
-        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return b;
-    }
-
     private void handleEdit(Mon m) {
         ui.dialog.MenuDialog dlg = new ui.dialog.MenuDialog((Frame) SwingUtilities.getWindowAncestor(this), m, true);
         dlg.setVisible(true);
-        if (dlg.isConfirmed()) loadData();
+        if (dlg.isConfirmed())
+            loadData();
     }
 
     private void handleToggleStatus(Mon m) {

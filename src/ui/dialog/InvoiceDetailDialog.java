@@ -27,7 +27,7 @@ public class InvoiceDetailDialog extends JDialog {
     private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     public InvoiceDetailDialog(JFrame parent, HoaDon hoaDon) {
-        super(parent, "Chi Ti\u1EBFt H\u00F3a \u0110\u01A1n", true);
+        super(parent, "Chi Tiết Hóa Đơn", true);
         this.hoaDon = hoaDon;
         this.invoiceController = new InvoiceController();
 
@@ -48,7 +48,7 @@ public class InvoiceDetailDialog extends JDialog {
         pnlHeader.setLayout(new BoxLayout(pnlHeader, BoxLayout.Y_AXIS));
         pnlHeader.setOpaque(false);
 
-        JLabel lblTitle = new JLabel("H\u00D3A \u0110\u01A1N THANH TO\u00C1N", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("HÓA ĐƠN THANH TOÁN", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 22));
         lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         pnlHeader.add(lblTitle);
@@ -58,11 +58,11 @@ public class InvoiceDetailDialog extends JDialog {
                     ? hoaDon.getThoiGianThanhToan().format(dtf) 
                     : "";
 
-        pnlHeader.add(createDetailRow("M\u00E3 h\u00F3a \u0111\u01A1n:", hoaDon.getMaHD()));
-        pnlHeader.add(createDetailRow("B\u00E0n:", hoaDon.getMaBan() != null ? hoaDon.getMaBan() : "Mang v\u1EC1"));
-        pnlHeader.add(createDetailRow("Lo\u1EA1i \u0111\u01A1n:", hoaDon.getLoaiDon() != null ? hoaDon.getLoaiDon().name() : "N/A"));
-        pnlHeader.add(createDetailRow("Th\u1EDDi gian:", time));
-        pnlHeader.add(createDetailRow("Thu ng\u00E2n:", hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "N/A"));
+        pnlHeader.add(createDetailRow("Mã hóa đơn:", hoaDon.getMaHD()));
+        pnlHeader.add(createDetailRow("Bàn:", hoaDon.getMaBan() != null ? hoaDon.getMaBan() : "Mang về"));
+        pnlHeader.add(createDetailRow("Loại đơn:", hoaDon.getLoaiDon() != null ? hoaDon.getLoaiDon().name() : "N/A"));
+        pnlHeader.add(createDetailRow("Thời gian:", time));
+        pnlHeader.add(createDetailRow("Thu ngân:", hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "N/A"));
         
         main.add(pnlHeader, BorderLayout.NORTH);
 
@@ -71,7 +71,7 @@ public class InvoiceDetailDialog extends JDialog {
         pnlCenter.setOpaque(false);
         pnlCenter.setBorder(new EmptyBorder(15, 0, 15, 0));
 
-        String[] cols = {"T\u00EAn M\u00F3n", "SL", "Gi\u00E1", "T\u1ED5ng"};
+        String[] cols = {"Tên Món", "SL", "Giá", "Tổng"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
@@ -158,11 +158,11 @@ public class InvoiceDetailDialog extends JDialog {
         pnlTotal.setOpaque(false);
         pnlTotal.setBorder(new EmptyBorder(10, 0, 0, 0));
         
-        JLabel lblHinhThuc = new JLabel("H\u00ECnh th\u1EE9c TT: " + (hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().name() : "N/A"));
+        JLabel lblHinhThuc = new JLabel("Hình thức TT: " + (hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().name() : "N/A"));
         lblHinhThuc.setFont(new Font("Roboto", Font.PLAIN, 14));
         lblHinhThuc.setHorizontalAlignment(SwingConstants.RIGHT);
         
-        JLabel lblTongTien = new JLabel("T\u1ED5ng Thanh To\u00E1n: " + nf.format(hoaDon.getTongTienPhaiTra()) + "\u0111");
+        JLabel lblTongTien = new JLabel("Tổng Thanh Toán: " + nf.format(hoaDon.getTongTienPhaiTra()) + "đ");
         lblTongTien.setFont(new Font("Roboto", Font.BOLD, 18));
         lblTongTien.setHorizontalAlignment(SwingConstants.RIGHT);
         lblTongTien.setForeground(new Color(231, 76, 60));
@@ -177,13 +177,13 @@ public class InvoiceDetailDialog extends JDialog {
         JPanel pnlBot = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         pnlBot.setOpaque(false);
 
-        JButton btnClose = new JButton("\u0110\u00D3NG");
+        JButton btnClose = new JButton("ĐÓNG");
         btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
         btnClose.setPreferredSize(new Dimension(120, 40));
         btnClose.setFocusable(false);
         btnClose.addActionListener(e -> dispose());
 
-        JButton btnPrint = new JButton("\uD83D\uDDA8 IN H\u00D3A \u0110\u01A0N");
+        JButton btnPrint = new JButton("🖨 IN HÓA ĐƠN");
         btnPrint.setFont(new Font("Roboto", Font.BOLD, 13));
         btnPrint.setBackground(new Color(41, 128, 185));
         btnPrint.setForeground(Color.WHITE);
@@ -195,14 +195,14 @@ public class InvoiceDetailDialog extends JDialog {
                 String pdfPath = PDFPrinter.exportBill(hoaDon, items);
                 
                 int ans = JOptionPane.showConfirmDialog(this,
-                    "Xu\u1EA5t PDF th\u00E0nh c\u00F4ng t\u1EA1i th\u01B0 m\u1EE5c exports/\nB\u1EA1n c\u00F3 mu\u1ED1n m\u1EDF file l\u00EAn xem kh\u00F4ng?",
-                    "In H\u00F3a \u0110\u01A1n", JOptionPane.YES_NO_OPTION);
+                    "Xuất PDF thành công tại thư mục exports/\nBạn có muốn mở file lên xem không?",
+                    "In Hóa Đơn", JOptionPane.YES_NO_OPTION);
                 if (ans == JOptionPane.YES_OPTION) {
                     Desktop.getDesktop().open(new File(pdfPath));
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "L\u1ED7i t\u1EA1o file PDF: " + ex.getMessage(), "L\u1ED7i", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Lỗi tạo file PDF: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
 

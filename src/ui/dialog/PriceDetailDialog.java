@@ -162,6 +162,7 @@ public class PriceDetailDialog extends JDialog {
             }
         });
         pnlQuickTools.add(cbCloneSource, gbcR);
+        cbCloneSource.addActionListener(e -> handleCloneSourceChange());
 
         // Button Sao chép
         gbcR.gridy = 2;
@@ -293,22 +294,20 @@ public class PriceDetailDialog extends JDialog {
 
     private void loadPriceTable() {
         model.setRowCount(0);
-        List<Mon> allMon = menuController.getAllMon();
+        if (!isEditMode) {
+            // Bảng giá mới: để trống, người dùng tự thêm từng món
+            return;
+        }
+        // Chế độ sửa: chỉ hiển thị các món đã có giá trong bảng này
         List<BangGiaChiTiet> existingDetails = priceController.getDetailsOf(bangGia.getMaBangGia());
-
-        for (Mon m : allMon) {
-            List<Size> sizes = menuController.getSizeOfMon(m.getMaMon());
-            for (Size s : sizes) {
-                // Tìm giá đã lưu, nếu chưa có thì mặc định 0.0
-                double price = existingDetails.stream()
-                        .filter(d -> d.getMaSize().equals(s.getMaSize()))
-                        .map(BangGiaChiTiet::getGiaBan)
-                        .findFirst().orElse(0.0);
-
+        for (BangGiaChiTiet d : existingDetails) {
+            Size s = menuController.getSizeById(d.getMaSize());
+            if (s != null) {
+                Mon m = menuController.getMonById(s.getMaMon());
                 model.addRow(new Object[] {
-                        m.getTenMon(),
+                        m != null ? m.getTenMon() : "Unknown",
                         s.getTenSize(),
-                        price,
+                        d.getGiaBan(),
                         s.getMaSize()
                 });
             }
@@ -345,11 +344,69 @@ public class PriceDetailDialog extends JDialog {
             return;
         }
 
-        int opt = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn sao chép giá từ [" + source.getTenBangGia()
-                + "]?\nCác dòng hiện tại sẽ bị ghi đè.", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        String ten = txtTen.getText().trim();
+        if (ten.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập 'Tên bảng giá' trước khi sao chép!");
+            txtTen.requestFocus();
+            return;
+        }
+
+        int opt = JOptionPane.showConfirmDialog(this,
+                "Sao chép toàn bộ giá từ [" + source.getTenBangGia() + "] và LƯU ngay?\nCác dòng chi tiết hiện tại sẽ bị ghi đè.",
+                "Xác nhận sao chép", JOptionPane.YES_NO_OPTION);
         if (opt == JOptionPane.YES_OPTION) {
+            try {
+                // 1. Lưu thông tin chung bảng giá
+                bangGia.setTenBangGia(ten);
+                Date start = dcBatDau.getDate();
+                Date end = dcKetThuc.getDate();
+                bangGia.setNgayBatDau(start != null ? start.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : LocalDate.now());
+                bangGia.setNgayKetThuc(end != null ? end.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null);
+                priceController.saveBangGia(bangGia, isEditMode);
+
+                // 2. Xóa chi tiết cũ (nếu có) và sao chép từ nguồn
+                priceController.deleteAllDetailsOf(bangGia.getMaBangGia());
+                priceController.clonePriceList(source.getMaBangGia(), bangGia.getMaBangGia());
+
+                JOptionPane.showMessageDialog(this,
+                        "✅ Đã sao chép và lưu bảng giá từ [" + source.getTenBangGia() + "] thành công!");
+                isDirty = false;
+                dispose();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "❌ Lỗi khi sao chép: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Xem trước chi tiết bảng giá khi người dùng thay đổi combo box nguồn sao chép.
+     * Chưa lưu vào cơ sở dữ liệu - chỉ hiển thị để tham khảo.
+     */
+    private void handleCloneSourceChange() {
+        BangGia source = (BangGia) cbCloneSource.getSelectedItem();
+        model.setRowCount(0);
+        if (source == null) {
+            // Chọn "― Bảng giá mới ―": khôi phục về trạng thái gốc
+            if (isEditMode) {
+                List<BangGiaChiTiet> existingDetails = priceController.getDetailsOf(bangGia.getMaBangGia());
+                for (BangGiaChiTiet d : existingDetails) {
+                    Size s = menuController.getSizeById(d.getMaSize());
+                    if (s != null) {
+                        Mon m = menuController.getMonById(s.getMaMon());
+                        model.addRow(new Object[] {
+                                m != null ? m.getTenMon() : "Unknown",
+                                s.getTenSize(),
+                                d.getGiaBan(),
+                                s.getMaSize()
+                        });
+                    }
+                }
+            }
+            // New mode: table stays empty
+            isDirty = false;
+        } else {
+            // Xem trước chi tiết của bảng giá được chọn
             List<BangGiaChiTiet> sourceDetails = priceController.getDetailsOf(source.getMaBangGia());
-            model.setRowCount(0);
             for (BangGiaChiTiet d : sourceDetails) {
                 Size s = menuController.getSizeById(d.getMaSize());
                 if (s != null) {
@@ -363,8 +420,8 @@ public class PriceDetailDialog extends JDialog {
                 }
             }
             isDirty = true;
-            checkDirty();
         }
+        checkDirty();
     }
 
     private void handleBatchAdjust() {

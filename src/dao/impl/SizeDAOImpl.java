@@ -91,7 +91,7 @@ public class SizeDAOImpl implements SizeDAO {
     @Override
     public List<Size> findByMon(String maMon) {
         List<Size> list = new ArrayList<>();
-        String sql = "SELECT * FROM Size WHERE maMon=? ORDER BY tenSize";
+        String sql = "SELECT * FROM Size WHERE maMon=? ORDER BY maSize";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maMon);
             ResultSet rs = ps.executeQuery();

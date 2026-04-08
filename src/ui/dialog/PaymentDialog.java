@@ -36,13 +36,13 @@ public class PaymentDialog extends JDialog {
     private JLabel lblTienThua;
     private JLabel lblTongPhaiTra;
 
-    private double tongTienDon; // t\u1EEB DonHang
+    private double tongTienDon; // từ DonHang
     private double tongPhaiTra;
     
     private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
 
     public PaymentDialog(JFrame parent, DonHang donHang) {
-        super(parent, "Thanh To\u00E1n \u0110\u01A1n H\u00E0ng", true);
+        super(parent, "Thanh Toán Đơn Hàng", true);
         this.donHang = donHang;
         this.paymentController = new PaymentController();
         this.tongTienDon = donHang.getTongTienTamTinh();
@@ -62,7 +62,7 @@ public class PaymentDialog extends JDialog {
         main.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         // ── Header ──
-        JLabel lblTitle = new JLabel("Thanh To\u00E1n", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("Thanh Toán", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 24));
         lblTitle.setForeground(new Color(44, 62, 80));
         main.add(lblTitle, BorderLayout.NORTH);
@@ -78,13 +78,13 @@ public class PaymentDialog extends JDialog {
         pnlBill.setBackground(Color.WHITE);
         pnlBill.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            "Th\u00F4ng tin h\u00F3a \u0111\u01A1n", TitledBorder.LEFT, TitledBorder.TOP,
+            "Thông tin hóa đơn", TitledBorder.LEFT, TitledBorder.TOP,
             new Font("Roboto", Font.BOLD, 14), new Color(100, 100, 100)
         ));
 
         pnlBill.add(Box.createVerticalStrut(15));
-        addDetailRow(pnlBill, "M\u00E3 \u0111\u01A1n:", donHang.getMaDonHang());
-        addDetailRow(pnlBill, "B\u00E0n:", donHang.getMaBan() == null ? "MANG V\u1EC0" : donHang.getMaBan());
+        addDetailRow(pnlBill, "Mã đơn:", donHang.getMaDonHang());
+        addDetailRow(pnlBill, "Bàn:", donHang.getMaBan() == null ? "MANG VỀ" : donHang.getMaBan());
         pnlBill.add(Box.createVerticalStrut(15));
         
         JSeparator sep = new JSeparator();
@@ -92,16 +92,16 @@ public class PaymentDialog extends JDialog {
         pnlBill.add(sep);
         pnlBill.add(Box.createVerticalStrut(15));
 
-        addDetailRow(pnlBill, "T\u1ED5ng ti\u1EC1n m\u00F3n:", nf.format(tongTienDon) + " \u0111");
-        addDetailRow(pnlBill, "Khuy\u1EBFn m\u00E3i (0%):", "-0 \u0111");
-        addDetailRow(pnlBill, "Thu\u1EBF (0%):", "+0 \u0111");
+        addDetailRow(pnlBill, "Tổng tiền món:", nf.format(tongTienDon) + " đ");
+        addDetailRow(pnlBill, "Khuyến mãi (0%):", "-0 đ");
+        addDetailRow(pnlBill, "Thuế (0%):", "+0 đ");
         
         pnlBill.add(Box.createVerticalStrut(20));
         pnlBill.add(Box.createVerticalGlue());
 
         JPanel pnlTotal = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         pnlTotal.setOpaque(false);
-        lblTongPhaiTra = new JLabel("C\u1EA7n TT: " + nf.format(tongPhaiTra) + " \u0111");
+        lblTongPhaiTra = new JLabel("Cần TT: " + nf.format(tongPhaiTra) + " đ");
         lblTongPhaiTra.setFont(new Font("Roboto", Font.BOLD, 22));
         lblTongPhaiTra.setForeground(new Color(231, 76, 60));
         pnlTotal.add(lblTongPhaiTra);
@@ -116,15 +116,15 @@ public class PaymentDialog extends JDialog {
         pnlPay.setBackground(Color.WHITE);
         pnlPay.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            "Ti\u1EC1n kh\u00E1ch tr\u1EA3", TitledBorder.LEFT, TitledBorder.TOP,
+            "Tiền khách trả", TitledBorder.LEFT, TitledBorder.TOP,
             new Font("Roboto", Font.BOLD, 14), new Color(100, 100, 100)
         ));
 
         // Hình thức
         JPanel pnlMethod = new JPanel(new FlowLayout(FlowLayout.LEFT));
         pnlMethod.setOpaque(false);
-        rbTienMat = new JRadioButton("Ti\u1EC1n M\u1EB7t");
-        rbChuyenKhoan = new JRadioButton("Chuy\u1EC3n Kho\u1EA3n \uD83D\uDCF1");
+        rbTienMat = new JRadioButton("Tiền Mặt");
+        rbChuyenKhoan = new JRadioButton("Chuyển Khoản 📱");
         rbTienMat.setFont(new Font("Roboto", Font.BOLD, 13));
         rbChuyenKhoan.setFont(new Font("Roboto", Font.BOLD, 13));
         rbTienMat.setOpaque(false);
@@ -152,7 +152,7 @@ public class PaymentDialog extends JDialog {
         pnlInput.setOpaque(false);
         pnlInput.setBorder(new EmptyBorder(10, 15, 10, 15));
         
-        JLabel lblKD = new JLabel("S\u1ED1 ti\u1EC1n kh\u00E1ch \u0111\u01B0a (VN\u0110):");
+        JLabel lblKD = new JLabel("Số tiền khách đưa (VNĐ):");
         lblKD.setFont(new Font("Roboto", Font.PLAIN, 14));
         pnlInput.add(lblKD);
 
@@ -171,7 +171,7 @@ public class PaymentDialog extends JDialog {
         // Tiền thừa label
         JPanel pnlThua = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         pnlThua.setOpaque(false);
-        lblTienThua = new JLabel("Ti\u1EC1n th\u1EEBa tr\u1EA3 kh\u00E1ch: 0 \u0111");
+        lblTienThua = new JLabel("Tiền thừa trả khách: 0 đ");
         lblTienThua.setFont(new Font("Roboto", Font.BOLD, 16));
         lblTienThua.setForeground(new Color(39, 174, 96));
         pnlThua.add(lblTienThua);
@@ -188,13 +188,13 @@ public class PaymentDialog extends JDialog {
         JPanel bot = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         bot.setOpaque(false);
 
-        JButton btnHuy = new JButton("H\u1EE6Y");
+        JButton btnHuy = new JButton("HỦY");
         btnHuy.setFont(new Font("Roboto", Font.BOLD, 14));
         btnHuy.setPreferredSize(new Dimension(100, 42));
         btnHuy.setFocusable(false);
         btnHuy.addActionListener(e -> dispose());
 
-        JButton btnPay = new JButton("X\u00C1C NH\u1EACN THANH TO\u00C1N");
+        JButton btnPay = new JButton("XÁC NHẬN THANH TOÁN");
         btnPay.setFont(new Font("Roboto", Font.BOLD, 15));
         btnPay.setBackground(new Color(39, 174, 96));
         btnPay.setForeground(Color.WHITE);
@@ -230,7 +230,7 @@ public class PaymentDialog extends JDialog {
 
     private void updateTienThua() {
         if (!rbTienMat.isSelected()) {
-            lblTienThua.setText("Ti\u1EC1n th\u1EEBa tr\u1EA3 kh\u00E1ch: 0 \u0111");
+            lblTienThua.setText("Tiền thừa trả khách: 0 đ");
             return;
         }
 
@@ -241,14 +241,14 @@ public class PaymentDialog extends JDialog {
             double thua = kd - tongPhaiTra;
             
             if (thua < 0) {
-                lblTienThua.setText("Kh\u00E1ch \u0111\u01B0a thi\u1EBFu!");
+                lblTienThua.setText("Khách đưa thiếu!");
                 lblTienThua.setForeground(new Color(231, 76, 60));
             } else {
-                lblTienThua.setText("Ti\u1EC1n th\u1EEBa: " + nf.format(thua) + " \u0111");
+                lblTienThua.setText("Tiền thừa: " + nf.format(thua) + " đ");
                 lblTienThua.setForeground(new Color(39, 174, 96));
             }
         } catch (NumberFormatException ignored) {
-            lblTienThua.setText("S\u1ED1 ti\u1EC1n kh\u00F4ng h\u1EE3p l\u1EC7");
+            lblTienThua.setText("Số tiền không hợp lệ");
             lblTienThua.setForeground(Color.GRAY);
         }
     }
@@ -258,7 +258,7 @@ public class PaymentDialog extends JDialog {
             String raw = txtKhachDua.getText().trim().replace(".", "").replace(",", "");
             double kd = Double.parseDouble(raw);
             if (kd < tongPhaiTra) {
-                JOptionPane.showMessageDialog(this, "S\u1ED1 ti\u1EC1n kh\u00E1ch \u0111\u01B0a ch\u01B0a \u0111\u1EE7!", "L\u1ED7i", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Số tiền khách đưa chưa đủ!", "Lỗi", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -269,24 +269,24 @@ public class PaymentDialog extends JDialog {
             HoaDon hd = paymentController.thanhToan(donHang, cart, tongPhaiTra, ht);
             isPaid = true;
 
-            JOptionPane.showMessageDialog(this, "\u0110\u00E3 thanh to\u00E1n th\u00E0nh c\u00F4ng m\u00E3 " + hd.getMaHD() + "!", "Th\u00E0nh C\u00F4ng", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Đã thanh toán thành công mã " + hd.getMaHD() + "!", "Thành Công", JOptionPane.INFORMATION_MESSAGE);
             dispose();
 
-            int inBill = JOptionPane.showConfirmDialog(this.getParent(), "B\u1EA1n c\u00F3 mu\u1ED1n In H\u00F3a \u0110\u01A1n kh\u00F4ng?", "In Bill", JOptionPane.YES_NO_OPTION);
+            int inBill = JOptionPane.showConfirmDialog(this.getParent(), "Bạn có muốn In Hóa Đơn không?", "In Bill", JOptionPane.YES_NO_OPTION);
             if (inBill == JOptionPane.YES_OPTION) {
                 try {
                     String pdfPath = PDFPrinter.exportBill(hd, cart);
                     Desktop.getDesktop().open(new File(pdfPath));
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    JOptionPane.showMessageDialog(this.getParent(), "L\u1ED7i in H\u00F3a \u0111\u01A1n: " + ex.getMessage(), "L\u1ED7i", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this.getParent(), "Lỗi in Hóa đơn: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
 
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "S\u1ED1 ti\u1EC1n kh\u00F4ng h\u1EE3p l\u1EC7!", "L\u1ED7i", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Số tiền không hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (AppException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "L\u1ED7i Thanh To\u00E1n", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Lỗi Thanh Toán", JOptionPane.ERROR_MESSAGE);
         }
     }
 

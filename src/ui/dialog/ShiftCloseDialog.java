@@ -23,7 +23,7 @@ public class ShiftCloseDialog extends JDialog {
     private boolean shiftClosed = false;
 
     public ShiftCloseDialog(JFrame parent, ShiftController shiftController) {
-        super(parent, "\u0110\u00F3ng Ca L\u00E0m Vi\u1EC7c", true);
+        super(parent, "Đóng Ca Làm Việc", true);
         this.shiftController = shiftController;
 
         setSize(460, 520);
@@ -58,12 +58,12 @@ public class ShiftCloseDialog extends JDialog {
         main.setBorder(new EmptyBorder(25, 35, 25, 35));
 
         // Title
-        JLabel lblTitle = new JLabel("B\u00C1O C\u00C1O CU\u1ED0I CA", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("BÁO CÁO CUỐI CA", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 22));
         lblTitle.setForeground(new Color(231, 76, 60));
         lblTitle.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel lblCa = new JLabel("Ca: " + maCa + "  |  " + gioBatDau + " \u2192 " + gioHienTai, SwingConstants.CENTER);
+        JLabel lblCa = new JLabel("Ca: " + maCa + "  |  " + gioBatDau + " → " + gioHienTai, SwingConstants.CENTER);
         lblCa.setFont(new Font("Roboto", Font.PLAIN, 13));
         lblCa.setForeground(new Color(130, 130, 130));
         lblCa.setAlignmentX(CENTER_ALIGNMENT);
@@ -77,21 +77,21 @@ public class ShiftCloseDialog extends JDialog {
         reportPanel.setOpaque(false);
         reportPanel.setAlignmentX(LEFT_ALIGNMENT);
 
-        addReportRow(reportPanel, "Nh\u00E2n vi\u00EAn:", SessionManager.getCurrentUser().getTenNV());
-        addReportRow(reportPanel, "Ti\u1EC1n \u0111\u1EA7u ca:", nf.format(tienDauCa) + " \u0111");
-        addReportRow(reportPanel, "T\u1ED5ng s\u1ED1 \u0111\u01A1n:", String.valueOf(tongDon));
-        addReportRow(reportPanel, "\u0110\u01A1n ho\u00E0n th\u00E0nh:", String.valueOf(donHoanThanh));
-        addReportRow(reportPanel, "Doanh thu (h\u1EC7 th\u1ED1ng):", nf.format(doanhThu) + " \u0111");
+        addReportRow(reportPanel, "Nhân viên:", SessionManager.getCurrentUser().getTenNV());
+        addReportRow(reportPanel, "Tiền đầu ca:", nf.format(tienDauCa) + " đ");
+        addReportRow(reportPanel, "Tổng số đơn:", String.valueOf(tongDon));
+        addReportRow(reportPanel, "Đơn hoàn thành:", String.valueOf(donHoanThanh));
+        addReportRow(reportPanel, "Doanh thu (hệ thống):", nf.format(doanhThu) + " đ");
 
         double tienCanCo = tienDauCa + doanhThu;
-        addReportRow(reportPanel, "Ti\u1EC1n c\u1EA7n c\u00F3 trong k\u00E9t:", nf.format(tienCanCo) + " \u0111");
+        addReportRow(reportPanel, "Tiền cần có trong két:", nf.format(tienCanCo) + " đ");
 
         // Separator 2
         JSeparator sep2 = new JSeparator();
         sep2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
 
         // Input tiền thực đếm
-        JLabel lblThucDem = new JLabel("Ti\u1EC1n m\u1EB7t th\u1EF1c \u0111\u1EBFm (VN\u0110):");
+        JLabel lblThucDem = new JLabel("Tiền mặt thực đếm (VNĐ):");
         lblThucDem.setFont(new Font("Roboto", Font.BOLD, 14));
         lblThucDem.setForeground(new Color(44, 62, 80));
         lblThucDem.setAlignmentX(LEFT_ALIGNMENT);
@@ -102,7 +102,7 @@ public class ShiftCloseDialog extends JDialog {
         txtThucDem.setHorizontalAlignment(JTextField.CENTER);
 
         // Chênh lệch label
-        JLabel lblChenhLech = new JLabel("Ch\u00EAnh l\u1EC7ch: 0 \u0111");
+        JLabel lblChenhLech = new JLabel("Chênh lệch: 0 đ");
         lblChenhLech.setFont(new Font("Roboto", Font.BOLD, 15));
         lblChenhLech.setForeground(new Color(39, 174, 96));
         lblChenhLech.setAlignmentX(CENTER_ALIGNMENT);
@@ -114,7 +114,7 @@ public class ShiftCloseDialog extends JDialog {
                     String raw = txtThucDem.getText().trim().replace(".", "").replace(",", "");
                     double thucDemVal = Double.parseDouble(raw);
                     double chenhLech = thucDemVal - tienCanCo;
-                    lblChenhLech.setText("Ch\u00EAnh l\u1EC7ch: " + nf.format(chenhLech) + " \u0111");
+                    lblChenhLech.setText("Chênh lệch: " + nf.format(chenhLech) + " đ");
                     if (chenhLech < 0) {
                         lblChenhLech.setForeground(new Color(231, 76, 60)); // Thiếu = Đỏ
                     } else if (chenhLech > 0) {
@@ -123,7 +123,7 @@ public class ShiftCloseDialog extends JDialog {
                         lblChenhLech.setForeground(new Color(39, 174, 96)); // Khớp = Xanh
                     }
                 } catch (NumberFormatException ignore) {
-                    lblChenhLech.setText("Ch\u00EAnh l\u1EC7ch: --");
+                    lblChenhLech.setText("Chênh lệch: --");
                     lblChenhLech.setForeground(Color.GRAY);
                 }
             }
@@ -133,7 +133,7 @@ public class ShiftCloseDialog extends JDialog {
         });
 
         // Button
-        JButton btnDongCa = new JButton("X\u00C1C NH\u1EACN \u0110\u00D3NG CA");
+        JButton btnDongCa = new JButton("XÁC NHẬN ĐÓNG CA");
         btnDongCa.setFont(new Font("Roboto", Font.BOLD, 15));
         btnDongCa.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         btnDongCa.setAlignmentX(CENTER_ALIGNMENT);
@@ -149,13 +149,13 @@ public class ShiftCloseDialog extends JDialog {
                 shiftController.dongCa(thucDem);
                 shiftClosed = true;
                 JOptionPane.showMessageDialog(this,
-                    "\u0110\u00E3 \u0111\u00F3ng ca th\u00E0nh c\u00F4ng!\nDoanh thu: " + nf.format(doanhThu) + " \u0111",
-                    "Th\u00E0nh c\u00F4ng", JOptionPane.INFORMATION_MESSAGE);
+                    "Đã đóng ca thành công!\nDoanh thu: " + nf.format(doanhThu) + " đ",
+                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Vui l\u00F2ng nh\u1EADp s\u1ED1 h\u1EE3p l\u1EC7!", "L\u1ED7i", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập số hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             } catch (AppException ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "L\u1ED7i", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
 

@@ -40,12 +40,12 @@ public class InvoicePanel extends JPanel {
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(25, 30, 20, 30));
 
-        JLabel lblTitle = new JLabel("\uD83D\uDCDC  L\u1ECBch S\u1EED H\u00F3a \u0110\u01A1n");
+        JLabel lblTitle = new JLabel("📜  Lịch Sử Hóa Đơn");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 24));
         lblTitle.setForeground(new Color(44, 62, 80));
         header.add(lblTitle, BorderLayout.WEST);
 
-        JButton btnRefresh = new JButton("\u21BB L\u00E0m M\u1EDBi");
+        JButton btnRefresh = new JButton("↻ Làm Mới");
         btnRefresh.setFont(new Font("Roboto", Font.BOLD, 13));
         btnRefresh.setBackground(new Color(220, 220, 220));
         btnRefresh.setFocusable(false);
@@ -61,14 +61,14 @@ public class InvoicePanel extends JPanel {
         content.setBorder(new EmptyBorder(0, 30, 30, 30));
 
         String[] cols = {
-            "M\u00E3 H\u00F3a \u0110\u01A1n", 
-            "B\u00E0n", 
-            "Lo\u1EA1i \u0111\u01A1n",
-            "T\u1ED5ng Ti\u1EC1n", 
-            "T.Gian Th.To\u00E1n",
-            "H\u00ECnh Th\u1EE9c",
-            "Tr\u1EA1ng th\u00E1i",
-            "Thu Ng\u00E2n"
+            "Mã Hóa Đơn", 
+            "Bàn", 
+            "Loại đơn",
+            "Tổng Tiền", 
+            "T.Gian Th.Toán",
+            "Hình Thức",
+            "Trạng thái",
+            "Thu Ngân"
         };
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
@@ -113,9 +113,9 @@ public class InvoicePanel extends JPanel {
             
             tableModel.addRow(new Object[]{
                 hd.getMaHD(),
-                hd.getMaBan() != null ? hd.getMaBan() : "Mang v\u1EC1",
+                hd.getMaBan() != null ? hd.getMaBan() : "Mang về",
                 hd.getLoaiDon() != null ? hd.getLoaiDon().name() : "",
-                nf.format(hd.getTongTienPhaiTra()) + " \u0111",
+                nf.format(hd.getTongTienPhaiTra()) + " đ",
                 time,
                 hd.getHinhThucThanhToan() == null ? "" : hd.getHinhThucThanhToan().name(),
                 hd.getTrangThai().name(),

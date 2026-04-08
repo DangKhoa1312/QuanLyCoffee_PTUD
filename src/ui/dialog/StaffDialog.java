@@ -119,8 +119,8 @@ public class StaffDialog extends JDialog {
         form.setOpaque(false);
         GridBagConstraints gbc = createGBC();
 
-        txtMaNV = addInputRow(form, gbc, "M\u00E3 Nh\u00E2n Vi\u00EAn:", FontAwesome.ID_CARD_O);
-        txtMaNV.setEditable(false); // Lu\u00F4n kh\u00F4ng cho ph\u00E9p s\u1EEDa m\u00E3
+        txtMaNV = addInputRow(form, gbc, "Mã Nhân Viên:", FontAwesome.ID_CARD_O);
+        txtMaNV.setEditable(false); // Luôn không cho phép sửa mã
 
         txtUsername = addInputRow(form, gbc, "Tên Đăng Nhập*:", FontAwesome.AT);
         if (isEditMode)

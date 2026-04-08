@@ -24,12 +24,12 @@ public class TransferTableDialog extends JDialog {
     private JComboBox<BanItem> cbDanhSachBan;
 
     public TransferTableDialog(JFrame parent, Ban banNguon, DonHang donHang) {
-        super(parent, "T\u00F9y Ch\u1ECDn Chuy\u1EC3n / G\u1ED9p B\u00E0n", true);
+        super(parent, "Tùy Chọn Chuyển / Gộp Bàn", true);
         this.banNguon = banNguon;
         this.donHangHienTai = donHang;
         this.tableController = new TableController();
 
-        setSize(400, 250);
+        setSize(520, 320);
         setLocationRelativeTo(parent);
         setResizable(false);
 
@@ -43,7 +43,7 @@ public class TransferTableDialog extends JDialog {
         main.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         // ── Tiêu đề ──
-        JLabel lblTitle = new JLabel("B\u00E0n hi\u1EC7n t\u1EA1i: " + banNguon.getSoBan(), SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("Bàn hiện tại: " + banNguon.getSoBan(), SwingConstants.CENTER);
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 18));
         main.add(lblTitle, BorderLayout.NORTH);
 
@@ -54,8 +54,8 @@ public class TransferTableDialog extends JDialog {
         JPanel pnlRadio = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pnlRadio.setOpaque(false);
 
-        rbChuyenBan = new JRadioButton("Chuy\u1EC3n sang B\u00E0n m\u1EDBi");
-        rbGopBan = new JRadioButton("G\u1ED9p v\u00E0o B\u00E0n kh\u00E1c");
+        rbChuyenBan = new JRadioButton("Chuyển sang Bàn mới");
+        rbGopBan = new JRadioButton("Gộp vào Bàn khác");
         rbChuyenBan.setOpaque(false);
         rbGopBan.setOpaque(false);
         rbChuyenBan.setFont(new Font("Roboto", Font.BOLD, 14));
@@ -75,10 +75,10 @@ public class TransferTableDialog extends JDialog {
 
         JPanel pnlCombo = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pnlCombo.setOpaque(false);
-        pnlCombo.add(new JLabel("Ch\u1ECDn B\u00E0n \u0110\u00EDch:"));
+        pnlCombo.add(new JLabel("Chọn Bàn Đích:"));
         
         cbDanhSachBan = new JComboBox<>();
-        cbDanhSachBan.setPreferredSize(new Dimension(150, 30));
+        cbDanhSachBan.setPreferredSize(new Dimension(250, 32));
         cbDanhSachBan.setFont(new Font("Roboto", Font.PLAIN, 14));
         pnlCombo.add(cbDanhSachBan);
 
@@ -89,10 +89,10 @@ public class TransferTableDialog extends JDialog {
         JPanel pnlBot = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         pnlBot.setOpaque(false);
 
-        JButton btnHuy = new JButton("H\u1EE7y");
+        JButton btnHuy = new JButton("Hủy");
         btnHuy.addActionListener(e -> dispose());
 
-        JButton btnXacNhan = new JButton("X\u00E1c Nh\u1EADn");
+        JButton btnXacNhan = new JButton("Xác Nhận");
         btnXacNhan.setBackground(new Color(41, 128, 185));
         btnXacNhan.setForeground(Color.WHITE);
         btnXacNhan.setFont(new Font("Roboto", Font.BOLD, 13));
@@ -111,14 +111,14 @@ public class TransferTableDialog extends JDialog {
             List<Ban> banTrongs = tableController.getBanTrong();
             for (Ban b : banTrongs) {
                 if (!"MANG_VE".equals(b.getMaBan())) {
-                    cbDanhSachBan.addItem(new BanItem(b, " (Tr\u1ED1ng)"));
+                    cbDanhSachBan.addItem(new BanItem(b, " (Trống)"));
                 }
             }
         } else {
             List<Ban> banCoKhach = tableController.getBanDangCoKhach();
             for (Ban b : banCoKhach) {
                 if (!b.getMaBan().equals(banNguon.getMaBan()) && !"MANG_VE".equals(b.getMaBan())) {
-                    cbDanhSachBan.addItem(new BanItem(b, " (\u0110ang kh\u00E1ch)"));
+                    cbDanhSachBan.addItem(new BanItem(b, " (Đang khách)"));
                 }
             }
         }
@@ -127,27 +127,27 @@ public class TransferTableDialog extends JDialog {
     private void commitAction() {
         BanItem selected = (BanItem) cbDanhSachBan.getSelectedItem();
         if (selected == null) {
-            JOptionPane.showMessageDialog(this, "Vui l\u00F2ng ch\u1ECDn b\u00E0n \u0111\u00EDch!");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn bàn đích!");
             return;
         }
 
         try {
             if (rbChuyenBan.isSelected()) {
                 tableController.chuyenBan(donHangHienTai.getMaDonHang(), banNguon.getMaBan(), selected.ban.getMaBan());
-                JOptionPane.showMessageDialog(this, "\u0110\u00E3 CHUY\u1EC2N B\u00C0N th\u00E0nh c\u00F4ng!");
+                JOptionPane.showMessageDialog(this, "Đã CHUYỂN BÀN thành công!");
             } else {
                 DonHang dhDich = tableController.getDonHangDangMo(selected.ban.getMaBan());
                 if (dhDich == null) {
-                    JOptionPane.showMessageDialog(this, "B\u00E0n \u0111\u00EDch kh\u00F4ng c\u00F3 \u0111\u01A1n \u0111ang m\u1EDF!");
+                    JOptionPane.showMessageDialog(this, "Bàn đích không có đơn đang mở!");
                     return;
                 }
                 tableController.gopBan(donHangHienTai.getMaDonHang(), dhDich.getMaDonHang(), banNguon.getMaBan(), selected.ban.getMaBan());
-                JOptionPane.showMessageDialog(this, "\u0110\u00E3 G\u1ED8P B\u00C0N th\u00E0nh c\u00F4ng!");
+                JOptionPane.showMessageDialog(this, "Đã GỘP BÀN thành công!");
             }
             success = true;
             dispose();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "L\u1ED7i thao t\u00E1c: " + ex.getMessage(), "L\u1ED7i", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi thao tác: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -159,6 +159,6 @@ public class TransferTableDialog extends JDialog {
         Ban ban;
         String desc;
         BanItem(Ban ban, String desc) { this.ban = ban; this.desc = desc; }
-        @Override public String toString() { return "B\u00E0n " + ban.getSoBan() + desc; }
+        @Override public String toString() { return "Bàn " + ban.getSoBan() + desc; }
     }
 }

@@ -43,8 +43,8 @@ public class PriceManagementPanel extends JPanel {
         // 1. Breadcrumb
         JPanel pnlBreadcrumb = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         pnlBreadcrumb.setOpaque(false);
-        pnlBreadcrumb.add(new JLabel("Admin / Thi\u1EBFt l\u1EADp / "));
-        JLabel lblCurrent = new JLabel("B\u1EA3 ng gi\u00E1");
+        pnlBreadcrumb.add(new JLabel("Admin / Thiết lập / "));
+        JLabel lblCurrent = new JLabel("Bảng giá");
         lblCurrent.setFont(new Font("Roboto", Font.BOLD, 13));
         lblCurrent.setForeground(PRIMARY_COLOR);
         pnlBreadcrumb.add(lblCurrent);
@@ -54,12 +54,12 @@ public class PriceManagementPanel extends JPanel {
         // 2. Title & Add Button
         JPanel pnlTitle = new JPanel(new BorderLayout());
         pnlTitle.setOpaque(false);
-        JLabel lblTitle = new JLabel("DANH S\u00C1CH B\u1EA2NG GI\u00C1");
+        JLabel lblTitle = new JLabel("DANH SÁCH BẢNG GIÁ");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 22));
         lblTitle.setForeground(new Color(44, 62, 80));
         pnlTitle.add(lblTitle, BorderLayout.WEST);
 
-        JButton btnAdd = new JButton(" T\u1EA1o B\u1EA3ng Gi\u00E1 M\u1EDBi");
+        JButton btnAdd = new JButton(" Tạo Bảng Giá Mới");
         btnAdd.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS, 14, Color.WHITE));
         btnAdd.setBackground(new Color(46, 204, 113));
         btnAdd.setForeground(Color.WHITE);
@@ -73,7 +73,7 @@ public class PriceManagementPanel extends JPanel {
     }
 
     private void initTable() {
-        String[] cols = {"M\u00E3 b\u1EA3ng gi\u00E1", "T\u00EAn b\u1EA3ng gi\u00E1", "Ng\u00E0y b\u1EAFt \u0111\u1EA7u", "Ng\u00E0y k\u1EBFt th\u00FAc", "Tr\u1EA1ng th\u00E1i"};
+        String[] cols = {"Mã bảng giá", "Tên bảng giá", "Ngày bắt đầu", "Ngày kết thúc", "Trạng thái"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -109,14 +109,14 @@ public class PriceManagementPanel extends JPanel {
 
     private void loadData() {
         tableModel.setRowCount(0);
-        controller.autoUpdateStatus(); // Ki\u1EC3m tra t\u1EF1 \u0111\u1ED9ng tr\u01B0\u1EDBc khi load
+        controller.autoUpdateStatus(); // Kiểm tra tự động trước khi load
         List<BangGia> list = controller.getAllBangGia();
         for (BangGia bg : list) {
             tableModel.addRow(new Object[]{
                 bg.getMaBangGia(),
                 bg.getTenBangGia(),
                 bg.getNgayBatDau(),
-                bg.getNgayKetThuc() != null ? bg.getNgayKetThuc() : "V\u00F4 th\u1EDDi h\u1EA1n",
+                bg.getNgayKetThuc() != null ? bg.getNgayKetThuc() : "Vô thời hạn",
                 bg.isTrangThai()
             });
         }
@@ -148,7 +148,7 @@ public class PriceManagementPanel extends JPanel {
             lbl.setHorizontalAlignment(CENTER);
             boolean active = (boolean) v;
             lbl.setForeground(active ? new Color(39, 174, 96) : Color.GRAY);
-            lbl.setText(active ? "\u25CF \u0110ang \u00E1p d\u1EE5ng" : "\u25CF T\u1EA1m ng\u1EEBng");
+            lbl.setText(active ? "● Đang áp dụng" : "● Tạm ngừng");
             return lbl;
         }
     }

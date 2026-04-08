@@ -19,7 +19,7 @@ public class TakeawayListDialog extends JDialog {
     private final OrderController orderController;
 
     public TakeawayListDialog(JFrame parent, List<DonHang> listOrders, OrderController orderController) {
-        super(parent, "Danh s\u00E1ch \u0110\u01A1n Mang V\u1EC1 Đang Chờ", true);
+        super(parent, "Danh sách Đơn Mang Về Đang Chờ", true);
         this.listOrders = listOrders;
         this.orderController = orderController;
         setSize(450, 600); // Tăng chiều cao một chút để hiển thị thêm thông tin món
@@ -33,7 +33,7 @@ public class TakeawayListDialog extends JDialog {
         pMain.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         // Header
-        JLabel lblTitle = new JLabel("\uD83D\uDECD DANH S\u00C1CH MANG V\u1EC0 \u0110ANG CH\u1EDC");
+        JLabel lblTitle = new JLabel("🛍 DANH SÁCH MANG VỀ ĐANG CHỜ");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 18));
         lblTitle.setHorizontalAlignment(SwingConstants.CENTER);
         lblTitle.setBorder(new EmptyBorder(0, 0, 15, 0));
@@ -48,7 +48,7 @@ public class TakeawayListDialog extends JDialog {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm");
 
         if (listOrders == null || listOrders.isEmpty()) {
-            JLabel lblEmpty = new JLabel("(Ch\u01B0a c\u00F3 \u0111\u01A1n ch\u1EDD n\u00E0o)");
+            JLabel lblEmpty = new JLabel("(Chưa có đơn chờ nào)");
             lblEmpty.setFont(new Font("Roboto", Font.ITALIC, 14));
             lblEmpty.setForeground(Color.GRAY);
             lblEmpty.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -70,7 +70,7 @@ public class TakeawayListDialog extends JDialog {
         JPanel pFooter = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         pFooter.setBackground(Color.WHITE);
 
-        JButton btnNew = new JButton("+ T\u1EA0O \u0110\u01A1N M\u1EDAI");
+        JButton btnNew = new JButton("+ TẠO ĐƠN MỚI");
         btnNew.setFont(new Font("Roboto", Font.BOLD, 14));
         btnNew.setBackground(new Color(46, 204, 113));
         btnNew.setForeground(Color.WHITE);
@@ -82,7 +82,7 @@ public class TakeawayListDialog extends JDialog {
             dispose();
         });
 
-        JButton btnCancel = new JButton("\u0110\u00F3ng");
+        JButton btnCancel = new JButton("Đóng");
         btnCancel.setFont(new Font("Roboto", Font.BOLD, 14));
         btnCancel.setBackground(new Color(230, 230, 230));
         btnCancel.setFocusPainted(false);
@@ -104,11 +104,11 @@ public class TakeawayListDialog extends JDialog {
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         String time = dh.getThoiGianMo() != null ? dh.getThoiGianMo().format(dtf) : "--:--";
-        JLabel lblLeft = new JLabel(String.format("<html><b>[%s]</b> - l\u00FAc %s</html>", dh.getMaDonHang(), time));
+        JLabel lblLeft = new JLabel(String.format("<html><b>[%s]</b> - lúc %s</html>", dh.getMaDonHang(), time));
         lblLeft.setFont(new Font("Roboto", Font.PLAIN, 15));
         lblLeft.setBorder(new EmptyBorder(10, 15, 10, 15));
 
-        JLabel lblRight = new JLabel("T\u1ED5ng: " + nf.format(dh.getTongTienTamTinh()) + "\u0111", SwingConstants.RIGHT);
+        JLabel lblRight = new JLabel("Tổng: " + nf.format(dh.getTongTienTamTinh()) + "đ", SwingConstants.RIGHT);
         lblRight.setFont(new Font("Roboto", Font.BOLD, 14));
         lblRight.setForeground(new Color(231, 76, 60));
         lblRight.setBorder(new EmptyBorder(10, 15, 10, 15));

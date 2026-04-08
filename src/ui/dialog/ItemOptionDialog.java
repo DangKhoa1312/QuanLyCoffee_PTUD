@@ -39,7 +39,7 @@ public class ItemOptionDialog extends JDialog {
     private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
 
     public ItemOptionDialog(JFrame parent, Mon mon, MenuController menuController) {
-        super(parent, "Tu\u1EF3 Ch\u1ECDn: " + mon.getTenMon(), true);
+        super(parent, "Tuỳ Chọn: " + mon.getTenMon(), true);
         this.mon = mon;
         this.menuController = menuController;
 
@@ -73,18 +73,20 @@ public class ItemOptionDialog extends JDialog {
         sizePanel.setBackground(Color.WHITE);
         sizePanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(220, 220, 220)),
-            "Ch\u1ECDn Size", TitledBorder.LEFT, TitledBorder.TOP,
+            "Chọn Size", TitledBorder.LEFT, TitledBorder.TOP,
             new Font("Roboto", Font.BOLD, 13), new Color(100, 100, 100)
         ));
 
         sizeGroup = new ButtonGroup();
         if (sizeList == null || sizeList.isEmpty()) {
-            sizePanel.add(new JLabel("  Kh\u00F4ng c\u00F3 Size"));
+            sizePanel.add(new JLabel("  Không có Size"));
         } else {
             boolean first = true;
             for (Size size : sizeList) {
                 double gia = menuController.getGiaBan(size.getMaSize());
-                String text = size.getTenSize() + " (" + nf.format(gia) + "\u0111)";
+                String szName = size.getTenSize();
+                boolean isNormal = szName.equalsIgnoreCase("Thường") || szName.contains("Thư?");
+                String text = (isNormal ? "Mặc định" : szName) + " (" + nf.format(gia) + "đ)";
                 JRadioButton rb = new JRadioButton(text);
                 rb.setFont(new Font("Roboto", Font.PLAIN, 14));
                 rb.setBackground(Color.WHITE);
@@ -109,15 +111,15 @@ public class ItemOptionDialog extends JDialog {
         toppPanel.setBackground(Color.WHITE);
         toppPanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(220, 220, 220)),
-            "Topping (C\u00F3 th\u1EC3 ch\u1ECDn nhi\u1EC1u)", TitledBorder.LEFT, TitledBorder.TOP,
+            "Topping (Có thể chọn nhiều)", TitledBorder.LEFT, TitledBorder.TOP,
             new Font("Roboto", Font.BOLD, 13), new Color(100, 100, 100)
         ));
 
         if (toppingList == null || toppingList.isEmpty()) {
-            toppPanel.add(new JLabel("  Kh\u00F4ng c\u00F3 Topping"));
+            toppPanel.add(new JLabel("  Không có Topping"));
         } else {
             for (Topping top : toppingList) {
-                String text = top.getTenTopping() + " (+" + nf.format(top.getGiaTopping()) + "\u0111)";
+                String text = top.getTenTopping() + " (+" + nf.format(top.getGiaTopping()) + "đ)";
                 JCheckBox cb = new JCheckBox(text);
                 cb.setFont(new Font("Roboto", Font.PLAIN, 13));
                 cb.setBackground(Color.WHITE);
@@ -140,7 +142,7 @@ public class ItemOptionDialog extends JDialog {
 
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.weightx = 0;
-        JLabel lblSL = new JLabel("S\u1ED1 l\u01B0\u1EE3ng:");
+        JLabel lblSL = new JLabel("Số lượng:");
         lblSL.setFont(new Font("Roboto", Font.BOLD, 13));
         botPanel.add(lblSL, gbc);
 
@@ -154,7 +156,7 @@ public class ItemOptionDialog extends JDialog {
 
         gbc.gridx = 0; gbc.gridy = 1;
         gbc.weightx = 0;
-        JLabel lblGC = new JLabel("Ghi ch\u00FA:");
+        JLabel lblGC = new JLabel("Ghi chú:");
         lblGC.setFont(new Font("Roboto", Font.BOLD, 13));
         botPanel.add(lblGC, gbc);
 
@@ -173,7 +175,7 @@ public class ItemOptionDialog extends JDialog {
         JPanel actionPanel = new JPanel(new BorderLayout());
         actionPanel.setBackground(Color.WHITE);
 
-        lblTotal = new JLabel("T\u1ED5ng: 0\u0111");
+        lblTotal = new JLabel("Tổng: 0đ");
         lblTotal.setFont(new Font("Roboto", Font.BOLD, 18));
         lblTotal.setForeground(new Color(231, 76, 60));
         actionPanel.add(lblTotal, BorderLayout.WEST);
@@ -181,7 +183,7 @@ public class ItemOptionDialog extends JDialog {
         JPanel pnlBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlBtns.setOpaque(false);
 
-        JButton btnCancel = new JButton("H\u1EE6Y");
+        JButton btnCancel = new JButton("HỦY");
         btnCancel.setFont(new Font("Roboto", Font.BOLD, 13));
         btnCancel.setBackground(new Color(240, 240, 240));
         btnCancel.setForeground(new Color(100, 100, 100));
@@ -189,7 +191,7 @@ public class ItemOptionDialog extends JDialog {
         btnCancel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCancel.addActionListener(e -> dispose());
 
-        JButton btnAdd = new JButton("TH\u00CAM V\u00C0O GI\u1ECE");
+        JButton btnAdd = new JButton("THÊM VÀO GIỎ");
         btnAdd.setFont(new Font("Roboto", Font.BOLD, 13));
         btnAdd.setBackground(new Color(39, 174, 96));
         btnAdd.setForeground(Color.WHITE);
@@ -226,12 +228,12 @@ public class ItemOptionDialog extends JDialog {
 
         int sl = (Integer) spinSoLuong.getValue();
         double total = (sizePrice + toppingPrice) * sl;
-        lblTotal.setText("T\u1ED5ng: " + nf.format(total) + "\u0111");
+        lblTotal.setText("Tổng: " + nf.format(total) + "đ");
     }
 
     private void commitAndClose() {
         if (sizeBtnMap.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "M\u00F3n n\u00E0y ch\u01B0a c\u00F3 Size n\u00E0o!", "L\u1ED7i", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Món này chưa có Size nào!", "Lỗi", JOptionPane.WARNING_MESSAGE);
             return;
         }
 

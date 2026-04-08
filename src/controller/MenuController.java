@@ -112,6 +112,11 @@ public class MenuController {
     public String generateNextMaSize() { return utils.IDGenerator.newMaSize(); }
     public String generateNextMaBGCT() { return utils.IDGenerator.newMaBangGiaChiTiet(); }
 
+    public boolean saveSize(Size size, boolean isEdit) {
+        if (isEdit) return sizeDAO.update(size);
+        return sizeDAO.insert(size);
+    }
+
     public boolean saveSizeAndPrice(Size size, double price, boolean isEdit) {
         boolean sizeOk;
         if (isEdit) sizeOk = sizeDAO.update(size);

@@ -44,7 +44,7 @@ public class LoginForm extends JFrame {
         card.setPreferredSize(new Dimension(380, 440));
 
         // Logo
-        JLabel lblIcon = new JLabel("\u2615", SwingConstants.CENTER);
+        JLabel lblIcon = new JLabel("☕", SwingConstants.CENTER);
         lblIcon.setFont(new Font("Roboto", Font.PLAIN, 52));
         lblIcon.setAlignmentX(CENTER_ALIGNMENT);
 

@@ -51,10 +51,10 @@ public class StaffManagementPanel extends JPanel {
         // 1. Breadcrumb
         JPanel pnlBreadcrumb = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         pnlBreadcrumb.setOpaque(false);
-        JLabel lblBreadcrumb = new JLabel("Admin / Qu\u1EA3n tr\u1ECB / ");
+        JLabel lblBreadcrumb = new JLabel("Admin / Quản trị / ");
         lblBreadcrumb.setForeground(Color.GRAY);
         lblBreadcrumb.setFont(new Font("Roboto", Font.PLAIN, 13));
-        JLabel lblCurrent = new JLabel("Nh\u00E2n vi\u00EAn");
+        JLabel lblCurrent = new JLabel("Nhân viên");
         lblCurrent.setFont(new Font("Roboto", Font.BOLD, 13));
         lblCurrent.setForeground(PRIMARY_COLOR);
         pnlBreadcrumb.add(lblBreadcrumb);
@@ -65,7 +65,7 @@ public class StaffManagementPanel extends JPanel {
         // 2. Title Section
         JPanel pnlTitle = new JPanel(new BorderLayout());
         pnlTitle.setOpaque(false);
-        JLabel lblTitle = new JLabel("DANH S\u00C1CH NH\u00C2N VI\u00CAN");
+        JLabel lblTitle = new JLabel("DANH SÁCH NHÂN VIÊN");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 22));
         lblTitle.setForeground(new Color(44, 62, 80));
         pnlTitle.add(lblTitle, BorderLayout.WEST);
@@ -104,7 +104,7 @@ public class StaffManagementPanel extends JPanel {
         pnlFilter.add(lblSearchIcon);
         pnlFilter.add(txtSearch);
         pnlFilter.add(new JLabel("  |  "));
-        pnlFilter.add(new JLabel("Tr\u1EA1ng th\u00E1i: "));
+        pnlFilter.add(new JLabel("Trạng thái: "));
         pnlFilter.add(cbFilterStatus);
 
         pnlHeader.add(pnlFilter);
@@ -189,14 +189,14 @@ public class StaffManagementPanel extends JPanel {
 
     private void handleAddEmployee() {
         NhanVien nv = new NhanVien();
-        nv.setMaNV(controller.generateNextMaNV()); // T\u1EF1 \u0111\u1ED9ng sinh m\u00E3 m\u1EDBi
+        nv.setMaNV(controller.generateNextMaNV()); // Tự động sinh mã mới
         ui.dialog.StaffDialog dlg = new ui.dialog.StaffDialog((Frame) SwingUtilities.getWindowAncestor(this), nv,
                 false);
         dlg.setVisible(true);
         if (dlg.isConfirmed()) {
             if (controller.addEmployee(nv)) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Th\u00EA m th\u00E0nh c\u00F4ng!");
+                JOptionPane.showMessageDialog(this, "Thêm thành công!");
             }
         }
     }
@@ -223,10 +223,10 @@ public class StaffManagementPanel extends JPanel {
             lbl.setHorizontalAlignment(CENTER);
             if (value == TrangThaiNhanVien.DANG_LAM_VIEC) {
                 lbl.setForeground(new Color(39, 174, 96));
-                lbl.setText("\u25CF \u0110ang l\u00E0m");
+                lbl.setText("● Đang làm");
             } else {
                 lbl.setForeground(new Color(192, 57, 43));
-                lbl.setText("\u25CF \u0110\u00E3 ngh\u1EC9");
+                lbl.setText("● Đã nghỉ");
             }
             return lbl;
         }

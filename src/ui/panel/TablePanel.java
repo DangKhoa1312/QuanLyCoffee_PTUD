@@ -53,7 +53,7 @@ public class TablePanel extends JPanel {
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(20, 25, 15, 25));
 
-        JLabel lblTitle = new JLabel("\uD83C\uDFE0  S\u01A1 \u0110\u1ED3 B\u00E0n");
+        JLabel lblTitle = new JLabel("🏠  Sơ Đồ Bàn");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 22));
         lblTitle.setForeground(new Color(26, 26, 46));
         header.add(lblTitle, BorderLayout.WEST);
@@ -61,9 +61,9 @@ public class TablePanel extends JPanel {
         // Legend
         JPanel legend = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
         legend.setOpaque(false);
-        legend.add(createLegend("Tr\u1ED1ng", new Color(39, 174, 96)));
-        legend.add(createLegend("\u0110ang ph\u1EE5c v\u1EE5", new Color(231, 76, 60)));
-        legend.add(createLegend("\u0110\u00E3 \u0111\u1EB7t", new Color(243, 156, 18)));
+        legend.add(createLegend("Trống", new Color(39, 174, 96)));
+        legend.add(createLegend("Đang phục vụ", new Color(231, 76, 60)));
+        legend.add(createLegend("Đã đặt", new Color(243, 156, 18)));
         header.add(legend, BorderLayout.EAST);
 
         add(header, BorderLayout.NORTH);
@@ -124,7 +124,7 @@ public class TablePanel extends JPanel {
         tabbedKhuVuc.removeAll();
 
         // Tab "Tất cả"
-        tabbedKhuVuc.addTab("T\u1EA5t c\u1EA3", null);
+        tabbedKhuVuc.addTab("Tất cả", null);
         tabbedKhuVuc.putClientProperty("kv_0", "");
 
         List<KhuVuc> dsKV = tableController.getDanhSachKhuVuc();
@@ -142,7 +142,7 @@ public class TablePanel extends JPanel {
 
         // Bàn ảo "Mang Về" ở tab Tất cả
         if (maKhuVuc == null || maKhuVuc.isEmpty()) {
-            Ban banMangVe = new Ban("MANG_VE", "MANG V\u1EC0", null, 0, TrangThaiBan.TRONG);
+            Ban banMangVe = new Ban("MANG_VE", "MANG VỀ", null, 0, TrangThaiBan.TRONG);
             gridPanel.add(createTableCard(banMangVe, true));
         }
 
@@ -180,27 +180,27 @@ public class TablePanel extends JPanel {
 
         if (isMangVe) {
             bgColor = new Color(52, 152, 219); // Xanh dương riêng cho Mang Về
-            statusText = "MANG V\u1EC0";
-            topLine = "\uD83D\uDECD"; // 🛍 icon
+            statusText = "MANG VỀ";
+            topLine = "🛍"; // 🛍 icon
         } else {
             switch (ban.getTrangThai()) {
                 case TRONG:
                     bgColor = new Color(39, 174, 96);
-                    statusText = "TR\u1ED0NG";
+                    statusText = "TRỐNG";
                     break;
                 case CO_KHACH:
                     bgColor = new Color(231, 76, 60);
-                    statusText = "\u0110ANG PH\u1EE4C V\u1EE4";
+                    statusText = "ĐANG PHỤC VỤ";
                     break;
                 case DA_DAT_TRUOC:
                     bgColor = new Color(243, 156, 18);
-                    statusText = "\u0110\u00C3 \u0110\u1EB6T";
+                    statusText = "ĐÃ ĐẶT";
                     break;
                 default:
                     bgColor = new Color(149, 165, 166);
-                    statusText = "KH\u00C1C";
+                    statusText = "KHÁC";
             }
-            topLine = "B\u00E0n " + ban.getSoBan();
+            topLine = ban.getSoBan();
         }
 
         btn.setBackground(bgColor);
@@ -214,7 +214,7 @@ public class TablePanel extends JPanel {
         // Trạng thái + sức chứa
         String subText = statusText;
         if (!isMangVe && ban.getSucChua() > 0) {
-            subText += " (" + ban.getSucChua() + " gh\u1EBF)";
+            subText += " (" + ban.getSucChua() + " ghế)";
         }
 
         // Nếu bàn CO_KHACH, hiển thị thêm tiền tạm tính
@@ -222,7 +222,7 @@ public class TablePanel extends JPanel {
             DonHang dh = OrderManager.getInstance().getOrderByBan(ban.getMaBan());
             if (dh != null && dh.getTongTienTamTinh() > 0) {
                 NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
-                subText = nf.format(dh.getTongTienTamTinh()) + "\u0111";
+                subText = nf.format(dh.getTongTienTamTinh()) + "đ";
             }
         }
 
@@ -269,8 +269,8 @@ public class TablePanel extends JPanel {
                 }
             } else {
                 String msg = isMangVe
-                        ? "M\u1edf \u0111\u01a1n MANG V\u1ec0..."
-                        : "M\u1edf \u0111\u01a1n cho B\u00e0n " + ban.getSoBan() + "...";
+                        ? "Mở đơn MANG VỀ..."
+                        : "Mở đơn cho Bàn " + ban.getSoBan() + "...";
                 JOptionPane.showMessageDialog(this, msg, "Order", JOptionPane.INFORMATION_MESSAGE);
             }
         });

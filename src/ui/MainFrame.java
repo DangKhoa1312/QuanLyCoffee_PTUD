@@ -41,7 +41,7 @@ public class MainFrame extends JFrame {
     private String vaiTroFull = "";
 
     public MainFrame() {
-        setTitle("COFFEE 11:01 - H\u1EC7 Th\u1ED1ng Qu\u1EA3n L\u00FD");
+        setTitle("COFFEE 11:01 - Hệ Thống Quản Lý");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1280, 800);
         setLocationRelativeTo(null);
@@ -120,10 +120,10 @@ public class MainFrame extends JFrame {
         sidebar.add(Box.createVerticalStrut(25));
 
         // --- NHÓM 1: VẬN HÀNH ---
-        addMenuHeader(sidebar, "V\u1EACN H\u00C0NH");
-        JButton btnBanHang = createSidebarBtn("B\u00E1n H\u00E0ng", FontAwesome.SHOPPING_CART, new Color(243, 156, 18));
-        JButton btnDatBan  = createSidebarBtn("\u0110\u1EB7t B\u00E0n", FontAwesome.CALENDAR_CHECK_O, new Color(46, 204, 113));
-        JButton btnHoaDon  = createSidebarBtn("Ho\u00E1 \u0110\u01A1n", FontAwesome.FILE_TEXT_O, new Color(52, 152, 219));
+        addMenuHeader(sidebar, "VẬN HÀNH");
+        JButton btnBanHang = createSidebarBtn("Bán Hàng", FontAwesome.SHOPPING_CART, new Color(243, 156, 18));
+        JButton btnDatBan  = createSidebarBtn("Đặt Bàn", FontAwesome.CALENDAR_CHECK_O, new Color(46, 204, 113));
+        JButton btnHoaDon  = createSidebarBtn("Hoá Đơn", FontAwesome.FILE_TEXT_O, new Color(52, 152, 219));
 
         sidebar.add(btnBanHang);
         sidebar.add(Box.createVerticalStrut(6));
@@ -134,11 +134,11 @@ public class MainFrame extends JFrame {
         // --- NHÓM 2: THIẾT LẬP (Quản lý) ---
         if (SessionManager.isQuanLy()) {
             sidebar.add(Box.createVerticalStrut(25));
-            addMenuHeader(sidebar, "THI\u1EBET L\u1EACP");
+            addMenuHeader(sidebar, "THIẾT LẬP");
             
-            JButton btnMon  = createSidebarBtn("Th\u1EF1c \u0110\u01A1n", FontAwesome.CUTLERY, new Color(230, 126, 34));
-            JButton btnGia  = createSidebarBtn("B\u1EA3ng Gi\u00E1", FontAwesome.MONEY, new Color(46, 204, 113));
-            JButton btnSoDo = createSidebarBtn("S\u01A1 \u0111\u1ED3 B\u00E0n", FontAwesome.TH_LARGE, new Color(52, 152, 219));
+            JButton btnMon  = createSidebarBtn("Thực Đơn", FontAwesome.CUTLERY, new Color(230, 126, 34));
+            JButton btnGia  = createSidebarBtn("Bảng Giá", FontAwesome.MONEY, new Color(46, 204, 113));
+            JButton btnSoDo = createSidebarBtn("Sơ đồ Bàn", FontAwesome.TH_LARGE, new Color(52, 152, 219));
 
             sidebar.add(btnMon);
             sidebar.add(Box.createVerticalStrut(6));
@@ -148,11 +148,11 @@ public class MainFrame extends JFrame {
 
             // --- NHÓM 3: QUẢN TRỊ ---
             sidebar.add(Box.createVerticalStrut(25));
-            addMenuHeader(sidebar, "QU\u1EA2N TR\u1ECA");
+            addMenuHeader(sidebar, "QUẢN TRỊ");
 
-            JButton btnNV  = createSidebarBtn("Nh\u00E2n Vi\u00EAn", FontAwesome.USERS, new Color(149, 165, 166));
-            JButton btnKho = createSidebarBtn("Qu\u1EA3n L\u00FD Kho", FontAwesome.ARCHIVE, new Color(52, 73, 94));
-            JButton btnThongKe = createSidebarBtn("Th\u1ED1ng K\u00EA", FontAwesome.BAR_CHART, new Color(155, 89, 182));
+            JButton btnNV  = createSidebarBtn("Nhân Viên", FontAwesome.USERS, new Color(149, 165, 166));
+            JButton btnKho = createSidebarBtn("Quản Lý Kho", FontAwesome.ARCHIVE, new Color(52, 73, 94));
+            JButton btnThongKe = createSidebarBtn("Thống Kê", FontAwesome.BAR_CHART, new Color(155, 89, 182));
 
             sidebar.add(btnNV);
             sidebar.add(Box.createVerticalStrut(6));
@@ -174,7 +174,7 @@ public class MainFrame extends JFrame {
 
         // Nút đóng ca
         if (SessionManager.isCaDangMo()) {
-            JButton btnDongCa = createSidebarBtn("\u0110\u00F3ng Ca", FontAwesome.STOP_CIRCLE, Color.WHITE);
+            JButton btnDongCa = createSidebarBtn("Đóng Ca", FontAwesome.STOP_CIRCLE, Color.WHITE);
             btnDongCa.setBackground(new Color(180, 40, 40));
             btnDongCa.addActionListener(e -> handleDongCa());
             sidebar.add(btnDongCa);
@@ -182,7 +182,7 @@ public class MainFrame extends JFrame {
         }
 
         // Nút đăng xuất
-        JButton btnLogout = createSidebarBtn("\u0110\u0103ng Xu\u1EA5t", FontAwesome.SIGN_OUT, Color.WHITE);
+        JButton btnLogout = createSidebarBtn("Đăng Xuất", FontAwesome.SIGN_OUT, Color.WHITE);
         btnLogout.setBackground(new Color(60, 60, 80));
         btnLogout.addActionListener(e -> handleLogout());
         sidebar.add(btnLogout);
@@ -203,12 +203,12 @@ public class MainFrame extends JFrame {
         welcomeBox.setBorder(new EmptyBorder(50, 60, 50, 60));
 
 
-        JLabel lblW1 = new JLabel("\u2615 COFFEE 11:01");
+        JLabel lblW1 = new JLabel("☕ COFFEE 11:01");
         lblW1.setFont(new Font("Roboto", Font.BOLD, 28));
         lblW1.setForeground(new Color(26, 26, 46));
         lblW1.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel lblW2 = new JLabel("Ch\u1ECDn ch\u1EE9c n\u0103ng t\u1EEB menu b\u00EAn tr\u00E1i \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u.");
+        JLabel lblW2 = new JLabel("Chọn chức năng từ menu bên trái để bắt đầu.");
         lblW2.setFont(new Font("Roboto", Font.PLAIN, 16));
         lblW2.setForeground(new Color(150, 150, 150));
         lblW2.setAlignmentX(CENTER_ALIGNMENT);
@@ -249,12 +249,12 @@ public class MainFrame extends JFrame {
         contentPanel.add(statisticPanel, "THONG_KE");
 
         // --- PLACEHOLDERS CHO CÁC MODULE ADMIN ---
-        contentPanel.add(createPlaceholderPanel("QU\u1EA2N L\u00DD \u0110\u1EB6T B\u00C0N"), "DAT_BAN");
+        contentPanel.add(createPlaceholderPanel("QUẢN LÝ ĐẶT BÀN"), "DAT_BAN");
         contentPanel.add(new ui.panel.admin.MenuManagementPanel(), "ADMIN_MON");
         contentPanel.add(new ui.panel.admin.PriceManagementPanel(), "ADMIN_GIA");
-        contentPanel.add(createPlaceholderPanel("THI\u1EBET L\u1EACP S\u01A1 \u0111\u1ED3 B\u00C0N"), "ADMIN_BAN");
+        contentPanel.add(createPlaceholderPanel("THIẾT LẬP Sơ đồ Bàn"), "ADMIN_BAN");
         contentPanel.add(new StaffManagementPanel(), "ADMIN_NHAN_VIEN");
-        contentPanel.add(createPlaceholderPanel("QU\u1EA2N L\u00DD KHO H\u00C0NG"), "ADMIN_KHO");
+        contentPanel.add(createPlaceholderPanel("QUẢN LÝ KHO HÀNG"), "ADMIN_KHO");
 
         add(contentPanel, BorderLayout.CENTER);
 
@@ -333,7 +333,7 @@ public class MainFrame extends JFrame {
     private JPanel createPlaceholderPanel(String title) {
         JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(false);
-        JLabel lbl = new JLabel(title + " (S\u1EBD c\u00F3 trong b\u1EA3n c\u1EADp nh\u1EADt sau)");
+        JLabel lbl = new JLabel(title + " (Sẽ có trong bản cập nhật sau)");
         lbl.setFont(new Font("Roboto", Font.ITALIC, 20));
         lbl.setForeground(Color.GRAY);
         p.add(lbl);
@@ -349,10 +349,10 @@ public class MainFrame extends JFrame {
         if (SessionManager.isCaDangMo()) {
             String maCa = SessionManager.getCurrentCa().getMaCa();
             String gio = SessionManager.getCurrentCa().getGioBatDau().format(DateTimeFormatter.ofPattern("HH:mm"));
-            lblCaInfo.setText("\u2615 COFFEE 11:01   |   Ca: " + maCa + "  (t\u1EEB " + gio + ")");
+            lblCaInfo.setText("☕ COFFEE 11:01   |   Ca: " + maCa + "  (từ " + gio + ")");
             lblCaInfo.setForeground(new Color(39, 174, 96));
         } else {
-            lblCaInfo.setText("\u2615 COFFEE 11:01   |   Ch\u01B0a v\u00E0o ca");
+            lblCaInfo.setText("☕ COFFEE 11:01   |   Chưa vào ca");
             lblCaInfo.setForeground(new Color(180, 180, 180));
         }
     }
@@ -366,7 +366,7 @@ public class MainFrame extends JFrame {
 
     private void handleDongCa() {
         if (!SessionManager.isCaDangMo()) {
-            JOptionPane.showMessageDialog(this, "Hi\u1ec7n kh\u00f4ng c\u00f3 ca n\u00e0o \u0111ang m\u1edf.");
+            JOptionPane.showMessageDialog(this, "Hiện không có ca nào đang mở.");
             return;
         }
         ui.dialog.ShiftCloseDialog dlg = new ui.dialog.ShiftCloseDialog(this, shiftController);
@@ -380,13 +380,13 @@ public class MainFrame extends JFrame {
 
     private void handleLogout() {
         if (SessionManager.isCaDangMo()) {
-            // C\u00f3 ca \u0111ang m\u1edf -> m\u1edf b\u00e1o c\u00e1o \u0111\u00f3ng ca
+            // Có ca đang mở -> mở báo cáo đóng ca
             int confirm = JOptionPane.showConfirmDialog(this,
-                "B\u1ea1n \u0111ang c\u00f3 ca l\u00e0m vi\u1ec7c \u0111ang m\u1edf!\n\u0110\u0103ng xu\u1ea5t s\u1ebd y\u00eau c\u1ea7u \u0110\u00d3NG CA tr\u01b0\u1edbc.\nTi\u1ebfp t\u1ee5c?",
-                "X\u00e1c nh\u1eadn",
+                "Bạn đang có ca làm việc đang mở!\nĐăng xuất sẽ yêu cầu ĐÓNG CA trước.\nTiếp tục?",
+                "Xác nhận",
                 JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (confirm == JOptionPane.YES_OPTION) {
-                handleDongCa(); // M\u1edf ShiftCloseDialog
+                handleDongCa(); // Mở ShiftCloseDialog
             }
             return;
         }

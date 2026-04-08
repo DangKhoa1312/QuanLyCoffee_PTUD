@@ -56,6 +56,16 @@ public class PriceController {
     }
 
     /**
+     * Xóa toàn bộ chi tiết giá của một bảng giá (dùng trước khi sao chép đè lên).
+     */
+    public void deleteAllDetailsOf(String maBG) {
+        List<BangGiaChiTiet> details = bgctDAO.findByBangGia(maBG);
+        for (BangGiaChiTiet d : details) {
+            bgctDAO.delete(d.getMaBGCT());
+        }
+    }
+
+    /**
      * Điều chỉnh giá hàng loạt theo phần trăm hoặc số tiền cố định.
      * @param percent Tỉ lệ phần trăm (Ví dụ: 0.1 là tăng 10%, -0.05 là giảm 5%)
      * @param fixedAmount Số tiền cố định cộng thêm (Ví dụ: 5000)

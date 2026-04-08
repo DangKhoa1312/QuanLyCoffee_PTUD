@@ -31,7 +31,7 @@ public class StatisticPanel extends JPanel {
         setBorder(new EmptyBorder(20, 20, 20, 20));
 
         // Header
-        JLabel lblTitle = new JLabel("BI\u1EC2U \u0110\u1ED2 TH\u1ED0NG K\u00CA");
+        JLabel lblTitle = new JLabel("BIỂU ĐỒ THỐNG KÊ");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 24));
         lblTitle.setForeground(new Color(44, 62, 80));
         add(lblTitle, BorderLayout.NORTH);
@@ -67,9 +67,9 @@ public class StatisticPanel extends JPanel {
         }
 
         JFreeChart chartDT = ChartFactory.createLineChart(
-            "Doanh Thu 7 Ng\u00E0y Qua",
-            "Ng\u00E0y",
-            "S\u1ED1 ti\u1EC1n (VN\u0110)",
+            "Doanh Thu 7 Ngày Qua",
+            "Ngày",
+            "Số tiền (VNĐ)",
             dsDT,
             PlotOrientation.VERTICAL,
             false, true, false
@@ -82,13 +82,13 @@ public class StatisticPanel extends JPanel {
         Map<String, Integer> mapMon = statController.getTopMonBanChay(5);
         DefaultCategoryDataset dsMon = new DefaultCategoryDataset();
         for (Map.Entry<String, Integer> entry : mapMon.entrySet()) {
-            dsMon.addValue(entry.getValue(), "S\u1ED1 l\u01B0\u1EE3ng", entry.getKey());
+            dsMon.addValue(entry.getValue(), "Số lượng", entry.getKey());
         }
 
         JFreeChart chartMon = ChartFactory.createBarChart(
-            "Top 5 M\u00F3n B\u00E1n Ch\u1EA1y",
-            "T\u00EAn M\u00F3n",
-            "Ly/C\u1ED1c",
+            "Top 5 Món Bán Chạy",
+            "Tên Món",
+            "Ly/Cốc",
             dsMon,
             PlotOrientation.VERTICAL,
             false, true, false
