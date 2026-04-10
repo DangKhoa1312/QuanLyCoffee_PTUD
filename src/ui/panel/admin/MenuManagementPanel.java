@@ -94,7 +94,11 @@ public class MenuManagementPanel extends JPanel {
             @Override public void keyReleased(KeyEvent e) { performSearch(); }
         });
 
-        cbFilterLoai = new JComboBox<>(new String[]{"Tất cả loại", "Đồ uống", "Đồ ăn"});
+        cbFilterLoai = new JComboBox<>();
+        cbFilterLoai.addItem("Tất cả loại");
+        for(LoaiMon lm : LoaiMon.values()) {
+            cbFilterLoai.addItem(lm.getTenLoai());
+        }
         cbFilterLoai.setPreferredSize(new Dimension(150, 35));
         cbFilterLoai.addActionListener(e -> performSearch());
 
@@ -161,7 +165,7 @@ public class MenuManagementPanel extends JPanel {
 
     private void addMonToTable(Mon m) {
         String priceRange = getPriceRange(m.getMaMon());
-        String loaiText = (m.getLoaiMon() == LoaiMon.DO_AN) ? "Đồ ăn" : "Đồ uống";
+        String loaiText = m.getLoaiMon() != null ? m.getLoaiMon().getTenLoai() : "";
         tableModel.addRow(new Object[] { m.getMaMon(), m.getTenMon(), loaiText, priceRange, m.isTrangThai(), m });
     }
 
@@ -189,9 +193,10 @@ public class MenuManagementPanel extends JPanel {
         List<Mon> list = controller.getAllMon();
         for (Mon m : list) {
             boolean matchName = m.getTenMon().toLowerCase().contains(keyword);
-            boolean matchType = (filterIdx == 0) || 
-                               (filterIdx == 1 && m.getLoaiMon() == LoaiMon.DO_UONG) || 
-                               (filterIdx == 2 && m.getLoaiMon() == LoaiMon.DO_AN);
+            boolean matchType = (filterIdx == 0);
+            if (!matchType && m.getLoaiMon() != null) {
+                matchType = m.getLoaiMon().getTenLoai().equals(cbFilterLoai.getItemAt(filterIdx));
+            }
             if (matchName && matchType) {
                 addMonToTable(m);
             }

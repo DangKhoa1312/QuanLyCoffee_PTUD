@@ -3,5 +3,6 @@ package enums;
 public enum TrangThaiBan {
     TRONG,
     DA_DAT_TRUOC,
-    CO_KHACH
+    CO_KHACH,
+    TAM_NGUNG
 }

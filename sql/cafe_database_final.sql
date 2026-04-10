@@ -77,11 +77,11 @@ CREATE TABLE Mon (
     tenMon    NVARCHAR(100) NOT NULL,
     moTa      NVARCHAR(500) NULL,
     hinhAnh   NVARCHAR(255) NULL,
-    loaiMon   VARCHAR(10)   NOT NULL DEFAULT 'DO_UONG',
+    loaiMon   VARCHAR(20)   NOT NULL DEFAULT 'COFFEE',
     trangThai BIT           NOT NULL DEFAULT 1,
 
     CONSTRAINT PK_Mon       PRIMARY KEY (maMon),
-    CONSTRAINT CHK_Mon_Loai CHECK (loaiMon IN ('DO_UONG','DO_AN'))
+    CONSTRAINT CHK_Mon_Loai CHECK (loaiMon IN ('COFFEE','COLD_BREW','MATCHA_CACAO','TRA','TRA_SUA','DA_XAY','NUOC_EP','SODA','YAOURT','DO_AN_NHE'))
 );
 GO
 
@@ -176,7 +176,7 @@ CREATE TABLE Ban (
     CONSTRAINT PK_Ban            PRIMARY KEY (maBan),
     CONSTRAINT FK_Ban_KhuVuc     FOREIGN KEY (maKhuVuc) REFERENCES KhuVuc(maKhuVuc),
     CONSTRAINT UQ_Ban_SoBan      UNIQUE (soBan),
-    CONSTRAINT CHK_Ban_TrangThai CHECK (trangThai IN ('TRONG','DA_DAT_TRUOC','CO_KHACH')),
+    CONSTRAINT CHK_Ban_TrangThai CHECK (trangThai IN ('TRONG','DA_DAT_TRUOC','CO_KHACH','TAM_NGUNG')),
     CONSTRAINT CHK_Ban_SucChua   CHECK (sucChua > 0)
 );
 GO

@@ -29,14 +29,25 @@ INSERT INTO CaLamViec (maCa, ngayLam, gioBatDau, gioKetThuc, tongDoanhThu, trang
 GO
 
 -- 4. Mon
-INSERT INTO Mon (maMon, tenMon, moTa, loaiMon, trangThai) VALUES
-('MON001', N'Trà sữa truyền thống',  N'Trà sữa đài loan truyền thống',      'DO_UONG', 1),
-('MON002', N'Cà phê sữa đá',         N'Cà phê phin pha với sữa đặc',        'DO_UONG', 1),
-('MON003', N'Matcha latte',          N'Matcha Nhật kết hợp sữa tươi',       'DO_UONG', 1),
-('MON004', N'Trà đào cam sả',        N'Trà thơm vị đào, cam, sả tươi',      'DO_UONG', 1),
-('MON005', N'Cà phê đen',            N'Cà phê đen đậm đà',                  'DO_UONG', 1),
-('MON006', N'Bánh mì trứng',         N'Bánh mì trứng ốp la nóng giòn',      'DO_AN',   1),
-('MON007', N'Bánh croissant',        N'Bánh sừng bò bơ thơm',               'DO_AN',   1);
+INSERT INTO Mon (maMon, tenMon, moTa, hinhAnh, loaiMon, trangThai) VALUES
+('MON001', N'Trà sữa truyền thống',  N'Trà sữa đài loan truyền thống',      NULL, 'TRA_SUA', 1),
+('MON002', N'Cà phê sữa đá',         N'Cà phê phin pha với sữa đặc',        NULL, 'COFFEE', 1),
+('MON003', N'Matcha latte',          N'Matcha Nhật kết hợp sữa tươi',       NULL, 'MATCHA_CACAO', 1),
+('MON004', N'Trà đào cam sả',        N'Trà thơm vị đào, cam, sả tươi',      NULL, 'TRA', 1),
+('MON005', N'Cà phê đen',            N'Cà phê đen đậm đà',                  NULL, 'COFFEE', 1),
+('MON006', N'Bánh mì trứng',         N'Bánh mì trứng ốp la nóng giòn',      NULL, 'DO_AN_NHE', 1),
+('MON007', N'Bánh croissant',        N'Bánh sừng bò bơ thơm',               NULL, 'DO_AN_NHE', 1),
+('MON008', N'Cold Brew nguyên bản',  N'Cà phê ủ lạnh 24h',                  NULL, 'COLD_BREW', 1),
+('MON009', N'Cold Brew Macchiato',   N'Cold Brew lớp kem macchiato béo',    NULL, 'COLD_BREW', 1),
+('MON010', N'Cacao sữa đá',          N'Cacao Việt Nam đắng nhẹ',            NULL, 'MATCHA_CACAO', 1),
+('MON011', N'Matcha đá xay',         N'Trà xanh Nhật Bản xay đá',           NULL, 'DA_XAY', 1),
+('MON012', N'Oreo đá xay',           N'Đá xay cookie oreo chocolate',       NULL, 'DA_XAY', 1),
+('MON013', N'Nước ép táo',           N'Táo Fuji ép tươi',                   NULL, 'NUOC_EP', 1),
+('MON014', N'Nước ép thơm',          N'Thơm tươi nhiệt đới ép nguyên chất', NULL, 'NUOC_EP', 1),
+('MON015', N'Soda chanh dây',        N'Soda chua thanh chanh dây',          NULL, 'SODA', 1),
+('MON016', N'Soda việt quất',        N'Đậm vị việt quất chua ngọt',         NULL, 'SODA', 1),
+('MON017', N'Yaourt trái cây',       N'Sữa chua trộn hạt dẻ và trái sơ ri', NULL, 'YAOURT', 1),
+('MON018', N'Cà phê muối',           N'Cà phê phin thêm lớp kem mặn',       NULL, 'COFFEE', 1);
 GO
 
 -- 5. Size
@@ -47,7 +58,18 @@ INSERT INTO Size (maSize, tenSize, maMon) VALUES
 ('SZ010', 'S', 'MON004'), ('SZ011', 'M', 'MON004'), ('SZ012', 'L', 'MON004'),
 ('SZ013', 'S', 'MON005'), ('SZ014', 'M', 'MON005'), ('SZ015', 'L', 'MON005'),
 ('SZ016', 'Thường', 'MON006'),
-('SZ017', 'Thường', 'MON007');
+('SZ017', 'Thường', 'MON007'),
+('SZ018', 'M', 'MON008'), ('SZ019', 'L', 'MON008'),
+('SZ020', 'M', 'MON009'), ('SZ021', 'L', 'MON009'),
+('SZ022', 'M', 'MON010'), ('SZ023', 'L', 'MON010'),
+('SZ024', 'M', 'MON011'), ('SZ025', 'L', 'MON011'),
+('SZ026', 'M', 'MON012'), ('SZ027', 'L', 'MON012'),
+('SZ028', 'Thường', 'MON013'),
+('SZ029', 'Thường', 'MON014'),
+('SZ030', 'Thường', 'MON015'),
+('SZ031', 'Thường', 'MON016'),
+('SZ032', 'Thường', 'MON017'),
+('SZ033', 'M', 'MON018'), ('SZ034', 'L', 'MON018');
 GO
 
 -- 6. Topping
@@ -59,11 +81,11 @@ INSERT INTO Topping (maTopping, tenTopping, giaTopping, trangThai) VALUES
 ('TOP005', N'Kem cheese',        10000, 1);
 GO
 
--- 7. BangGia (Bo mucUuTien)
+-- 7. BangGia
 INSERT INTO BangGia (maBangGia, tenBangGia, ngayBatDau, ngayKetThuc, trangThai) VALUES
 ('BG001', N'Bảng giá thường ngày',     '2026-01-01', '2026-12-31', 1),
 ('BG002', N'Bảng giá cuối tuần',       '2026-03-01', '2026-12-31', 1),
-('BG003', N'Bảng giá ngày lễ Tết',     '2026-04-29', '2026-05-01', 0); -- Tat trang thai le tet
+('BG003', N'Bảng giá ngày lễ Tết',     '2026-04-29', '2026-05-01', 0);
 GO
 
 -- 8. BangGiaChiTiet
@@ -82,13 +104,29 @@ INSERT INTO BangGiaChiTiet (maBGCT, giaBan, maSize, maBangGia) VALUES
 ('BGCT012', 52000, 'SZ009', 'BG001'),
 ('BGCT013', 25000, 'SZ016', 'BG001'),
 ('BGCT014', 35000, 'SZ017', 'BG001'),
--- Bo sung gia cho MON004 (Tra dao) va MON005 (Ca phe den)
 ('BGCT015', 30000, 'SZ010', 'BG001'),
 ('BGCT016', 35000, 'SZ011', 'BG001'),
 ('BGCT017', 40000, 'SZ012', 'BG001'),
 ('BGCT018', 25000, 'SZ013', 'BG001'),
 ('BGCT019', 30000, 'SZ014', 'BG001'),
-('BGCT020', 35000, 'SZ015', 'BG001');
+('BGCT020', 35000, 'SZ015', 'BG001'),
+('BGCT021', 45000, 'SZ018', 'BG001'),
+('BGCT022', 52000, 'SZ019', 'BG001'),
+('BGCT023', 49000, 'SZ020', 'BG001'),
+('BGCT024', 55000, 'SZ021', 'BG001'),
+('BGCT025', 38000, 'SZ022', 'BG001'),
+('BGCT026', 45000, 'SZ023', 'BG001'),
+('BGCT027', 49000, 'SZ024', 'BG001'),
+('BGCT028', 55000, 'SZ025', 'BG001'),
+('BGCT029', 49000, 'SZ026', 'BG001'),
+('BGCT030', 55000, 'SZ027', 'BG001'),
+('BGCT031', 40000, 'SZ028', 'BG001'),
+('BGCT032', 40000, 'SZ029', 'BG001'),
+('BGCT033', 35000, 'SZ030', 'BG001'),
+('BGCT034', 35000, 'SZ031', 'BG001'),
+('BGCT035', 38000, 'SZ032', 'BG001'),
+('BGCT036', 35000, 'SZ033', 'BG001'),
+('BGCT037', 42000, 'SZ034', 'BG001');
 GO
 
 -- 9. NguyenLieu

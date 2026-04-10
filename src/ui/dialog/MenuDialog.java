@@ -111,7 +111,7 @@ public class MenuDialog extends JDialog {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof LoaiMon) {
                     LoaiMon type = (LoaiMon) value;
-                    setText(type == LoaiMon.DO_AN ? "Đồ ăn" : "Đồ uống");
+                    setText(type.getTenLoai());
                 }
                 return this;
             }

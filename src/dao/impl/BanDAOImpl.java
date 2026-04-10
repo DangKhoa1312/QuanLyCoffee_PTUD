@@ -135,4 +135,30 @@ public class BanDAOImpl implements BanDAO {
             return false;
         }
     }
+
+    @Override
+    public int countByKhuVuc(String maKhuVuc) {
+        String sql = "SELECT COUNT(*) FROM Ban WHERE maKhuVuc=?";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setString(1, maKhuVuc);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("BanDAO.countByKhuVuc: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    @Override
+    public int countTrongByKhuVuc(String maKhuVuc) {
+        String sql = "SELECT COUNT(*) FROM Ban WHERE maKhuVuc=? AND trangThai='TRONG'";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setString(1, maKhuVuc);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("BanDAO.countTrongByKhuVuc: " + e.getMessage());
+        }
+        return 0;
+    }
 }

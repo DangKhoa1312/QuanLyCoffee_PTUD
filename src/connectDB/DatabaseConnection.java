@@ -40,10 +40,15 @@ public class DatabaseConnection {
     public Connection getConnection() {
         try {
             if (connection == null || connection.isClosed()) {
-                instance = new DatabaseConnection();
+                // Re-establish connection for the current instance
+                this.connection = DriverManager.getConnection(
+                    DatabaseConfig.URL,
+                    DatabaseConfig.USERNAME,
+                    DatabaseConfig.PASSWORD
+                );
             }
         } catch (SQLException e) {
-            instance = new DatabaseConnection();
+            System.err.println("Loi khi lay ket noi database: " + e.getMessage());
         }
         return connection;
     }

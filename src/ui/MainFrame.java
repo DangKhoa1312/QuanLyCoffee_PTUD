@@ -94,7 +94,7 @@ public class MainFrame extends JFrame {
         // ═══════════════════ SIDEBAR ═══════════════════
         sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(new Color(26, 26, 46));
+        sidebar.setBackground(new Color(74, 54, 40)); // Coffee brown
         sidebar.setPreferredSize(new Dimension(220, 0));
         sidebar.setBorder(new EmptyBorder(20, 12, 20, 12));
 
@@ -183,7 +183,7 @@ public class MainFrame extends JFrame {
 
         // Nút đăng xuất
         JButton btnLogout = createSidebarBtn("Đăng Xuất", FontAwesome.SIGN_OUT, Color.WHITE);
-        btnLogout.setBackground(new Color(60, 60, 80));
+        btnLogout.setBackground(new Color(90, 70, 60));
         btnLogout.addActionListener(e -> handleLogout());
         sidebar.add(btnLogout);
 
@@ -252,7 +252,7 @@ public class MainFrame extends JFrame {
         contentPanel.add(createPlaceholderPanel("QUẢN LÝ ĐẶT BÀN"), "DAT_BAN");
         contentPanel.add(new ui.panel.admin.MenuManagementPanel(), "ADMIN_MON");
         contentPanel.add(new ui.panel.admin.PriceManagementPanel(), "ADMIN_GIA");
-        contentPanel.add(createPlaceholderPanel("THIẾT LẬP Sơ đồ Bàn"), "ADMIN_BAN");
+        contentPanel.add(new ui.panel.admin.TableManagementPanel(), "ADMIN_BAN");
         contentPanel.add(new StaffManagementPanel(), "ADMIN_NHAN_VIEN");
         contentPanel.add(new ui.panel.admin.WarehouseManagementPanel(), "ADMIN_KHO");
 
@@ -280,13 +280,14 @@ public class MainFrame extends JFrame {
             btn.setIconTextGap(15);
         }
         btn.setFont(new Font("Roboto", Font.BOLD, 13));
-        btn.setForeground(new Color(210, 210, 220));
-        btn.setBackground(new Color(40, 40, 65));
+        btn.setForeground(new Color(230, 230, 230));
+        btn.setBackground(new Color(90, 68, 52));
         btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setBorder(new EmptyBorder(0, 16, 0, 0));
+        btn.putClientProperty("FlatLaf.style", "arc: 10; borderWidth: 0; focusWidth: 0; hoverBackground: #714c34");
         
         btn.putClientProperty("full_text", text);
         sidebarButtons.add(btn);
@@ -324,7 +325,7 @@ public class MainFrame extends JFrame {
     private void addMenuHeader(JPanel container, String text) {
         JLabel lbl = new JLabel(text);
         lbl.setFont(new Font("Roboto", Font.BOLD, 10));
-        lbl.setForeground(new Color(100, 100, 130));
+        lbl.setForeground(new Color(180, 160, 150));
         lbl.setAlignmentX(LEFT_ALIGNMENT);
         lbl.setBorder(new EmptyBorder(0, 8, 4, 0));
         container.add(lbl);

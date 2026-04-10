@@ -28,9 +28,41 @@ public class TableController {
         this.orderManager = OrderManager.getInstance();
     }
 
+    // ═══════════════ KHU VỰC ═══════════════
+
+    /** Lấy danh sách khu vực đang hoạt động (cho bán hàng) */
     public List<KhuVuc> getDanhSachKhuVuc() {
         return khuVucDAO.findActive();
     }
+
+    /** Lấy tất cả khu vực kể cả tạm ngưng (cho admin) */
+    public List<KhuVuc> getAllKhuVuc() {
+        return khuVucDAO.findAll();
+    }
+
+    public boolean addKhuVuc(KhuVuc kv) {
+        return khuVucDAO.insert(kv);
+    }
+
+    public boolean updateKhuVuc(KhuVuc kv) {
+        return khuVucDAO.update(kv);
+    }
+
+    public boolean deleteKhuVuc(String maKV) {
+        // Kiểm tra còn bàn không
+        int count = banDAO.countByKhuVuc(maKV);
+        if (count > 0) {
+            return false; // Không cho xóa nếu còn bàn
+        }
+        return khuVucDAO.delete(maKV);
+    }
+
+    public boolean toggleKhuVuc(KhuVuc kv) {
+        kv.setTrangThai(!kv.isTrangThai());
+        return khuVucDAO.update(kv);
+    }
+
+    // ═══════════════ BÀN ═══════════════
 
     public List<Ban> getAllBan() {
         return banDAO.findAll();
@@ -43,8 +75,34 @@ public class TableController {
         return banDAO.findByKhuVuc(maKhuVuc);
     }
 
+    public boolean addBan(Ban ban) {
+        return banDAO.insert(ban);
+    }
+
+    public boolean updateBan(Ban ban) {
+        return banDAO.update(ban);
+    }
+
+    public boolean deleteBan(String maBan) {
+        Ban ban = banDAO.findById(maBan);
+        if (ban == null) return false;
+        // Chỉ cho xóa bàn đang TRỐNG hoặc TẠM NGƯNG
+        if (ban.getTrangThai() != TrangThaiBan.TRONG && ban.getTrangThai() != TrangThaiBan.TAM_NGUNG) {
+            return false;
+        }
+        return banDAO.delete(maBan);
+    }
+
     public void capNhatTrangThai(String maBan, TrangThaiBan trangThai) {
         banDAO.updateTrangThai(maBan, trangThai);
+    }
+
+    public int countBanByKhuVuc(String maKV) {
+        return banDAO.countByKhuVuc(maKV);
+    }
+
+    public int countBanTrongByKhuVuc(String maKV) {
+        return banDAO.countTrongByKhuVuc(maKV);
     }
 
     /**

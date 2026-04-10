@@ -1,5 +1,6 @@
 package ui.panel;
 
+
 import controller.MenuController;
 import controller.OrderController;
 import dto.CartItem;
@@ -23,7 +24,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Màn hình Gọi Món: Split-pane trái MENU, phải GIỎ HÀNG.
+ * Màn hình Gọi Món hiện đại.
+ * Layout 3 cột: Sidebar (Trái) | Menu (Giữa) | Cart (Phải).
  */
 public class OrderPanel extends JPanel {
 
@@ -37,15 +39,14 @@ public class OrderPanel extends JPanel {
     // UI Components
     private JLabel lblHeaderTitle;
     private JPanel menuGrid;
-    private JTabbedPane tabCategories;
+    private JPanel categorySidebar;
+    private ButtonGroup bgCategories;
     
-    // Khai báo bảng giỏ hàng
     private JTable cartTable;
     private DefaultTableModel cartModel;
     private JLabel lblTotalCart;
 
     private Runnable onBackAction;
-
     private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
 
     public OrderPanel() {
@@ -53,10 +54,9 @@ public class OrderPanel extends JPanel {
         this.orderController = new OrderController();
 
         setLayout(new BorderLayout());
-        setBackground(new Color(245, 247, 250));
+        setBackground(new Color(245, 247, 250)); // Nền xám nhạt
 
         initUI();
-        loadCategories();
     }
 
     public void setOnBackAction(Runnable r) {
@@ -69,11 +69,11 @@ public class OrderPanel extends JPanel {
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(15, 20, 15, 20));
 
-        JButton btnBack = new JButton("← Quay lại thẻ Bàn");
-        btnBack.setFont(new Font("Roboto", Font.BOLD, 14));
+        JButton btnBack = new JButton("⬅ Quay lại");
+        btnBack.setFont(new Font("Roboto", Font.BOLD, 15));
+        btnBack.putClientProperty("FlatLaf.style", "borderWidth:0; background:null; foreground: #666666");
         btnBack.setFocusable(false);
         btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnBack.setBackground(new Color(220, 220, 225));
         btnBack.addActionListener(e -> {
             if (onBackAction != null) onBackAction.run();
         });
@@ -81,260 +81,188 @@ public class OrderPanel extends JPanel {
 
         lblHeaderTitle = new JLabel("CHƯA CHỌN BÀN", SwingConstants.CENTER);
         lblHeaderTitle.setFont(new Font("Roboto", Font.BOLD, 22));
-        lblHeaderTitle.setForeground(new Color(44, 62, 80));
+        lblHeaderTitle.setForeground(new Color(113, 76, 52));
         header.add(lblHeaderTitle, BorderLayout.CENTER);
+
+        // Placeholder for right balance
+        JLabel spacer = new JLabel();
+        spacer.setPreferredSize(new Dimension(100, 10));
+        header.add(spacer, BorderLayout.EAST);
 
         add(header, BorderLayout.NORTH);
 
-        // ── 2. Split Pane (Trái: Menu  |  Phải: Giỏ) ──
+        // ── 2. Split Pane Center ──
+        JPanel centerContainer = new JPanel(new BorderLayout());
+        centerContainer.setOpaque(false);
+
+        // -- Sidebar (Loại Món) --
+        categorySidebar = new JPanel();
+        categorySidebar.setLayout(new BoxLayout(categorySidebar, BoxLayout.Y_AXIS));
+        categorySidebar.setOpaque(false);
+        categorySidebar.setBorder(new EmptyBorder(0, 20, 20, 10));
+        categorySidebar.setPreferredSize(new Dimension(180, 0));
+        
+        loadCategoriesSidebar();
+        
+        centerContainer.add(categorySidebar, BorderLayout.WEST);
+
+        // -- Split (Menu | Cart) --
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(650);
-        splitPane.setResizeWeight(0.55);
+        splitPane.setDividerLocation(550);
+        splitPane.setResizeWeight(0.65);
         splitPane.setBorder(null);
         splitPane.setOpaque(false);
 
-        splitPane.setLeftComponent(createMenuPanel());
+        splitPane.setLeftComponent(createMenuGridPanel());
         splitPane.setRightComponent(createCartPanel());
 
-        add(splitPane, BorderLayout.CENTER);
+        centerContainer.add(splitPane, BorderLayout.CENTER);
+        
+        add(centerContainer, BorderLayout.CENTER);
     }
 
-    // ── GIAO DIỆN TRÁI (MENU) ──
-    private JPanel createMenuPanel() {
+    // ── GIAO DIỆN TRÁI (DANH MỤC) ──
+    private void loadCategoriesSidebar() {
+        categorySidebar.removeAll();
+        bgCategories = new ButtonGroup();
+
+        // Nút Tất cả
+        JToggleButton btnAll = createCategoryButton("Tất cả", null);
+        btnAll.setSelected(true); 
+
+        LoaiMon[] cats = menuController.getDanhMuc();
+        for (LoaiMon cat : cats) {
+            String title = cat.getTenLoai();
+            createCategoryButton(title, cat);
+        }
+        categorySidebar.revalidate();
+        categorySidebar.repaint();
+    }
+
+    private JToggleButton createCategoryButton(String title, LoaiMon cat) {
+        JToggleButton btn = new JToggleButton(title);
+        btn.setFont(new Font("Roboto", Font.BOLD, 15));
+        
+        btn.putClientProperty("FlatLaf.style", "arc: 15; margin: 12,20,12,20; borderWidth: 0;" +
+            "selectedBackground: #714c34; selectedForeground: #ffffff;" + 
+            "background: null; foreground: #4a3628; hoverBackground: #e8ecef; focusWidth: 0");
+            
+        btn.setFocusable(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setMaximumSize(new Dimension(160, 45));
+        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        btn.addActionListener(e -> {
+            loadMenuToGrid(cat);
+        });
+
+        bgCategories.add(btn);
+        categorySidebar.add(btn);
+        categorySidebar.add(Box.createVerticalStrut(10)); 
+        
+        return btn;
+    }
+
+    // ── GIAO DIỆN GIỮA (LƯỚI MÓN) ──
+    private JPanel createMenuGridPanel() {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
-        p.setBorder(new EmptyBorder(0, 20, 20, 10));
-
-        tabCategories = new JTabbedPane();
-        tabCategories.setFont(new Font("Roboto", Font.BOLD, 14));
-        tabCategories.addChangeListener(e -> loadMenuToGrid());
-
+        
         menuGrid = new JPanel(new utils.WrapLayout(FlowLayout.LEFT, 15, 15));
-        menuGrid.setBackground(Color.WHITE);
-        menuGrid.setBorder(new EmptyBorder(15, 15, 15, 15));
+        menuGrid.setOpaque(false);
+        menuGrid.setBorder(new EmptyBorder(0, 10, 20, 10));
 
         JScrollPane scroll = new JScrollPane(menuGrid);
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.getViewport().addChangeListener(e -> {
-            menuGrid.revalidate();
-            menuGrid.repaint();
-        });
-
-        p.add(tabCategories, BorderLayout.NORTH);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        
         p.add(scroll, BorderLayout.CENTER);
-
         return p;
     }
-
-    // ── GIAO DIỆN PHẢI (GIỎ HÀNG) ──
-    private JPanel createCartPanel() {
-        JPanel p = new JPanel(new BorderLayout());
-        p.setBackground(Color.WHITE);
-        p.setBorder(BorderFactory.createCompoundBorder(
-            new EmptyBorder(0, 10, 20, 20),
-            BorderFactory.createLineBorder(new Color(230, 230, 230), 1)
-        ));
-
-        // Tiêu đề
-        JPanel topCart = new JPanel(new BorderLayout());
-        topCart.setOpaque(true);
-        topCart.setBackground(new Color(245, 245, 245));
-        topCart.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel(" Giỏ Hàng", SwingConstants.LEFT);
-        title.setFont(new Font("Roboto", Font.BOLD, 18));
-        topCart.add(title, BorderLayout.CENTER);
-
-        JButton btnTuyChon = new JButton("⇄ ĐỔI/GỘP BÀN");
-        btnTuyChon.setFont(new Font("Roboto", Font.BOLD, 12));
-        btnTuyChon.setBackground(new Color(220, 220, 220));
-        btnTuyChon.setForeground(new Color(44, 62, 80));
-        btnTuyChon.setFocusable(false);
-        btnTuyChon.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnTuyChon.addActionListener(e -> moTuyChonBan());
-        topCart.add(btnTuyChon, BorderLayout.EAST);
-
-        p.add(topCart, BorderLayout.NORTH);
-
-        // Bảng
-        String[] cols = {"Món (Size)", "SL", "Giá", "Tổng"};
-        cartModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int row, int col) { return false; }
-        };
-        cartTable = new JTable(cartModel);
-        cartTable.setRowHeight(40);
-        cartTable.setFont(new Font("Roboto", Font.PLAIN, 14));
-        cartTable.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 13));
-
-        // Căn chỉnh cột
-        cartTable.getColumnModel().getColumn(0).setPreferredWidth(220); // Tên món
-        cartTable.getColumnModel().getColumn(1).setPreferredWidth(45);  // SL
-        cartTable.getColumnModel().getColumn(2).setPreferredWidth(85);  // Giá
-        cartTable.getColumnModel().getColumn(3).setPreferredWidth(95);  // Tổng
-
-        // Căn lề cho cột SL (Center), Giá & Tổng (Right)
-        javax.swing.table.DefaultTableCellRenderer rightRenderer = new javax.swing.table.DefaultTableCellRenderer();
-        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
-        rightRenderer.setVerticalAlignment(SwingConstants.TOP); // Để khớp hàng với cột Tên món khi dùng HTML
-        
-        javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        centerRenderer.setVerticalAlignment(SwingConstants.TOP);
-
-        cartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-        cartTable.getColumnModel().getColumn(2).setCellRenderer(rightRenderer);
-        cartTable.getColumnModel().getColumn(3).setCellRenderer(rightRenderer);
-
-        JScrollPane scroll = new JScrollPane(cartTable);
-        scroll.setBorder(null);
-        p.add(scroll, BorderLayout.CENTER);
-
-        // Bot: Total + Nút action
-        JPanel bot = new JPanel(new BorderLayout());
-        bot.setBackground(Color.WHITE);
-        bot.setBorder(new EmptyBorder(15, 15, 15, 15));
-
-        lblTotalCart = new JLabel("Tổng tiền: 0đ");
-        lblTotalCart.setFont(new Font("Roboto", Font.BOLD, 22));
-        lblTotalCart.setForeground(new Color(231, 76, 60));
-        bot.add(lblTotalCart, BorderLayout.NORTH);
-
-        JPanel pnlBtns = new JPanel(new GridLayout(2, 2, 10, 10));
-        pnlBtns.setOpaque(false);
-        pnlBtns.setBorder(new EmptyBorder(15, 0, 0, 0));
-
-        JButton btnClear = new JButton("XÓA MÓN");
-        btnClear.setFont(new Font("Roboto", Font.BOLD, 13));
-        btnClear.setBackground(new Color(231, 76, 60)); // Đỏ
-        btnClear.setForeground(Color.WHITE);
-        btnClear.setFocusable(false);
-        btnClear.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnClear.addActionListener(e -> xoaMonKhoiGio());
-
-        JButton btnHuyDon = new JButton("HỦY ĐƠN");
-        btnHuyDon.setFont(new Font("Roboto", Font.BOLD, 13));
-        btnHuyDon.setBackground(new Color(192, 57, 43)); // Đỏ đậm
-        btnHuyDon.setForeground(Color.WHITE);
-        btnHuyDon.setFocusable(false);
-        btnHuyDon.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnHuyDon.addActionListener(e -> huyDonHangAction());
-
-        JButton btnLuu = new JButton("LƯU VÀO BẾP");
-        btnLuu.setFont(new Font("Roboto", Font.BOLD, 13));
-        btnLuu.setBackground(new Color(243, 156, 18)); // Cam
-        btnLuu.setForeground(Color.WHITE);
-        btnLuu.setFocusable(false);
-        btnLuu.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnLuu.addActionListener(e -> saveDonHang());
-
-        JButton btnThanhToan = new JButton("THANH TOÁN");
-        btnThanhToan.setFont(new Font("Roboto", Font.BOLD, 13));
-        btnThanhToan.setBackground(new Color(39, 174, 96)); // Xanh
-        btnThanhToan.setForeground(Color.WHITE);
-        btnThanhToan.setFocusable(false);
-        btnThanhToan.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnThanhToan.addActionListener(e -> moThanhToan());
-
-        pnlBtns.add(btnClear);
-        pnlBtns.add(btnHuyDon);
-        pnlBtns.add(btnLuu);
-        pnlBtns.add(btnThanhToan);
-
-        bot.add(pnlBtns, BorderLayout.SOUTH);
-        p.add(bot, BorderLayout.SOUTH);
-
-        return p;
-    }
-
-    // ── XỬ LÝ LOGIC UI ──
-    private void loadCategories() {
-        tabCategories.removeAll();
-        tabCategories.addTab("Tất cả", null);
-        tabCategories.putClientProperty("cat_0", null);
-
-        LoaiMon[] cats = menuController.getDanhMuc();
-        for (int i = 0; i < cats.length; i++) {
-            String title = (cats[i] == LoaiMon.DO_AN) ? "Đồ ăn" : "Đồ uống";
-            tabCategories.addTab(title, null);
-            tabCategories.putClientProperty("cat_" + (i + 1), cats[i]);
-        }
-    }
-
-    private void loadMenuToGrid() {
+    
+    private void loadMenuToGrid(LoaiMon cat) {
         menuGrid.removeAll();
-        int idx = tabCategories.getSelectedIndex();
-        if (idx < 0) return;
-
-        LoaiMon loai = (LoaiMon) tabCategories.getClientProperty("cat_" + idx);
-        List<Mon> dsMon = menuController.getMon(loai);
+        // Nếu cat == null, controller sẽ lấy tất cả do param trong SQL pattern 
+        List<Mon> dsMon = menuController.getMon(cat); 
 
         for (Mon m : dsMon) {
             menuGrid.add(createItemCard(m));
         }
 
-        // WrapLayout tự động xuống dòng và dồn trái, không cần add(empty) nữa.
-
         menuGrid.revalidate();
         menuGrid.repaint();
     }
-
+    
     private JPanel createItemCard(Mon m) {
         boolean isHet = menuController.isHetHang(m.getMaMon());
 
         JPanel card = new JPanel(new BorderLayout());
-        card.setPreferredSize(new Dimension(160, 220));
+        card.setPreferredSize(new Dimension(165, 230));
         card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230), 1));
+        card.putClientProperty("FlatLaf.style", "arc: 20; border: 1,1,1,1,#e8e8e8;"); 
         
-        // Image Area (Top) - Placeholder 160x160
+        // Image Area
         JLabel lblImage = new JLabel();
-        lblImage.setPreferredSize(new Dimension(160, 160));
+        lblImage.setPreferredSize(new Dimension(165, 130));
         lblImage.setOpaque(true);
         lblImage.setBackground(isHet ? new Color(240, 240, 240) : new Color(248, 249, 250));
         lblImage.setHorizontalAlignment(SwingConstants.CENTER);
         
-        jiconfont.IconCode iconCode = isHet ? FontAwesome.BAN : FontAwesome.PICTURE_O;
-        Color iconColor = isHet ? new Color(200, 150, 150) : new Color(200, 200, 200);
+        jiconfont.IconCode iconCode = isHet ? FontAwesome.BAN : FontAwesome.COFFEE; 
+        Color iconColor = isHet ? new Color(200, 150, 150) : new Color(139, 90, 43);
         lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(iconCode, 50, iconColor));
-        
+        lblImage.putClientProperty("FlatLaf.style", "arc: 20");
+
         JPanel pnlTop = new JPanel(new BorderLayout());
-        pnlTop.setBackground(card.getBackground());
+        pnlTop.setOpaque(false);
         pnlTop.add(lblImage, BorderLayout.CENTER);
 
-        // Info Area (Bottom)
-        JPanel pnlInfo = new JPanel();
-        pnlInfo.setLayout(new BoxLayout(pnlInfo, BoxLayout.Y_AXIS));
-        pnlInfo.setBackground(Color.WHITE);
-        pnlInfo.setBorder(new EmptyBorder(8, 8, 8, 8));
+        // Info Area
+        JPanel pnlInfo = new JPanel(new BorderLayout());
+        pnlInfo.setOpaque(false);
+        pnlInfo.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         String nameHtml = "<html><div style='text-align: center; width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>" 
                         + m.getTenMon() + "</div></html>";
         JLabel lblName = new JLabel(nameHtml, SwingConstants.CENTER);
-        lblName.setFont(new Font("Roboto", Font.BOLD, 14));
-        lblName.setForeground(isHet ? Color.GRAY : new Color(44, 62, 80));
-        lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        String phuDe = isHet ? "(Hết hàng)" : "Chọn size...";
-        JLabel lblPrice = new JLabel(phuDe, SwingConstants.CENTER);
-        lblPrice.setFont(new Font("Roboto", isHet ? Font.PLAIN : Font.BOLD, 13));
+        lblName.setFont(new Font("Roboto", Font.BOLD, 15));
+        lblName.setForeground(isHet ? Color.GRAY : new Color(26, 26, 26));
+
+        String subText = isHet ? "(Hết hàng)" : "Tuỳ chọn size...";
+        JLabel lblPrice = new JLabel(subText, SwingConstants.CENTER);
+        lblPrice.setFont(new Font("Roboto", Font.BOLD, 12));
         lblPrice.setForeground(isHet ? new Color(200, 50, 50) : new Color(39, 174, 96));
+
+        JPanel pnlText = new JPanel();
+        pnlText.setLayout(new BoxLayout(pnlText, BoxLayout.Y_AXIS));
+        pnlText.setOpaque(false);
+        lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblPrice.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnlText.add(lblName);
+        pnlText.add(Box.createVerticalStrut(5));
+        pnlText.add(lblPrice);
 
-        pnlInfo.add(lblName);
-        pnlInfo.add(Box.createVerticalStrut(4));
-        pnlInfo.add(lblPrice);
+        // Nút Thêm
+        JButton btnAdd = new JButton("+ Thêm");
+        btnAdd.setFont(new Font("Roboto", Font.BOLD, 13));
+        btnAdd.putClientProperty("FlatLaf.style", "arc: 15; background: #f0f0f0; foreground: #333333; borderWidth: 0;");
+        btnAdd.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAdd.setFocusable(false);
+        
+        pnlInfo.add(pnlText, BorderLayout.CENTER);
+        pnlInfo.add(btnAdd, BorderLayout.SOUTH);
 
-        card.add(pnlTop, BorderLayout.CENTER);
-        card.add(pnlInfo, BorderLayout.SOUTH);
+        card.add(pnlTop, BorderLayout.NORTH);
+        card.add(pnlInfo, BorderLayout.CENTER);
 
         if (!isHet) {
-            card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             Color hoverBg = new Color(250, 252, 255);
             Color hoverBorder = new Color(52, 152, 219);
             Color defaultBorder = new Color(230, 230, 230);
             
-            card.addMouseListener(new java.awt.event.MouseAdapter() {
+            java.awt.event.MouseAdapter clickHandler = new java.awt.event.MouseAdapter() {
                 @Override
                 public void mouseEntered(java.awt.event.MouseEvent e) {
                     card.setBorder(BorderFactory.createLineBorder(hoverBorder, 1));
@@ -343,14 +271,19 @@ public class OrderPanel extends JPanel {
                 @Override
                 public void mouseExited(java.awt.event.MouseEvent e) {
                     card.setBorder(BorderFactory.createLineBorder(defaultBorder, 1));
-                    pnlInfo.setBackground(Color.WHITE);
+                    pnlInfo.setBackground(null);
                 }
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent e) {
                     showOptionDialog(m);
                 }
-            });
+            };
+            
+            card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            card.addMouseListener(clickHandler);
+            btnAdd.addActionListener(e -> showOptionDialog(m));
         }
+
         return card;
     }
 
@@ -366,6 +299,140 @@ public class OrderPanel extends JPanel {
                 renderCartTable();
             }
         }
+    }
+
+    // ── GIAO DIỆN PHẢI (GIỎ HÀNG) ──
+    private JPanel createCartPanel() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(Color.WHITE);
+        p.putClientProperty("FlatLaf.style", "arc: 20"); 
+        p.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        // Tiêu đề
+        JPanel topCart = new JPanel(new BorderLayout());
+        topCart.setOpaque(false);
+        topCart.setBorder(new EmptyBorder(10, 10, 15, 10));
+        
+        JLabel title = new JLabel("🛒 Đơn hàng", SwingConstants.LEFT);
+        title.setFont(new Font("Roboto", Font.BOLD, 18));
+        title.setForeground(new Color(113, 76, 52));
+        topCart.add(title, BorderLayout.CENTER);
+
+        JButton btnTuyChonTop = new JButton("Chuyển / Ghép bàn");
+        btnTuyChonTop.setFont(new Font("Roboto", Font.BOLD, 12));
+        btnTuyChonTop.setBackground(new Color(245, 245, 245));
+        btnTuyChonTop.putClientProperty("FlatLaf.style", "arc: 10; margin: 5,12,5,12; borderWidth:1; borderColor: #e0e0e0");
+        btnTuyChonTop.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnTuyChonTop.addActionListener(e -> moTuyChonBan());
+        topCart.add(btnTuyChonTop, BorderLayout.EAST);
+
+        p.add(topCart, BorderLayout.NORTH);
+
+        // Bảng
+        String[] cols = {"Món (Size)", "SL", "Giá", "Tổng"};
+        cartModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        cartTable = new JTable(cartModel);
+        cartTable.setRowHeight(40);
+        cartTable.setFont(new Font("Roboto", Font.PLAIN, 14));
+        cartTable.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 13));
+        cartTable.setShowGrid(false);
+
+        cartTable.getColumnModel().getColumn(0).setPreferredWidth(200); 
+        cartTable.getColumnModel().getColumn(1).setPreferredWidth(45);  
+        cartTable.getColumnModel().getColumn(2).setPreferredWidth(85);  
+        cartTable.getColumnModel().getColumn(3).setPreferredWidth(95);  
+
+        javax.swing.table.DefaultTableCellRenderer rightRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+        rightRenderer.setVerticalAlignment(SwingConstants.TOP); 
+        
+        javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        centerRenderer.setVerticalAlignment(SwingConstants.TOP);
+
+        cartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        cartTable.getColumnModel().getColumn(2).setCellRenderer(rightRenderer);
+        cartTable.getColumnModel().getColumn(3).setCellRenderer(rightRenderer);
+
+        JScrollPane scroll = new JScrollPane(cartTable);
+        scroll.setBorder(null);
+        scroll.getViewport().setBackground(Color.WHITE);
+        p.add(scroll, BorderLayout.CENTER);
+
+        // Bot: Total + Nút action
+        JPanel bot = new JPanel(new BorderLayout());
+        bot.setOpaque(false);
+        bot.setBorder(new EmptyBorder(15, 10, 10, 10));
+
+        JPanel pnlTotalRow = new JPanel(new BorderLayout());
+        pnlTotalRow.setOpaque(false);
+        JLabel lblTotalText = new JLabel("Tổng cộng:");
+        lblTotalText.setFont(new Font("Roboto", Font.BOLD, 16));
+        lblTotalCart = new JLabel("0 đ");
+        lblTotalCart.setFont(new Font("Roboto", Font.BOLD, 22));
+        lblTotalCart.setForeground(new Color(231, 76, 60)); 
+        pnlTotalRow.add(lblTotalText, BorderLayout.WEST);
+        pnlTotalRow.add(lblTotalCart, BorderLayout.EAST);
+        
+        bot.add(pnlTotalRow, BorderLayout.NORTH);
+
+        JPanel pnlBtns = new JPanel(new GridLayout(2, 1, 0, 10)); // Dọc
+        pnlBtns.setOpaque(false);
+        pnlBtns.setBorder(new EmptyBorder(20, 0, 0, 0));
+
+        JButton btnLuu = new JButton("Gọi Món (In phiếu)");
+        btnLuu.setFont(new Font("Roboto", Font.BOLD, 15));
+        btnLuu.setBackground(new Color(39, 174, 96)); // Xanh lá
+        btnLuu.setForeground(Color.WHITE);
+        btnLuu.putClientProperty("FlatLaf.style", "arc: 12; margin: 12,0,12,0; borderWidth:0");
+        btnLuu.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLuu.addActionListener(e -> saveDonHang());
+
+        JButton btnThanhToan = new JButton("Thanh Toán");
+        btnThanhToan.setFont(new Font("Roboto", Font.BOLD, 15));
+        btnThanhToan.setBackground(new Color(74, 54, 40)); // Nâu
+        btnThanhToan.setForeground(Color.WHITE);
+        btnThanhToan.putClientProperty("FlatLaf.style", "arc: 12; margin: 12,0,12,0; borderWidth:0");
+        btnThanhToan.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnThanhToan.addActionListener(e -> moThanhToan());
+
+        pnlBtns.add(btnLuu);
+        pnlBtns.add(btnThanhToan);
+
+        JPanel pnlUtils = new JPanel(new GridLayout(1, 2, 10, 0)); // Only 2 buttons now
+        pnlUtils.setOpaque(false);
+        pnlUtils.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        JButton btnClear = new JButton("Xóa Món");
+        btnClear.setFont(new Font("Roboto", Font.PLAIN, 12));
+        btnClear.setBackground(new Color(250, 230, 230));
+        btnClear.setForeground(new Color(200, 50, 50));
+        btnClear.putClientProperty("FlatLaf.style", "arc: 10; margin: 8,0,8,0; borderWidth:0");
+        btnClear.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnClear.addActionListener(e -> xoaMonKhoiGio());
+
+        JButton btnHuyDon = new JButton("Hủy Đơn");
+        btnHuyDon.setFont(new Font("Roboto", Font.PLAIN, 12));
+        btnHuyDon.setBackground(new Color(250, 230, 230));
+        btnHuyDon.setForeground(new Color(200, 50, 50));
+        btnHuyDon.putClientProperty("FlatLaf.style", "arc: 10; margin: 8,0,8,0; borderWidth:0");
+        btnHuyDon.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnHuyDon.addActionListener(e -> huyDonHangAction());
+
+        pnlUtils.add(btnClear);
+        pnlUtils.add(btnHuyDon);
+
+        JPanel pnlBotGroup = new JPanel(new BorderLayout());
+        pnlBotGroup.setOpaque(false);
+        pnlBotGroup.add(pnlBtns, BorderLayout.CENTER);
+        pnlBotGroup.add(pnlUtils, BorderLayout.SOUTH);
+
+        bot.add(pnlBotGroup, BorderLayout.SOUTH);
+        p.add(bot, BorderLayout.SOUTH);
+
+        return p;
     }
 
     private void xoaMonKhoiGio() {
@@ -385,14 +452,11 @@ public class OrderPanel extends JPanel {
         for (CartItem item : cartData) {
             int totalSubRows = 1 + item.getToppings().size() + (item.getGhiChu().isEmpty() ? 0 : 1);
             
-            // --- Khởi tạo 3 luồng HTML đồng bộ ---
             StringBuilder nameHtml = new StringBuilder("<html><table width='100%' border='0' cellspacing='0' cellpadding='1'>");
             StringBuilder priceHtml = new StringBuilder("<html><table width='100%' border='0' cellspacing='0' cellpadding='1'>");
             StringBuilder amountHtml = new StringBuilder("<html><table width='100%' border='0' cellspacing='0' cellpadding='1'>");
 
-            // 1. Dòng chính (Món + Size)
             String sizeLabel = item.getSize().getTenSize();
-            // Xử lý cả trường hợp "Thường" bị lỗi font thành "Thư?ng"
             boolean isNormal = sizeLabel.equalsIgnoreCase("Thường") || sizeLabel.contains("Thư?");
             String mainName = "<b>" + item.getMon().getTenMon() + "</b>" + 
                              (isNormal ? "" : " (" + sizeLabel + ")");
@@ -400,7 +464,6 @@ public class OrderPanel extends JPanel {
             priceHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:13px;'>").append(nf.format(item.getDonGiaSize())).append("đ</td></tr>");
             amountHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:13px;'>").append(nf.format(item.getDonGiaSize() * item.getSoLuong())).append("đ</td></tr>");
 
-            // 2. Các dòng Topping
             for (dto.CartItem.CartTopping ctx : item.getToppings()) {
                 String topName = "&nbsp;&nbsp;&nbsp;+ " + ctx.topping.getTenTopping() + " (x" + ctx.soLuong + ")";
                 nameHtml.append("<tr><td style='font-family:Roboto; font-size:11px; color:gray;'>").append(topName).append("</td></tr>");
@@ -412,10 +475,9 @@ public class OrderPanel extends JPanel {
                 amountHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:11px; color:gray;'>+ ").append(nf.format(topTotal)).append("đ</td></tr>");
             }
 
-            // 3. Dòng Ghi chú (nếu có)
             if (!item.getGhiChu().isEmpty()) {
                 nameHtml.append("<tr><td style='font-family:Roboto; font-size:11px; color:orange;'>(").append(item.getGhiChu()).append(")</td></tr>");
-                priceHtml.append("<tr><td>&nbsp;</td></tr>"); // Dòng trống để khớp hàng
+                priceHtml.append("<tr><td>&nbsp;</td></tr>"); 
                 amountHtml.append("<tr><td>&nbsp;</td></tr>");
             }
 
@@ -423,8 +485,7 @@ public class OrderPanel extends JPanel {
             priceHtml.append("</table></html>");
             amountHtml.append("</table></html>");
 
-            // Cột SL cũng dùng HTML để ép căn TOP đồng bộ
-            String slHtml = "<html><div style='padding-top:2px;'>" + item.getSoLuong() + "</div></html>";
+            String slHtml = "<html><div style='padding-top:2px;'><b>" + item.getSoLuong() + "</b></div></html>";
 
             cartModel.addRow(new Object[]{
                 nameHtml.toString(),
@@ -433,32 +494,25 @@ public class OrderPanel extends JPanel {
                 amountHtml.toString()
             });
 
-            // Chiều cao hàng: mỗi dòng khoảng 18-20px
             cartTable.setRowHeight(cartModel.getRowCount() - 1, totalSubRows * 20 + 15);
-            
             total += item.getThanhTien();
         }
 
-        lblTotalCart.setText("Tổng tiền: " + nf.format(total) + "đ");
+        lblTotalCart.setText(nf.format(total) + " đ");
     }
 
     // ── PUBLIC API ĐỂ MAINFRAME GỌI ──
 
-    /**
-     * Mở OrderPanel cho một Bàn và Đơn Hàng (có thể null nếu order mới)
-     */
     public void loadDonHangForTable(Ban ban, DonHang dh) {
         this.currentBan = ban;
         this.currentDonHang = dh;
 
-        // Set tiêu đề header
         if (ban == null || "MANG_VE".equals(ban.getMaBan())) {
             lblHeaderTitle.setText("🛍 Bán Mang Về");
         } else {
-            lblHeaderTitle.setText("🏠 " + ban.getSoBan());
+            lblHeaderTitle.setText("Gọi Món - " + ban.getSoBan());
         }
 
-        // Load cart
         if (dh != null) {
             cartData = orderController.loadCart(dh.getMaDonHang());
         } else {
@@ -466,7 +520,16 @@ public class OrderPanel extends JPanel {
         }
 
         renderCartTable();
-        loadMenuToGrid();
+        
+        // Reset category to "Tat Ca"
+        if(bgCategories != null) {
+            java.util.Enumeration<AbstractButton> elements = bgCategories.getElements();
+            if(elements.hasMoreElements()) {
+                AbstractButton btn = elements.nextElement();
+                btn.setSelected(true);
+            }
+        }
+        loadMenuToGrid(null); // Load all
     }
 
     private boolean performSaveOrder() {
@@ -487,15 +550,12 @@ public class OrderPanel extends JPanel {
 
     private void saveDonHang() {
         if (performSaveOrder()) {
-            JOptionPane.showMessageDialog(this, "Đã lưu order vào bếp thành công!");
-            // Quay lại màn hình bàn
-            if (onBackAction != null)
-                onBackAction.run();
+            JOptionPane.showMessageDialog(this, "Đã gửi order vào Bếp!");
+            if (onBackAction != null) onBackAction.run();
         }
     }
 
     private void moThanhToan() {
-        // FAST CHECKOUT: Luôn tự động lưu giỏ hàng hiện tại trước khi mở thanh toán
         if (!performSaveOrder()) return; 
 
         Window win = SwingUtilities.getWindowAncestor(this);
@@ -504,8 +564,7 @@ public class OrderPanel extends JPanel {
             dlg.setVisible(true);
 
             if (dlg.isPaid()) {
-                if (onBackAction != null)
-                    onBackAction.run(); // Quay về sơ đồ bàn
+                if (onBackAction != null) onBackAction.run(); 
             }
         }
     }
@@ -517,7 +576,7 @@ public class OrderPanel extends JPanel {
         }
 
         int xn = JOptionPane.showConfirmDialog(this,
-                "Bạn có CHẮC CHẮN muốn hủy đơn hàng [" + currentDonHang.getMaDonHang() + "] không?",
+                "Bạn có CHẮC CHẮN muốn hủy đơn hàng này không?",
                 "Xác nhận hủy đơn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
         if (xn == JOptionPane.YES_OPTION) {
@@ -534,7 +593,7 @@ public class OrderPanel extends JPanel {
 
     private void moTuyChonBan() {
         if (currentDonHang == null || !"DANG_PHUC_VU".equals(currentDonHang.getTrangThai().name())) {
-            JOptionPane.showMessageDialog(this, "Chỉ có thể đổi/gộp bàn cho đơn hàng đã [Lưu vào Bếp]!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Chỉ có thể đổi/gộp bàn cho đơn hàng đã [Gửi Bếp]!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
         if ("MANG_VE".equals(currentBan.getMaBan())) {

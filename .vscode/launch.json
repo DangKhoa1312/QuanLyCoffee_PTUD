@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run LoginForm",
+            "request": "launch",
+            "mainClass": "ui.LoginForm",
+            "projectName": "QuanLyCaFe_Final",
+            "classPaths": [
+                "bin",
+                "lib/*"
+            ],
+            "encoding": "UTF-8"
+        }
+    ]
+}
