@@ -329,7 +329,7 @@ public class OrderPanel extends JPanel {
         p.add(topCart, BorderLayout.NORTH);
 
         // Bảng
-        String[] cols = {"Món (Size)", "SL", "Giá", "Tổng"};
+        String[] cols = {"Món (Size)", "SL", "Giá", "Tổng", "Index"};
         cartModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
@@ -338,6 +338,9 @@ public class OrderPanel extends JPanel {
         cartTable.setFont(new Font("Roboto", Font.PLAIN, 14));
         cartTable.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 13));
         cartTable.setShowGrid(false);
+
+        // Ẩn cột Index (cột thứ 4 tính từ 0)
+        cartTable.removeColumn(cartTable.getColumnModel().getColumn(4));
 
         cartTable.getColumnModel().getColumn(0).setPreferredWidth(200); 
         cartTable.getColumnModel().getColumn(1).setPreferredWidth(45);  
@@ -438,7 +441,8 @@ public class OrderPanel extends JPanel {
     private void xoaMonKhoiGio() {
         int selected = cartTable.getSelectedRow();
         if (selected >= 0) {
-            cartData.remove(selected);
+            int dataIndex = (int) cartModel.getValueAt(cartTable.convertRowIndexToModel(selected), 4);
+            cartData.remove(dataIndex);
             renderCartTable();
         } else {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn món cần xóa trong Giỏ hàng!");
@@ -449,53 +453,51 @@ public class OrderPanel extends JPanel {
         cartModel.setRowCount(0);
         double total = 0;
 
-        for (CartItem item : cartData) {
-            int totalSubRows = 1 + item.getToppings().size() + (item.getGhiChu().isEmpty() ? 0 : 1);
+        for (int i = 0; i < cartData.size(); i++) {
+            CartItem item = cartData.get(i);
             
-            StringBuilder nameHtml = new StringBuilder("<html><table width='100%' border='0' cellspacing='0' cellpadding='1'>");
-            StringBuilder priceHtml = new StringBuilder("<html><table width='100%' border='0' cellspacing='0' cellpadding='1'>");
-            StringBuilder amountHtml = new StringBuilder("<html><table width='100%' border='0' cellspacing='0' cellpadding='1'>");
-
             String sizeLabel = item.getSize().getTenSize();
             boolean isNormal = sizeLabel.equalsIgnoreCase("Thường") || sizeLabel.contains("Thư?");
-            String mainName = "<b>" + item.getMon().getTenMon() + "</b>" + 
-                             (isNormal ? "" : " (" + sizeLabel + ")");
-            nameHtml.append("<tr><td style='font-family:Roboto; font-size:13px;'>").append(mainName).append("</td></tr>");
-            priceHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:13px;'>").append(nf.format(item.getDonGiaSize())).append("đ</td></tr>");
-            amountHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:13px;'>").append(nf.format(item.getDonGiaSize() * item.getSoLuong())).append("đ</td></tr>");
+            String statusHtml = item.isDaPhucVu() ? " <span style='color:#27ae60;font-size:10px;'>(Đã báo)</span>" : " <span style='color:#e74c3c;font-size:10px;'>(Mới)</span>";
+            String mainName = "<html><div style='font-family:Roboto; font-size:13px; width:160px; word-wrap:break-word;'>" + 
+                             "<b>" + item.getMon().getTenMon() + "</b>" + 
+                             (isNormal ? "" : " (" + sizeLabel + ")") + statusHtml + "</div></html>";
+                             
+            String mainPrice = "<html><div style='font-family:Roboto; font-size:13px;'>" + nf.format(item.getDonGiaSize()) + "đ</div></html>";
+            String slHtml = "<html><div style='font-family:Roboto; font-size:13px; font-weight:bold;'>" + item.getSoLuong() + "</div></html>";
+            String amountHtml = "<html><div style='font-family:Roboto; font-size:14px; font-weight:bold; color:#2c3e50;'>" + nf.format(item.getThanhTien()) + "đ</div></html>";
 
+            // Thêm dòng món chính
+            cartModel.addRow(new Object[]{ mainName, slHtml, mainPrice, amountHtml, i });
+
+            // Thêm cột topping
             for (dto.CartItem.CartTopping ctx : item.getToppings()) {
-                String topName = "&nbsp;&nbsp;&nbsp;+ " + ctx.topping.getTenTopping() + " (x" + ctx.soLuong + ")";
-                nameHtml.append("<tr><td style='font-family:Roboto; font-size:11px; color:gray;'>").append(topName).append("</td></tr>");
-                
-                String topPrice = "+ " + nf.format(ctx.giaTopping * ctx.soLuong) + "đ";
-                priceHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:11px; color:gray;'>").append(topPrice).append("</td></tr>");
-                
-                double topTotal = ctx.giaTopping * ctx.soLuong * item.getSoLuong();
-                amountHtml.append("<tr><td align='right' style='font-family:Roboto; font-size:11px; color:gray;'>+ ").append(nf.format(topTotal)).append("đ</td></tr>");
+                String topName = "<html><div style='font-family:Roboto; font-size:11px; color:gray; padding-left:15px; width:150px;'>" +
+                                 "+ " + ctx.topping.getTenTopping() + " (x" + ctx.soLuong + ")</div></html>";
+                String topPrice = "<html><div style='font-family:Roboto; font-size:11px; color:gray;'>" + 
+                                 "+ " + nf.format(ctx.giaTopping * ctx.soLuong) + "đ</div></html>";
+                                 
+                cartModel.addRow(new Object[]{ topName, "", topPrice, "", i });
             }
 
+            // Thêm dòng ghi chú
             if (!item.getGhiChu().isEmpty()) {
-                nameHtml.append("<tr><td style='font-family:Roboto; font-size:11px; color:orange;'>(").append(item.getGhiChu()).append(")</td></tr>");
-                priceHtml.append("<tr><td>&nbsp;</td></tr>"); 
-                amountHtml.append("<tr><td>&nbsp;</td></tr>");
+                String noteName = "<html><div style='font-family:Roboto; font-size:11px; color:orange; padding-left:15px; width:150px;'>" +
+                                  "* " + item.getGhiChu() + "</div></html>";
+                cartModel.addRow(new Object[]{ noteName, "", "", "", i });
             }
 
-            nameHtml.append("</table></html>");
-            priceHtml.append("</table></html>");
-            amountHtml.append("</table></html>");
-
-            String slHtml = "<html><div style='padding-top:2px;'><b>" + item.getSoLuong() + "</b></div></html>";
-
-            cartModel.addRow(new Object[]{
-                nameHtml.toString(),
-                slHtml,
-                priceHtml.toString(),
-                amountHtml.toString()
-            });
-
-            cartTable.setRowHeight(cartModel.getRowCount() - 1, totalSubRows * 20 + 15);
             total += item.getThanhTien();
+        }
+
+        // Cập nhật cao độ từng dòng
+        for (int r = 0; r < cartModel.getRowCount(); r++) {
+            String nameVal = (String) cartModel.getValueAt(r, 0);
+            if (nameVal != null && nameVal.contains("<b>")) {
+                cartTable.setRowHeight(r, 45); // Dòng chính (có thể bọc chữ)
+            } else {
+                cartTable.setRowHeight(r, 22); // Dòng topping / Ghi chú
+            }
         }
 
         lblTotalCart.setText(nf.format(total) + " đ");
@@ -516,7 +518,7 @@ public class OrderPanel extends JPanel {
         if (dh != null) {
             cartData = orderController.loadCart(dh.getMaDonHang());
         } else {
-            cartData.clear();
+            cartData = new ArrayList<>();
         }
 
         renderCartTable();
@@ -549,10 +551,63 @@ public class OrderPanel extends JPanel {
     }
 
     private void saveDonHang() {
+        if (cartData.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Giỏ hàng đang trống!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        List<CartItem> newItems = new ArrayList<>();
+        for (CartItem item : cartData) {
+            if (!item.isDaPhucVu()) {
+                newItems.add(item);
+                item.setDaPhucVu(true);
+            }
+        }
+        
+        if (!newItems.isEmpty()) {
+            showKitchenReceipt(newItems);
+        }
+        
         if (performSaveOrder()) {
-            JOptionPane.showMessageDialog(this, "Đã gửi order vào Bếp!");
+            renderCartTable(); // Cập nhật lại UI để chuyển chữ (Mới) -> (Đã báo bếp)
+            JOptionPane.showMessageDialog(this, "Lưu đơn hàng thành công!");
             if (onBackAction != null) onBackAction.run();
         }
+    }
+
+    private void showKitchenReceipt(List<CartItem> newItems) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("============================\n");
+        sb.append("     PHIẾU BÁO CHẾ BIẾN     \n");
+        sb.append("      ").append(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))).append("\n");
+        if (currentBan != null && !"MANG_VE".equals(currentBan.getMaBan())) {
+            sb.append(" Bàn: ").append(currentBan.getSoBan()).append("\n");
+        } else {
+            sb.append(" Bàn: MANG VỀ\n");
+        }
+        sb.append("============================\n");
+        sb.append(String.format("%-20s %5s\n", "Tên món", "SL"));
+        sb.append("----------------------------\n");
+        
+        for (CartItem item : newItems) {
+            String sizeStr = item.getSize().getTenSize().equalsIgnoreCase("Thường") ? "" : " (" + item.getSize().getTenSize() + ")";
+            sb.append(String.format("%-20s %5d\n", item.getMon().getTenMon() + sizeStr, item.getSoLuong()));
+            for (dto.CartItem.CartTopping top : item.getToppings()) {
+                sb.append(String.format("  + %-17s %5s\n", top.topping.getTenTopping(), "x" + top.soLuong));
+            }
+            if (!item.getGhiChu().isEmpty()) {
+                sb.append("  * Ghi chú: ").append(item.getGhiChu()).append("\n");
+            }
+        }
+        sb.append("============================\n");
+        
+        JTextArea txtReceipt = new JTextArea(sb.toString());
+        txtReceipt.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        txtReceipt.setEditable(false);
+        txtReceipt.setBackground(new Color(255, 250, 240));
+        txtReceipt.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        JOptionPane.showMessageDialog(this, new JScrollPane(txtReceipt), "Mô phỏng Máy In Bếp", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void moThanhToan() {

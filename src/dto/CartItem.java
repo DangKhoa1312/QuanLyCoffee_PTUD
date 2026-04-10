@@ -17,6 +17,7 @@ public class CartItem {
     private int soLuong;
     private double donGiaSize;
     private String ghiChu;
+    private boolean daPhucVu = false;
     private List<CartTopping> toppings = new ArrayList<>();
 
     public static class CartTopping {
@@ -45,6 +46,8 @@ public class CartItem {
     public void setSoLuong(int soLuong) { this.soLuong = soLuong; }
     public double getDonGiaSize() { return donGiaSize; }
     public String getGhiChu() { return ghiChu; }
+    public boolean isDaPhucVu() { return daPhucVu; }
+    public void setDaPhucVu(boolean daPhucVu) { this.daPhucVu = daPhucVu; }
     
     public List<CartTopping> getToppings() { return toppings; }
 

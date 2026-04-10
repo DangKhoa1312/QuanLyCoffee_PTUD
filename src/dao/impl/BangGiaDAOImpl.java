@@ -97,21 +97,16 @@ public class BangGiaDAOImpl implements BangGiaDAO {
 
     @Override
     public BangGia findHienHanh(LocalDate ngay) {
-        Date d = Date.valueOf(ngay);
-        String sql = "SELECT TOP 1 * FROM BangGia WHERE trangThai=1 AND ngayBatDau <= ? AND (ngayKetThuc IS NULL OR ngayKetThuc >= ?) ORDER BY ngayBatDau DESC";
+        String sql = "SELECT TOP 1 * FROM BangGia WHERE trangThai=1 ORDER BY maBangGia DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setDate(1, d);
-            ps.setDate(2, d);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapRow(rs);
         } catch (SQLException e) {
             System.err.println("BangGiaDAOImpl.findHienHanh: " + e.getMessage());
-            // fallback cho SQL Server hoặc MySQL không dùng TOP 1
+            // fallback cho DB khong the dung TOP 1
             if (e.getMessage().contains("TOP")) {
-                sql = "SELECT * FROM BangGia WHERE trangThai=1 AND ngayBatDau <= ? AND (ngayKetThuc IS NULL OR ngayKetThuc >= ?) ORDER BY ngayBatDau DESC";
+                sql = "SELECT * FROM BangGia WHERE trangThai=1 ORDER BY maBangGia DESC";
                 try (PreparedStatement psFallback = getConn().prepareStatement(sql)) {
-                    psFallback.setDate(1, d);
-                    psFallback.setDate(2, d);
                     ResultSet rsFallback = psFallback.executeQuery();
                     if (rsFallback.next()) return mapRow(rsFallback);
                 } catch (SQLException ex) {}
@@ -122,19 +117,6 @@ public class BangGiaDAOImpl implements BangGiaDAO {
 
     @Override
     public List<BangGia> findTatCaHienHanh(LocalDate ngay) {
-        List<BangGia> list = new ArrayList<>();
-        Date d = Date.valueOf(ngay);
-        String sql = "SELECT * FROM BangGia WHERE trangThai=1 AND ngayBatDau <= ? AND (ngayKetThuc IS NULL OR ngayKetThuc >= ?) ORDER BY ngayBatDau DESC";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setDate(1, d);
-            ps.setDate(2, d);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                list.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("BangGiaDAOImpl.findTatCaHienHanh: " + e.getMessage());
-        }
-        return list;
+        return new ArrayList<>(); // Không còn dùng
     }
 }

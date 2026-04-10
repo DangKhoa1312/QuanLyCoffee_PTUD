@@ -87,18 +87,15 @@ public class MenuController {
         return toppingDAO.findById(maTopping);
     }
 
-    /** Lấy giá bán của 1 Size cụ thể trong bảng giá hiện hành (Hỗ trợ Fallback) */
     public double getGiaBan(String maSize) {
-        List<BangGia> activeLists = bangGiaDAO.findTatCaHienHanh(LocalDate.now());
-        if (activeLists == null || activeLists.isEmpty()) return 0.0;
+        BangGia activeList = bangGiaDAO.findHienHanh(LocalDate.now());
+        if (activeList == null) return 0.0;
         
-        for (BangGia bg : activeLists) {
-            BangGiaChiTiet chiTiet = bgctDAO.findGia(maSize, bg.getMaBangGia());
-            if (chiTiet != null && chiTiet.getGiaBan() > 0) {
-                return chiTiet.getGiaBan();
-            }
+        BangGiaChiTiet chiTiet = bgctDAO.findGia(maSize, activeList.getMaBangGia());
+        if (chiTiet != null && chiTiet.getGiaBan() > 0) {
+            return chiTiet.getGiaBan();
         }
-        return 0.0; // Nếu không tìm thấy ở bất kỳ bảng giá nào
+        return 0.0;
     }
 
     /** Kiểm tra xem món có Đủ nguyên liệu tồn kho để bán không */

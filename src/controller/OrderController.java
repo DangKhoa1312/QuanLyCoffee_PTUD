@@ -33,7 +33,7 @@ public class OrderController {
      */
     public List<CartItem> loadCart(String maDonHang) {
         if (maDonHang == null) return new ArrayList<>();
-        return orderManager.getCart(maDonHang);
+        return new ArrayList<>(orderManager.getCart(maDonHang));
     }
 
     /**
