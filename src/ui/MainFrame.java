@@ -25,11 +25,10 @@ public class MainFrame extends JFrame {
     private final AuthController authController = new AuthController();
     private final ShiftController shiftController = new ShiftController();
 
-
     private JLabel lblCaInfo;
     private JLabel lblClock;
     private JPanel contentPanel;
-    
+
     // Sidebar toggle components
     private boolean isSidebarExpanded = true;
     private JPanel sidebar;
@@ -53,21 +52,20 @@ public class MainFrame extends JFrame {
 
     private void initUI() {
         setLayout(new BorderLayout());
-        
+
         IconFontSwing.register(FontAwesome.getIconFont());
 
         // ═══════════════════ HEADER ═══════════════════
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(Color.WHITE);
         header.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)),
-            new EmptyBorder(10, 20, 10, 20)
-        ));
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)),
+                new EmptyBorder(10, 20, 10, 20)));
 
         // Trái: thông tin ca và nút toggle
         JPanel pnlWest = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         pnlWest.setOpaque(false);
-        
+
         JButton btnToggle = new JButton(IconFontSwing.buildIcon(FontAwesome.BARS, 20, new Color(44, 62, 80)));
         btnToggle.setFocusable(false);
         btnToggle.setContentAreaFilled(false);
@@ -80,7 +78,7 @@ public class MainFrame extends JFrame {
         lblCaInfo.setFont(new Font("Roboto", Font.BOLD, 14));
         updateCaInfo();
         pnlWest.add(lblCaInfo);
-        
+
         header.add(pnlWest, BorderLayout.WEST);
 
         // Phải: đồng hồ
@@ -122,8 +120,8 @@ public class MainFrame extends JFrame {
         // --- NHÓM 1: VẬN HÀNH ---
         addMenuHeader(sidebar, "VẬN HÀNH");
         JButton btnBanHang = createSidebarBtn("Bán Hàng", FontAwesome.SHOPPING_CART, new Color(243, 156, 18));
-        JButton btnDatBan  = createSidebarBtn("Đặt Bàn", FontAwesome.CALENDAR_CHECK_O, new Color(46, 204, 113));
-        JButton btnHoaDon  = createSidebarBtn("Hoá Đơn", FontAwesome.FILE_TEXT_O, new Color(52, 152, 219));
+        JButton btnDatBan = createSidebarBtn("Đặt Bàn", FontAwesome.CALENDAR_CHECK_O, new Color(46, 204, 113));
+        JButton btnHoaDon = createSidebarBtn("Hoá Đơn", FontAwesome.FILE_TEXT_O, new Color(52, 152, 219));
 
         sidebar.add(btnBanHang);
         sidebar.add(Box.createVerticalStrut(6));
@@ -135,9 +133,9 @@ public class MainFrame extends JFrame {
         if (SessionManager.isQuanLy()) {
             sidebar.add(Box.createVerticalStrut(25));
             addMenuHeader(sidebar, "THIẾT LẬP");
-            
-            JButton btnMon  = createSidebarBtn("Thực Đơn", FontAwesome.CUTLERY, new Color(230, 126, 34));
-            JButton btnGia  = createSidebarBtn("Bảng Giá", FontAwesome.MONEY, new Color(46, 204, 113));
+
+            JButton btnMon = createSidebarBtn("Thực Đơn", FontAwesome.CUTLERY, new Color(230, 126, 34));
+            JButton btnGia = createSidebarBtn("Bảng Giá", FontAwesome.MONEY, new Color(46, 204, 113));
             JButton btnSoDo = createSidebarBtn("Sơ đồ Bàn", FontAwesome.TH_LARGE, new Color(52, 152, 219));
 
             sidebar.add(btnMon);
@@ -150,7 +148,7 @@ public class MainFrame extends JFrame {
             sidebar.add(Box.createVerticalStrut(25));
             addMenuHeader(sidebar, "QUẢN TRỊ");
 
-            JButton btnNV  = createSidebarBtn("Nhân Viên", FontAwesome.USERS, new Color(149, 165, 166));
+            JButton btnNV = createSidebarBtn("Nhân Viên", FontAwesome.USERS, new Color(149, 165, 166));
             JButton btnKho = createSidebarBtn("Quản Lý Kho", FontAwesome.ARCHIVE, new Color(52, 73, 94));
             JButton btnThongKe = createSidebarBtn("Thống Kê", FontAwesome.BAR_CHART, new Color(155, 89, 182));
 
@@ -202,7 +200,6 @@ public class MainFrame extends JFrame {
         welcomeBox.setBackground(Color.WHITE);
         welcomeBox.setBorder(new EmptyBorder(50, 60, 50, 60));
 
-
         JLabel lblW1 = new JLabel("☕ COFFEE 11:01");
         lblW1.setFont(new Font("Roboto", Font.BOLD, 28));
         lblW1.setForeground(new Color(26, 26, 46));
@@ -243,7 +240,7 @@ public class MainFrame extends JFrame {
         // Tấm thẻ 4: Quản lý Hoá Đơn
         ui.panel.InvoicePanel invoicePanel = new ui.panel.InvoicePanel();
         contentPanel.add(invoicePanel, "HOA_DON");
-        
+
         // Tấm thẻ 5: Thống Kê (Dashboard)
         ui.panel.StatisticPanel statisticPanel = new ui.panel.StatisticPanel();
         contentPanel.add(statisticPanel, "THONG_KE");
@@ -288,20 +285,20 @@ public class MainFrame extends JFrame {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setBorder(new EmptyBorder(0, 16, 0, 0));
         btn.putClientProperty("FlatLaf.style", "arc: 10; borderWidth: 0; focusWidth: 0; hoverBackground: #714c34");
-        
+
         btn.putClientProperty("full_text", text);
         sidebarButtons.add(btn);
 
         return btn;
     }
-    
+
     private void toggleSidebar() {
         isSidebarExpanded = !isSidebarExpanded;
         if (isSidebarExpanded) {
             sidebar.setPreferredSize(new Dimension(220, 0));
             lblAvatar.setText("  " + tenNVFull);
             lblRole.setVisible(true);
-            
+
             for (JButton btn : sidebarButtons) {
                 btn.setText((String) btn.getClientProperty("full_text"));
                 btn.setHorizontalAlignment(SwingConstants.LEFT);
@@ -311,7 +308,7 @@ public class MainFrame extends JFrame {
             sidebar.setPreferredSize(new Dimension(65, 0));
             lblAvatar.setText("");
             lblRole.setVisible(false);
-            
+
             for (JButton btn : sidebarButtons) {
                 btn.setText("");
                 btn.setHorizontalAlignment(SwingConstants.CENTER);
@@ -383,9 +380,9 @@ public class MainFrame extends JFrame {
         if (SessionManager.isCaDangMo()) {
             // Có ca đang mở -> mở báo cáo đóng ca
             int confirm = JOptionPane.showConfirmDialog(this,
-                "Bạn đang có ca làm việc đang mở!\nĐăng xuất sẽ yêu cầu ĐÓNG CA trước.\nTiếp tục?",
-                "Xác nhận",
-                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Bạn đang có ca làm việc đang mở!\nĐăng xuất sẽ yêu cầu ĐÓNG CA trước.\nTiếp tục?",
+                    "Xác nhận",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (confirm == JOptionPane.YES_OPTION) {
                 handleDongCa(); // Mở ShiftCloseDialog
             }

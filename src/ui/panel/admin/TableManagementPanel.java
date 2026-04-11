@@ -357,22 +357,42 @@ public class TableManagementPanel extends JPanel {
         JTextField txtMoTa = new JTextField(20);
 
         JPanel form = new JPanel(new GridLayout(0, 2, 10, 8));
-        form.add(new JLabel("Tên khu vực:"));
+        form.add(new JLabel("Tên khu vực (*):"));
         form.add(txtTen);
         form.add(new JLabel("Mô tả:"));
         form.add(txtMoTa);
 
-        int result = JOptionPane.showConfirmDialog(this, form, "Thêm Khu Vực Mới",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        while (true) {
+            int result = JOptionPane.showConfirmDialog(this, form, "Thêm Khu Vực Mới",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-        if (result == JOptionPane.OK_OPTION && !txtTen.getText().trim().isEmpty()) {
-            String maKV = IDGenerator.newMaKhuVuc();
-            KhuVuc kv = new KhuVuc(maKV, txtTen.getText().trim(), txtMoTa.getText().trim(), true);
-            if (controller.addKhuVuc(kv)) {
-                loadKhuVucData();
-                JOptionPane.showMessageDialog(this, "Thêm khu vực thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            if (result == JOptionPane.OK_OPTION) {
+                // Bug 8: Validate tên rỗng — phải hiển thị lỗi
+                String tenKV = txtTen.getText().trim();
+                if (tenKV.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                            "Tên khu vực không được để trống!", "Lỗi nhập liệu", JOptionPane.ERROR_MESSAGE);
+                    continue;
+                }
+                // Bug 3: Validate trùng tên
+                if (controller.isTenKhuVucTrung(tenKV, null)) {
+                    JOptionPane.showMessageDialog(this,
+                            "Tên khu vực \"" + tenKV + "\" đã tồn tại! Vui lòng chọn tên khác.",
+                            "Trùng tên", JOptionPane.ERROR_MESSAGE);
+                    continue;
+                }
+                String maKV = IDGenerator.newMaKhuVuc();
+                KhuVuc kv = new KhuVuc(maKV, tenKV, txtMoTa.getText().trim(), true);
+                if (controller.addKhuVuc(kv)) {
+                    loadKhuVucData();
+                    JOptionPane.showMessageDialog(this, "Thêm khu vực thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    break;
+                } else {
+                    JOptionPane.showMessageDialog(this, "Lỗi khi thêm khu vực!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    continue;
+                }
             } else {
-                JOptionPane.showMessageDialog(this, "Lỗi khi thêm khu vực!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                break;
             }
         }
     }
@@ -386,30 +406,62 @@ public class TableManagementPanel extends JPanel {
         JPanel form = new JPanel(new GridLayout(0, 2, 10, 8));
         form.add(new JLabel("Mã KV:"));
         form.add(new JLabel(currentKhuVuc.getMaKhuVuc()));
-        form.add(new JLabel("Tên khu vực:"));
+        form.add(new JLabel("Tên khu vực (*):"));
         form.add(txtTen);
         form.add(new JLabel("Mô tả:"));
         form.add(txtMoTa);
 
-        int result = JOptionPane.showConfirmDialog(this, form, "Cập Nhật Khu Vực",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        while (true) {
+            int result = JOptionPane.showConfirmDialog(this, form, "Cập Nhật Khu Vực",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-        if (result == JOptionPane.OK_OPTION && !txtTen.getText().trim().isEmpty()) {
-            currentKhuVuc.setTenKhuVuc(txtTen.getText().trim());
-            currentKhuVuc.setMoTa(txtMoTa.getText().trim());
-            
-            if (controller.updateKhuVuc(currentKhuVuc)) {
-                refreshDetailViewData();
-                JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
+            if (result == JOptionPane.OK_OPTION) {
+                String tenKV = txtTen.getText().trim();
+                if (tenKV.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                            "Tên khu vực không được để trống!", "Lỗi nhập liệu", JOptionPane.ERROR_MESSAGE);
+                    continue;
+                }
+                // Bug 3: Validate trùng tên (bỏ qua chính nó)
+                if (controller.isTenKhuVucTrung(tenKV, currentKhuVuc.getMaKhuVuc())) {
+                    JOptionPane.showMessageDialog(this,
+                            "Tên khu vực \"" + tenKV + "\" đã tồn tại! Vui lòng chọn tên khác.",
+                            "Trùng tên", JOptionPane.ERROR_MESSAGE);
+                    continue;
+                }
+                currentKhuVuc.setTenKhuVuc(tenKV);
+                currentKhuVuc.setMoTa(txtMoTa.getText().trim());
+                
+                if (controller.updateKhuVuc(currentKhuVuc)) {
+                    refreshDetailViewData();
+                    JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
+                    break;
+                } else {
+                    JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    continue;
+                }
             } else {
-                JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                break;
             }
         }
     }
 
     private void handleToggleKhuVuc() {
         if(currentKhuVuc == null) return;
-        
+
+        // Bug 4: Chặn tạm ngưng nếu còn bàn đang có khách
+        if (currentKhuVuc.isTrangThai()) {
+            int banCoKhach = controller.countBanCoKhachByKhuVuc(currentKhuVuc.getMaKhuVuc());
+            if (banCoKhach > 0) {
+                JOptionPane.showMessageDialog(this,
+                        "Không thể tạm ngưng khu vực \"" + currentKhuVuc.getTenKhuVuc() +
+                        "\" vì còn " + banCoKhach + " bàn đang có khách!\n" +
+                        "Vui lòng hoàn tất tất cả đơn hàng trước.",
+                        "Không thể tạm ngưng", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
         String action = currentKhuVuc.isTrangThai() ? "TẠM NGƯNG" : "KÍCH HOẠT";
         int confirm = JOptionPane.showConfirmDialog(this,
                 action + " khu vực \"" + currentKhuVuc.getTenKhuVuc() + "\"?",
@@ -424,11 +476,23 @@ public class TableManagementPanel extends JPanel {
 
     private void handleDeleteKhuVuc() {
         if(currentKhuVuc == null) return;
-        
+
+        // Bug 4: Kiểm tra còn bàn có khách không
+        int banCoKhach = controller.countBanCoKhachByKhuVuc(currentKhuVuc.getMaKhuVuc());
+        if (banCoKhach > 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Không thể xóa khu vực \"" + currentKhuVuc.getTenKhuVuc() +
+                    "\" vì còn " + banCoKhach + " bàn đang có khách!\n" +
+                    "Vui lòng hoàn tất tất cả đơn hàng trước.",
+                    "Không thể xóa", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         int count = controller.countBanByKhuVuc(currentKhuVuc.getMaKhuVuc());
         if (count > 0) {
             JOptionPane.showMessageDialog(this,
-                    "Không thể xóa khu vực \"" + currentKhuVuc.getTenKhuVuc() + "\" vì còn " + count + " bàn!\nHãy xóa hoặc chuyển hết bàn trước.",
+                    "Không thể xóa khu vực \"" + currentKhuVuc.getTenKhuVuc() +
+                    "\" vì còn " + count + " bàn!\nHãy xóa hoặc chuyển hết bàn trước.",
                     "Không thể xóa", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -466,7 +530,7 @@ public class TableManagementPanel extends JPanel {
                 } catch (Exception ignored) {}
             }
         }
-        String soBanGoiY = String.format("Bàn %02d", max + 1);
+        String soBanGoiY = String.format("%02d", max + 1);
         
         JTextField txtSoBan = new JTextField(soBanGoiY, 15);
         JSpinner spnSucChua = new JSpinner(new SpinnerNumberModel(4, 1, 50, 1));

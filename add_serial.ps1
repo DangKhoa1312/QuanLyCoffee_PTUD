@@ -1,0 +1,1 @@
+﻿Get-ChildItem -Path src\entity, src\dto -Filter *.java | ForEach-Object {  = Get-Content .FullName;  =  -replace class ([a-zA-Z0-9_]+) \{, class $1 implements java.io.Serializable {;  =  -replace class ([a-zA-Z0-9_]+)( implements Serializable) \{, class $1 implements java.io.Serializable {; Set-Content -Path .FullName -Value  -Encoding UTF8 }

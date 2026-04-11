@@ -4,7 +4,8 @@ import enums.LoaiDon;
 import enums.TrangThaiDonHang;
 import java.time.LocalDateTime;
 
-public class DonHang {
+public class DonHang implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private String           maDonHang;
     private LocalDateTime    thoiGianMo;
     private LocalDateTime    thoiGianChot;     // nullable - khi chốt order

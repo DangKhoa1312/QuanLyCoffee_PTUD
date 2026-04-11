@@ -2,7 +2,8 @@ package entity;
 
 import enums.LoaiMon;
 
-public class Mon {
+public class Mon implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private String  maMon;
     private String  tenMon;
     private String  moTa;

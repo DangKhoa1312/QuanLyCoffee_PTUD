@@ -28,16 +28,49 @@ public class OrderManager {
 
     /** Counter tạo mã đơn hàng tạm (không cần DB) */
     private final AtomicInteger dhCounter = new AtomicInteger(0);
+    
+    private static final String BACKUP_FILE = "orders_backup.dat";
 
-    private OrderManager() {}
+    private OrderManager() {
+        loadStateFromDisk();
+    }
 
     public static OrderManager getInstance() {
         return INSTANCE;
     }
 
+    private synchronized void saveStateToDisk() {
+        try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(BACKUP_FILE))) {
+            oos.writeObject(orders);
+            oos.writeObject(carts);
+            oos.writeObject(dhCounter.get());
+        } catch (Exception e) {
+            System.err.println("Lỗi lưu trạng thái OrderManager: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private synchronized void loadStateFromDisk() {
+        java.io.File file = new java.io.File(BACKUP_FILE);
+        if (!file.exists()) return;
+        try (java.io.ObjectInputStream ois = new java.io.ObjectInputStream(new java.io.FileInputStream(file))) {
+            Map<String, DonHang> loadedOrders = (Map<String, DonHang>) ois.readObject();
+            Map<String, List<CartItem>> loadedCarts = (Map<String, List<CartItem>>) ois.readObject();
+            int counter = (Integer) ois.readObject();
+            
+            orders.clear(); orders.putAll(loadedOrders);
+            carts.clear(); carts.putAll(loadedCarts);
+            dhCounter.set(counter);
+        } catch (Exception e) {
+            System.err.println("Lỗi nạp trạng thái OrderManager: " + e.getMessage());
+        }
+    }
+
     // ── Tạo mã đơn hàng tạm ──────────────────────────────────────────────
     public String generateMaDonHang() {
-        return "DH" + String.format("%03d", dhCounter.incrementAndGet());
+        String code = "DH" + String.format("%03d", dhCounter.incrementAndGet());
+        saveStateToDisk();
+        return code;
     }
 
     // ── CRUD DonHang ──────────────────────────────────────────────────────
@@ -62,11 +95,13 @@ public class OrderManager {
 
         orders.put(maDH, dh);
         carts.put(maDH, new ArrayList<>());
+        saveStateToDisk();
         return dh;
     }
 
     public void putOrder(DonHang dh) {
         orders.put(dh.getMaDonHang(), dh);
+        saveStateToDisk();
     }
 
     public DonHang getOrder(String maDonHang) {
@@ -102,12 +137,14 @@ public class OrderManager {
     public void removeOrder(String maDonHang) {
         orders.remove(maDonHang);
         carts.remove(maDonHang);
+        saveStateToDisk();
     }
 
     // ── Giỏ hàng (CartItem) ───────────────────────────────────────────────
 
     public void setCart(String maDonHang, List<CartItem> cart) {
         carts.put(maDonHang, cart != null ? new ArrayList<>(cart) : new ArrayList<>());
+        saveStateToDisk();
     }
 
     public List<CartItem> getCart(String maDonHang) {
@@ -131,6 +168,7 @@ public class OrderManager {
         DonHang dh = orders.get(maDonHang);
         if (dh != null) {
             dh.setMaBan(maBanMoi);
+            saveStateToDisk();
         }
     }
 
@@ -138,7 +176,20 @@ public class OrderManager {
     public void gopDon(String maDonNguon, String maDonDich) {
         List<CartItem> cartNguon = getCart(maDonNguon);
         List<CartItem> cartDich = getCart(maDonDich);
-        cartDich.addAll(cartNguon);
+        
+        for (CartItem itemNguon : cartNguon) {
+            boolean merged = false;
+            for (CartItem itemDich : cartDich) {
+                if (itemDich.isIdentical(itemNguon)) {
+                    itemDich.setSoLuong(itemDich.getSoLuong() + itemNguon.getSoLuong());
+                    merged = true;
+                    break;
+                }
+            }
+            if (!merged) {
+                cartDich.add(itemNguon);
+            }
+        }
         carts.put(maDonDich, cartDich);
 
         // Cập nhật tổng tiền đơn đích
@@ -152,12 +203,13 @@ public class OrderManager {
         if (dhNguon != null) {
             dhNguon.setTrangThai(TrangThaiDonHang.DA_HUY);
         }
-        removeOrder(maDonNguon);
+        removeOrder(maDonNguon); // Đã có hàm saveStateToDisk() bên trong removeOrder
     }
 
     /** Xóa tất cả đơn hàng (ví dụ khi đóng ca) */
     public void clearAll() {
         orders.clear();
         carts.clear();
+        saveStateToDisk();
     }
 }

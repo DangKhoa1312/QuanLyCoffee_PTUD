@@ -197,6 +197,9 @@ public class OrderPanel extends JPanel {
     
     private JPanel createItemCard(Mon m) {
         boolean isHet = menuController.isHetHang(m.getMaMon());
+        // Bug 1: Kiểm tra trạng thái món — ngưng bán cũng không cho order
+        boolean isNgungBan = !m.isTrangThai();
+        boolean isDisabled = isHet || isNgungBan;
 
         JPanel card = new JPanel(new BorderLayout());
         card.setPreferredSize(new Dimension(165, 230));
@@ -207,11 +210,11 @@ public class OrderPanel extends JPanel {
         JLabel lblImage = new JLabel();
         lblImage.setPreferredSize(new Dimension(165, 130));
         lblImage.setOpaque(true);
-        lblImage.setBackground(isHet ? new Color(240, 240, 240) : new Color(248, 249, 250));
+        lblImage.setBackground(isDisabled ? new Color(240, 240, 240) : new Color(248, 249, 250));
         lblImage.setHorizontalAlignment(SwingConstants.CENTER);
         
-        jiconfont.IconCode iconCode = isHet ? FontAwesome.BAN : FontAwesome.COFFEE; 
-        Color iconColor = isHet ? new Color(200, 150, 150) : new Color(139, 90, 43);
+        jiconfont.IconCode iconCode = isDisabled ? FontAwesome.BAN : FontAwesome.COFFEE; 
+        Color iconColor = isDisabled ? new Color(200, 150, 150) : new Color(139, 90, 43);
         lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(iconCode, 50, iconColor));
         lblImage.putClientProperty("FlatLaf.style", "arc: 20");
 
@@ -228,12 +231,17 @@ public class OrderPanel extends JPanel {
                         + m.getTenMon() + "</div></html>";
         JLabel lblName = new JLabel(nameHtml, SwingConstants.CENTER);
         lblName.setFont(new Font("Roboto", Font.BOLD, 15));
-        lblName.setForeground(isHet ? Color.GRAY : new Color(26, 26, 26));
+        lblName.setForeground(isDisabled ? Color.GRAY : new Color(26, 26, 26));
 
-        String subText = isHet ? "(Hết hàng)" : "Tuỳ chọn size...";
+        // Xác định sub-text hiển thị
+        String subText;
+        if (isNgungBan) subText = "(Ngưng bán)";
+        else if (isHet) subText = "(Hết hàng)";
+        else subText = "Tuỳ chọn size...";
+
         JLabel lblPrice = new JLabel(subText, SwingConstants.CENTER);
         lblPrice.setFont(new Font("Roboto", Font.BOLD, 12));
-        lblPrice.setForeground(isHet ? new Color(200, 50, 50) : new Color(39, 174, 96));
+        lblPrice.setForeground(isDisabled ? new Color(200, 50, 50) : new Color(39, 174, 96));
 
         JPanel pnlText = new JPanel();
         pnlText.setLayout(new BoxLayout(pnlText, BoxLayout.Y_AXIS));
@@ -248,8 +256,9 @@ public class OrderPanel extends JPanel {
         JButton btnAdd = new JButton("+ Thêm");
         btnAdd.setFont(new Font("Roboto", Font.BOLD, 13));
         btnAdd.putClientProperty("FlatLaf.style", "arc: 15; background: #f0f0f0; foreground: #333333; borderWidth: 0;");
-        btnAdd.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAdd.setCursor(isDisabled ? Cursor.getDefaultCursor() : Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAdd.setFocusable(false);
+        btnAdd.setEnabled(!isDisabled);
         
         pnlInfo.add(pnlText, BorderLayout.CENTER);
         pnlInfo.add(btnAdd, BorderLayout.SOUTH);
@@ -257,7 +266,7 @@ public class OrderPanel extends JPanel {
         card.add(pnlTop, BorderLayout.NORTH);
         card.add(pnlInfo, BorderLayout.CENTER);
 
-        if (!isHet) {
+        if (!isDisabled) {
             Color hoverBg = new Color(250, 252, 255);
             Color hoverBorder = new Color(52, 152, 219);
             Color defaultBorder = new Color(230, 230, 230);
@@ -295,7 +304,18 @@ public class OrderPanel extends JPanel {
 
             CartItem result = dlg.getResult();
             if (result != null) {
-                cartData.add(result);
+                boolean merged = false;
+                for (CartItem item : cartData) {
+                    // Nếu trùng món, trùng size, trùng topping, trùng cả trạng thái "đã báo bếp" và ghi chú thì gộp chung
+                    if (item.isIdentical(result)) {
+                        item.setSoLuong(item.getSoLuong() + result.getSoLuong());
+                        merged = true;
+                        break;
+                    }
+                }
+                if (!merged) {
+                    cartData.add(result);
+                }
                 renderCartTable();
             }
         }

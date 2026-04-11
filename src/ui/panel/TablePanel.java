@@ -563,7 +563,36 @@ public class TablePanel extends JPanel {
                 setCardStyleWithPadding(card, 16, hexColor, 15, 15);
             }
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (clickListener != null) {
+                if (clickListener == null) return;
+
+                // Bug 2: Phân nhánh xử lý đúng theo trạng thái bàn
+                if (ban.getTrangThai() == TrangThaiBan.CO_KHACH) {
+                    // Bàn đang có khách → lấy đơn hàng đang mở và tiếp tục phục vụ
+                    DonHang dh = tableController.getDonHangDangMo(ban.getMaBan());
+                    if (dh != null) {
+                        clickListener.onTableClicked(ban, dh);
+                    } else {
+                        // Không tìm được đơn trên RAM (có thể app restart) → tạo mới
+                        int xn = JOptionPane.showConfirmDialog(
+                            SwingUtilities.getWindowAncestor(card),
+                            "Bàn đang có khách nhưng không tìm thấy đơn hàng đang mở.\nBạn có muốn tạo đơn mới cho bàn này không?",
+                            "Xác nhận", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                        if (xn == JOptionPane.YES_OPTION) {
+                            clickListener.onTableClicked(ban, null);
+                        }
+                    }
+                } else if (ban.getTrangThai() == TrangThaiBan.DA_DAT_TRUOC) {
+                    // Bàn đã đặt trước → thông báo, hỏi có mở không
+                    int xn = JOptionPane.showConfirmDialog(
+                        SwingUtilities.getWindowAncestor(card),
+                        "Bàn \"" + ban.getSoBan() + "\" đã được đặt trước.\nBạn có muốn mở phục vụ cho bàn này không?",
+                        "Bàn đã đặt trước", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                    if (xn == JOptionPane.YES_OPTION) {
+                        DonHang dh = tableController.getDonHangDangMo(ban.getMaBan());
+                        clickListener.onTableClicked(ban, dh);
+                    }
+                } else {
+                    // Bàn TRONG hoặc trạng thái khác → mở bình thường
                     DonHang dh = tableController.getDonHangDangMo(ban.getMaBan());
                     clickListener.onTableClicked(ban, dh);
                 }

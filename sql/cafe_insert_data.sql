@@ -7,7 +7,7 @@ GO
 INSERT INTO KhuVuc (maKhuVuc, tenKhuVuc, moTa, trangThai) VALUES
 ('KV001', N'Tầng 1',   N'Khu vực tầng 1, gần cửa ra vào', 1),
 ('KV002', N'Tầng 2',   N'Khu vực tầng 2, view đẹp',       1),
-('KV003', N'Mang về',  N'Khu vực phục vụ đơn mang về',    1);
+('KV003', N'Tầng 3',   N'Khu nhân viên',    1);
 GO
 
 -- 2. NhanVien
@@ -57,18 +57,18 @@ INSERT INTO Size (maSize, tenSize, maMon) VALUES
 ('SZ007', 'S', 'MON003'), ('SZ008', 'M', 'MON003'), ('SZ009', 'L', 'MON003'),
 ('SZ010', 'S', 'MON004'), ('SZ011', 'M', 'MON004'), ('SZ012', 'L', 'MON004'),
 ('SZ013', 'S', 'MON005'), ('SZ014', 'M', 'MON005'), ('SZ015', 'L', 'MON005'),
-('SZ016', 'Thường', 'MON006'),
-('SZ017', 'Thường', 'MON007'),
+('SZ016', N'Thường', 'MON006'),
+('SZ017', N'Thường', 'MON007'),
 ('SZ018', 'M', 'MON008'), ('SZ019', 'L', 'MON008'),
 ('SZ020', 'M', 'MON009'), ('SZ021', 'L', 'MON009'),
 ('SZ022', 'M', 'MON010'), ('SZ023', 'L', 'MON010'),
 ('SZ024', 'M', 'MON011'), ('SZ025', 'L', 'MON011'),
 ('SZ026', 'M', 'MON012'), ('SZ027', 'L', 'MON012'),
-('SZ028', 'Thường', 'MON013'),
-('SZ029', 'Thường', 'MON014'),
-('SZ030', 'Thường', 'MON015'),
-('SZ031', 'Thường', 'MON016'),
-('SZ032', 'Thường', 'MON017'),
+('SZ028', N'Thường', 'MON013'),
+('SZ029', N'Thường', 'MON014'),
+('SZ030', N'Thường', 'MON015'),
+('SZ031', N'Thường', 'MON016'),
+('SZ032', N'Thường', 'MON017'),
 ('SZ033', 'M', 'MON018'), ('SZ034', 'L', 'MON018');
 GO
 

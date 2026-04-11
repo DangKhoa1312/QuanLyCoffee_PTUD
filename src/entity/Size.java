@@ -1,6 +1,7 @@
 package entity;
 
-public class Size {
+public class Size implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private String maSize;
     private String tenSize; // S, M, L, Thường,...
     private String maMon;   // FK Mon

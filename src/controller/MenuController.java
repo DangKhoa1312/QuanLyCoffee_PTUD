@@ -52,7 +52,10 @@ public class MenuController {
         if (loaiMon == null) {
             return monDAO.findDangBan();
         }
-        return monDAO.findByLoai(loaiMon);
+        // Lọc thêm trangThai=true để tránh hiển thị món đã ngưng bán
+        List<Mon> ds = monDAO.findByLoai(loaiMon);
+        ds.removeIf(m -> !m.isTrangThai());
+        return ds;
     }
     
     /** Lấy tất cả món để quán lý */

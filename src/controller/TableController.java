@@ -62,6 +62,30 @@ public class TableController {
         return khuVucDAO.update(kv);
     }
 
+    /**
+     * Kiểm tra tên khu vực đã tồn tại chưa (bỏ qua chính mình khi edit).
+     * @param tenKhuVuc tên cần kiểm tra
+     * @param maKVHienTai mã khu vực đang edit (null nếu là thêm mới)
+     */
+    public boolean isTenKhuVucTrung(String tenKhuVuc, String maKVHienTai) {
+        for (KhuVuc kv : khuVucDAO.findAll()) {
+            if (maKVHienTai != null && kv.getMaKhuVuc().equals(maKVHienTai)) continue;
+            if (kv.getTenKhuVuc().trim().equalsIgnoreCase(tenKhuVuc.trim())) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Đếm số bàn đang CÓ KHÁCH trong khu vực.
+     */
+    public int countBanCoKhachByKhuVuc(String maKV) {
+        int count = 0;
+        for (Ban ban : banDAO.findByKhuVuc(maKV)) {
+            if (ban.getTrangThai() == TrangThaiBan.CO_KHACH) count++;
+        }
+        return count;
+    }
+
     // ═══════════════ BÀN ═══════════════
 
     public List<Ban> getAllBan() {

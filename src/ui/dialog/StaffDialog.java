@@ -122,12 +122,21 @@ public class StaffDialog extends JDialog {
         txtMaNV = addInputRow(form, gbc, "Mã Nhân Viên:", FontAwesome.ID_CARD_O);
         txtMaNV.setEditable(false); // Luôn không cho phép sửa mã
 
+        // Bug 7: Chỉ Quản Lý mới được sửa username
+        boolean isManager = SessionManager.isQuanLy();
         txtUsername = addInputRow(form, gbc, "Tên Đăng Nhập*:", FontAwesome.AT);
-        if (isEditMode)
-            txtUsername.setEditable(false);
+        if (isEditMode && !isManager) {
+            txtUsername.setEditable(false); // Nhân viên thường không sửa được username
+        }
 
-        if (!isEditMode) {
-            txtPassword = (JPasswordField) addInputRow(form, gbc, "Mật Khẩu:", FontAwesome.LOCK, true);
+        // Bug 6: Luôn có field mật khẩu — khi edit để trống = không đổi
+        String pwdLabel = isEditMode ? "Mật Khẩu Mới (trống = không đổi):" : "Mật Khẩu*:";
+        txtPassword = (JPasswordField) addInputRow(form, gbc, pwdLabel, FontAwesome.LOCK, true);
+        // Bug 7: Chỉ Quản Lý mới thấy và sửa được mật khẩu khi edit
+        if (isEditMode && !isManager) {
+            txtPassword.setEditable(false);
+            txtPassword.setEnabled(false);
+            txtPassword.setToolTipText("Chỉ quản lý mới được đổi mật khẩu");
         }
 
         addLabelRow(form, gbc, "Vai Trò:", FontAwesome.SHIELD);
@@ -343,8 +352,9 @@ public class StaffDialog extends JDialog {
         }
 
         LocalDate localBirth = birthDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        if (Period.between(localBirth, LocalDate.now()).getYears() < 18) {
-            JOptionPane.showMessageDialog(this, "Nhân viên phải đủ 18 tuổi!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+        int age = Period.between(localBirth, LocalDate.now()).getYears();
+        if (age < 18 || age > 70) {
+            JOptionPane.showMessageDialog(this, "Tuổi nhân viên phải từ 18 đến 70 tuổi!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
             return false;
         }
 
@@ -363,7 +373,8 @@ public class StaffDialog extends JDialog {
             return false;
         }
 
-        if (!isEditMode && ValidationUtils.isEmpty(new String(txtPassword.getPassword()))) {
+        // Bug 6: Khi thêm mới bắt buộc nhập mật khẩu; khi edit để trống = không đổi (OK)
+        if (!isEditMode && txtPassword != null && ValidationUtils.isEmpty(new String(txtPassword.getPassword()))) {
             JOptionPane.showMessageDialog(this, "Mật khẩu không được để trống!", "Cảnh báo",
                     JOptionPane.WARNING_MESSAGE);
             txtPassword.requestFocus();
@@ -389,8 +400,13 @@ public class StaffDialog extends JDialog {
             employee.setVaiTro((VaiTro) cbVaiTro.getSelectedItem());
             employee.setTrangThai((TrangThaiNhanVien) cbTrangThai.getSelectedItem());
 
-            if (!isEditMode && txtPassword != null) {
-                employee.setPasswordHash(new String(txtPassword.getPassword()));
+            // Bug 6: Khi thêm mới bắt buộc set password;
+            // Khi edit: chỉ set nếu có nhập (không để trống)
+            if (txtPassword != null && txtPassword.isEnabled()) {
+                String pwd = new String(txtPassword.getPassword()).trim();
+                if (!isEditMode || !pwd.isEmpty()) {
+                    employee.setPasswordHash(pwd);
+                }
             }
 
             confirmed = true;

@@ -17,16 +17,15 @@ public class DatBanDAOImpl implements DatBanDAO {
 
     private DatBan mapRow(ResultSet rs) throws SQLException {
         return new DatBan(
-            rs.getString("maDatBan"),
-            rs.getString("tenKhach"),
-            rs.getString("soDienThoai"),
-            rs.getInt("soLuongNguoi"),
-            TrangThaiDatBan.valueOf(rs.getString("trangThai")),
-            rs.getTimestamp("thoiGianDen") != null ? rs.getTimestamp("thoiGianDen").toLocalDateTime() : null,
-            rs.getTimestamp("thoiGianDat") != null ? rs.getTimestamp("thoiGianDat").toLocalDateTime() : null,
-            rs.getString("maBan"),
-            rs.getString("maHD")
-        );
+                rs.getString("maDatBan"),
+                rs.getString("tenKhach"),
+                rs.getString("soDienThoai"),
+                rs.getInt("soLuongNguoi"),
+                TrangThaiDatBan.valueOf(rs.getString("trangThai")),
+                rs.getTimestamp("thoiGianDen") != null ? rs.getTimestamp("thoiGianDen").toLocalDateTime() : null,
+                rs.getTimestamp("thoiGianDat") != null ? rs.getTimestamp("thoiGianDat").toLocalDateTime() : null,
+                rs.getString("maBan"),
+                rs.getString("maHD"));
     }
 
     @Override
@@ -87,7 +86,8 @@ public class DatBanDAOImpl implements DatBanDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maDatBan);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return mapRow(rs);
+            if (rs.next())
+                return mapRow(rs);
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findById: " + e.getMessage());
         }
@@ -99,8 +99,9 @@ public class DatBanDAOImpl implements DatBanDAO {
         List<DatBan> list = new ArrayList<>();
         String sql = "SELECT * FROM DatBan ORDER BY thoiGianDen DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findAll: " + e.getMessage());
         }
@@ -114,7 +115,8 @@ public class DatBanDAOImpl implements DatBanDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maBan);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findByBan: " + e.getMessage());
         }
@@ -126,8 +128,9 @@ public class DatBanDAOImpl implements DatBanDAO {
         List<DatBan> list = new ArrayList<>();
         String sql = "SELECT * FROM DatBan WHERE trangThai IN ('CHO_XAC_NHAN', 'DA_XAC_NHAN') ORDER BY thoiGianDen ASC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findConHieuLuc: " + e.getMessage());
         }

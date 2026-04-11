@@ -32,6 +32,7 @@ public class MenuDialog extends JDialog {
     private JComboBox<LoaiMon> cbLoai;
     private JCheckBox chkTrangThai;
     private JTextArea txtMoTa;
+    private JButton btnSave;
 
     private JTable tableSize;
     private DefaultTableModel modelSize;
@@ -180,13 +181,17 @@ public class MenuDialog extends JDialog {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 15));
         footer.setOpaque(false);
 
-        JButton btnSave = new JButton(" LƯU ");
+        btnSave = new JButton(" LƯU ");
         btnSave.setPreferredSize(new Dimension(160, 40));
         btnSave.setBackground(new Color(46, 204, 113));
         btnSave.setForeground(Color.WHITE);
         btnSave.setFont(new Font("Roboto", Font.BOLD, 13));
         btnSave.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 16, Color.WHITE));
         btnSave.addActionListener(e -> handleSave());
+        
+        if (isEditMode) {
+            btnSave.setEnabled(false);
+        }
 
         JButton btnCancel = new JButton("ĐÓNG");
         btnCancel.setPreferredSize(new Dimension(90, 40));
@@ -194,7 +199,64 @@ public class MenuDialog extends JDialog {
 
         footer.add(btnCancel);
         footer.add(btnSave);
+
+        setupDirtyCheck();
+
         return footer;
+    }
+
+    private void setupDirtyCheck() {
+        if (!isEditMode) return;
+        java.awt.event.ActionListener checkListener = e -> checkDirty();
+        javax.swing.event.DocumentListener docListener = new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { checkDirty(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { checkDirty(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { checkDirty(); }
+        };
+
+        txtTenMon.getDocument().addDocumentListener(docListener);
+        txtMoTa.getDocument().addDocumentListener(docListener);
+        cbLoai.addActionListener(checkListener);
+        chkTrangThai.addActionListener(checkListener);
+
+        modelSize.addTableModelListener(e -> checkDirty());
+    }
+
+    private void checkDirty() {
+        if (!isEditMode) {
+            btnSave.setEnabled(true);
+            return;
+        }
+
+        boolean dirty = false;
+        if (!txtTenMon.getText().trim().equals(dish.getTenMon() == null ? "" : dish.getTenMon())) dirty = true;
+        
+        if (cbLoai.getSelectedItem() != dish.getLoaiMon()) dirty = true;
+        if (chkTrangThai.isSelected() != dish.isTrangThai()) dirty = true;
+        
+        String oMoTa = dish.getMoTa() == null ? "" : dish.getMoTa();
+        if (!txtMoTa.getText().trim().equals(oMoTa)) dirty = true;
+
+        List<Size> originalSizes = controller.getSizeOfMon(dish.getMaMon());
+        if (originalSizes.size() != modelSize.getRowCount()) {
+            dirty = true;
+        } else {
+            for (int i = 0; i < modelSize.getRowCount(); i++) {
+                String tId = (String) modelSize.getValueAt(i, 0);
+                String tTen = (String) modelSize.getValueAt(i, 1);
+                boolean found = false;
+                for (Size s : originalSizes) {
+                    if (s.getMaSize().equals(tId) && s.getTenSize().equals(tTen)) {
+                        found = true; break;
+                    }
+                }
+                if (!found) {
+                    dirty = true; break;
+                }
+            }
+        }
+
+        btnSave.setEnabled(dirty);
     }
 
     private void fillData() {
