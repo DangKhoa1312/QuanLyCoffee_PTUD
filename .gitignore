@@ -29,3 +29,5 @@ Thumbs.db
 # --- Crash logs ---
 hs_err_pid*
 replay_pid*
+
+src/config/DatabaseConfig.java
