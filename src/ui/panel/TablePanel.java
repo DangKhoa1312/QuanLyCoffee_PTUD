@@ -246,15 +246,13 @@ public class TablePanel extends JPanel {
         this.currentKhuVuc = null;
         khuVucGrid.removeAll();
 
+        // Card "Mang về" luôn ở đầu tiên
+        khuVucGrid.add(createMangVeCard());
+
         List<KhuVuc> dsKV = tableController.getDanhSachKhuVuc();
         for (KhuVuc kv : dsKV) {
-            if ("KV003".equals(kv.getMaKhuVuc()) || kv.getTenKhuVuc().toLowerCase().contains("mang về")) {
-                continue; 
-            }
             khuVucGrid.add(createKhuVucCard(kv));
         }
-
-        khuVucGrid.add(createMangVeCard());
 
         khuVucGrid.revalidate();
         khuVucGrid.repaint();
@@ -451,7 +449,7 @@ public class TablePanel extends JPanel {
         cbKhuVucFilter.removeAllItems();
         List<KhuVuc> dsKV = tableController.getDanhSachKhuVuc();
         for (KhuVuc k : dsKV) {
-            if ("KV003".equals(k.getMaKhuVuc()) || k.getTenKhuVuc().toLowerCase().contains("mang về")) continue;
+            // Hiển thị tất cả khu vực đang hoạt động
             KhuVucItem item = new KhuVucItem(k);
             cbKhuVucFilter.addItem(item);
             if (k.getMaKhuVuc().equals(kv.getMaKhuVuc())) {

@@ -206,6 +206,60 @@ public class OrderManager {
         removeOrder(maDonNguon); // Đã có hàm saveStateToDisk() bên trong removeOrder
     }
 
+    /** 
+     * Tách món: chuyển 1 phần (hoặc toàn bộ) món từ đơn nguồn sang đơn đích. 
+     * transferData: Map<CartItem, Integer> với Key là item gốc bên nguồn, Value là số lượng cần chuyển.
+     */
+    public void tachMon(String maDonNguon, String maDonDich, Map<CartItem, Integer> transferData) {
+        List<CartItem> cartNguon = getCart(maDonNguon);
+        List<CartItem> cartDich = getCart(maDonDich);
+
+        for (Map.Entry<CartItem, Integer> entry : transferData.entrySet()) {
+            CartItem itemNguon = entry.getKey();
+            int slChuyen = entry.getValue();
+
+            if (slChuyen <= 0) continue;
+
+            // 1. Tạo item mới cho đơn đích (sao chép thuộc tính)
+            CartItem itemMoi = new CartItem(itemNguon.getMon(), itemNguon.getSize(), slChuyen, itemNguon.getDonGiaSize(), itemNguon.getGhiChu());
+            itemMoi.setDaPhucVu(itemNguon.isDaPhucVu()); 
+            for (CartItem.CartTopping ct : itemNguon.getToppings()) {
+                itemMoi.addTopping(ct.topping, ct.soLuong);
+            }
+
+            // Gộp vào đơn đích nếu đã có
+            boolean merged = false;
+            for (CartItem itemDich : cartDich) {
+                if (itemDich.isIdentical(itemMoi)) {
+                    itemDich.setSoLuong(itemDich.getSoLuong() + slChuyen);
+                    merged = true;
+                    break;
+                }
+            }
+            if (!merged) {
+                cartDich.add(itemMoi);
+            }
+
+            // 2. Trừ số lượng ở đơn nguồn
+            itemNguon.setSoLuong(itemNguon.getSoLuong() - slChuyen);
+        }
+
+        // 3. Xóa các món có số lượng <= 0 ở đơn nguồn
+        cartNguon.removeIf(item -> item.getSoLuong() <= 0);
+
+        carts.put(maDonNguon, cartNguon);
+        carts.put(maDonDich, cartDich);
+
+        // Cập nhật tổng tiền
+        DonHang dhDich = orders.get(maDonDich);
+        if (dhDich != null) dhDich.setTongTienTamTinh(tinhTongTien(maDonDich));
+
+        DonHang dhNguon = orders.get(maDonNguon);
+        if (dhNguon != null) dhNguon.setTongTienTamTinh(tinhTongTien(maDonNguon));
+
+        saveStateToDisk();
+    }
+
     /** Xóa tất cả đơn hàng (ví dụ khi đóng ca) */
     public void clearAll() {
         orders.clear();

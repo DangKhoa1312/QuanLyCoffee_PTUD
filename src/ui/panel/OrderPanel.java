@@ -350,16 +350,19 @@ public class OrderPanel extends JPanel {
         title.setForeground(new Color(113, 76, 52));
         topCart.add(title, BorderLayout.CENTER);
 
-        JButton btnTuyChonTop = new JButton("Chuyển / Ghép bàn");
-        btnTuyChonTop.setFont(new Font("Roboto", Font.BOLD, 12));
-        btnTuyChonTop.setBackground(new Color(245, 245, 245));
-        btnTuyChonTop.putClientProperty("JButton.buttonArc", 10);
-        btnTuyChonTop.putClientProperty("JButton.margin", new java.awt.Insets(5, 12, 5, 12));
-        btnTuyChonTop.putClientProperty("JButton.borderWidth", 1);
-        btnTuyChonTop.putClientProperty("JButton.borderColor", new Color(224, 224, 224)); // #e0e0e0
-        btnTuyChonTop.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnTuyChonTop.addActionListener(e -> moTuyChonBan());
-        topCart.add(btnTuyChonTop, BorderLayout.EAST);
+        JComboBox<String> cbTuyChonBan = new JComboBox<>(new String[] {"Tùy chọn Bàn...", "Chuyển bàn", "Ghép bàn", "Tách món"});
+        cbTuyChonBan.setFont(new Font("Roboto", Font.BOLD, 13));
+        cbTuyChonBan.setBackground(new Color(245, 245, 245));
+        cbTuyChonBan.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        cbTuyChonBan.setFocusable(false);
+        cbTuyChonBan.addActionListener(e -> {
+            int idx = cbTuyChonBan.getSelectedIndex();
+            if (idx > 0) {
+                handleMenuTuyChonBan(idx);
+                SwingUtilities.invokeLater(() -> cbTuyChonBan.setSelectedIndex(0));
+            }
+        });
+        topCart.add(cbTuyChonBan, BorderLayout.EAST);
 
         p.add(topCart, BorderLayout.NORTH);
 
@@ -485,6 +488,10 @@ public class OrderPanel extends JPanel {
         int selected = cartTable.getSelectedRow();
         if (selected >= 0) {
             int dataIndex = (int) cartModel.getValueAt(cartTable.convertRowIndexToModel(selected), 4);
+            if (cartData.get(dataIndex).isDaPhucVu()) {
+                JOptionPane.showMessageDialog(this, "Không thể xóa món đã thông báo cho bếp!\nVui lòng sử dụng tính năng Tách món nếu cần chuyển món qua bàn khác.", "Lỗi Xoá Món", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             cartData.remove(dataIndex);
             renderCartTable();
         } else {
@@ -610,9 +617,26 @@ public class OrderPanel extends JPanel {
         if (!newItems.isEmpty()) {
             showKitchenReceipt(newItems);
         }
+
+        // Thu gọn giỏ hàng: Gộp các món giống nhau (sau khi tất cả đều đã chuyển thành Đã Phục Vụ)
+        List<CartItem> newCartData = new ArrayList<>();
+        for (CartItem item : cartData) {
+            boolean merged = false;
+            for (CartItem existing : newCartData) {
+                if (existing.isIdentical(item)) {
+                    existing.setSoLuong(existing.getSoLuong() + item.getSoLuong());
+                    merged = true;
+                    break;
+                }
+            }
+            if (!merged) {
+                newCartData.add(item);
+            }
+        }
+        cartData = newCartData;
         
         if (performSaveOrder()) {
-            renderCartTable(); // Cập nhật lại UI để chuyển chữ (Mới) -> (Đã báo bếp)
+            renderCartTable(); // Cập nhật lại UI để chuyển chữ (Mới) -> (Đã báo bếp) và thể hiện sự được gộp
             JOptionPane.showMessageDialog(this, "Lưu đơn hàng thành công!");
             if (onBackAction != null) onBackAction.run();
         }
@@ -673,6 +697,14 @@ public class OrderPanel extends JPanel {
             return;
         }
 
+        // Kiểm tra xem đã có đồ ăn gọi chưa
+        for (CartItem item : cartData) {
+            if (item.isDaPhucVu()) {
+                JOptionPane.showMessageDialog(this, "Không thể hủy toàn bộ hóa đơn vì đã có món được chế biến (Đã báo bếp).\nVui lòng sử dụng tính năng Chuyển bàn hoặc Tách món nếu cần thiết.", "Lỗi Huỷ Đơn", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
         int xn = JOptionPane.showConfirmDialog(this,
                 "Bạn có CHẮC CHẮN muốn hủy đơn hàng này không?",
                 "Xác nhận hủy đơn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
@@ -689,7 +721,7 @@ public class OrderPanel extends JPanel {
         }
     }
 
-    private void moTuyChonBan() {
+    private void handleMenuTuyChonBan(int actionType) {
         if (currentDonHang == null || !"DANG_PHUC_VU".equals(currentDonHang.getTrangThai().name())) {
             JOptionPane.showMessageDialog(this, "Chỉ có thể đổi/gộp bàn cho đơn hàng đã [Gửi Bếp]!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
@@ -700,12 +732,20 @@ public class OrderPanel extends JPanel {
         }
         
         Window win = SwingUtilities.getWindowAncestor(this);
-        if (win instanceof JFrame) {
-            ui.dialog.TransferTableDialog dlg = new ui.dialog.TransferTableDialog((JFrame) win, currentBan, currentDonHang);
+        if (!(win instanceof JFrame)) return;
+
+        if (actionType == 1) { // Chuyển bàn
+            ui.dialog.TransferTableDialog dlg = new ui.dialog.TransferTableDialog((JFrame) win, currentBan, currentDonHang, 1);
             dlg.setVisible(true);
-            if (dlg.isSuccess()) {
-                if (onBackAction != null) onBackAction.run();
-            }
+            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+        } else if (actionType == 2) { // Ghép bàn
+            ui.dialog.TransferTableDialog dlg = new ui.dialog.TransferTableDialog((JFrame) win, currentBan, currentDonHang, 2);
+            dlg.setVisible(true);
+            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+        } else if (actionType == 3) { // Tách món
+            ui.dialog.TransferItemsDialog dlg = new ui.dialog.TransferItemsDialog((JFrame) win, currentBan, currentDonHang, cartData);
+            dlg.setVisible(true);
+            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
         }
     }
 }

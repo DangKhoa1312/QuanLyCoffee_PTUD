@@ -1,5 +1,3 @@
-
-
 USE QuanLyQuanCafe;
 GO
 
