@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface SizeDAO extends BaseDAO<Size, String> {
     List<Size> findByMon(String maMon);
+    List<Size> findAllByMon(String maMon);
+    boolean isSizeUsedInHoaDon(String maSize);
 }

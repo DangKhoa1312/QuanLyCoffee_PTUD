@@ -93,41 +93,31 @@ public class PriceController {
         return bgctDAO.insert(detail);
     }
 
+
+
     /**
-     * Lấy bảng giá đang có hiệu lực cao nhất (Winning Price List) cho POS.
-     * Điều kiện: hoatDong=true, ngayBatDau <= hôm nay, ngayKetThuc null hoặc >= hôm nay.
-     * Ưu tiên bảng có ngayBatDau mới nhất (findAll() đã ORDER BY ngayBatDau DESC).
+     * Xử lý trạng thái hiển thị (Logic thuần túy View, không đụng vào DB).
      */
-    public BangGia getWinningPriceList() {
+    public String getVisualStatus(BangGia bg) {
+        if (!bg.isHoatDong()) return "Đã ẩn";
+        if (!bg.isTrangThai()) return "Tạm ngưng";
+
         LocalDate today = LocalDate.now();
-        List<BangGia> all = bgDAO.findAll();
-        for (BangGia bg : all) {
-            if (bg.isHoatDong()
-                    && !today.isBefore(bg.getNgayBatDau())
-                    && (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc()))) {
-                return bg;
-            }
+        if (bg.getNgayKetThuc() != null && today.isAfter(bg.getNgayKetThuc())) {
+            return "Hết hạn";
         }
-        return null;
-    }
+        if (bg.getNgayBatDau() != null && today.isBefore(bg.getNgayBatDau())) {
+            return "Đang chờ";
+        }
 
-    /**
-     * Tự động cập nhật trạng thái bảng giá dựa trên ngày hiện tại.
-     * Logic: Chỉ có bảng giá Winner (mới nhất, hiệu lực hôm nay) mới có trangThai=1.
-     * Các bảng khác dù hợp lệ ngày nhưng sẽ là trangThai=0 (Standby).
-     * Cập nhật DB chỉ khi có thay đổi (giảm số lần ghi).
-     */
-    public void autoUpdateStatus() {
+        // Bảng giá đang trong thời hạn VÀ có bật trangThai
         BangGia winner = getWinningPriceList();
-        List<BangGia> all = bgDAO.findAll();
-
-        for (BangGia bg : all) {
-            boolean isWinner = (winner != null && bg.getMaBangGia().equals(winner.getMaBangGia()));
-            if (bg.isTrangThai() != isWinner) {
-                bg.setTrangThai(isWinner);
-                bgDAO.update(bg);
-            }
+        if (winner != null && bg.getMaBangGia().equals(winner.getMaBangGia())) {
+            return "Đang áp dụng";
         }
+        
+        // Cũng trong ngày hôm nay nhưng bị 1 bảng giá khác đề lên (winner khác)
+        return "Dự phòng";
     }
 
     /**
@@ -156,4 +146,23 @@ public class PriceController {
         }
         return details.size() >= totalSizes;
     }
+
+    /**
+     * Lấy bảng giá đang có hiệu lực cao nhất (Winning Price List) cho POS.
+     * Điều kiện: hoatDong=true, ngayBatDau <= hôm nay, ngayKetThuc null hoặc >= hôm nay.
+     * Ưu tiên bảng có ngayBatDau mới nhất (findAll() đã ORDER BY ngayBatDau DESC).
+     */
+    public BangGia getWinningPriceList() {
+        LocalDate today = LocalDate.now();
+        List<BangGia> all = bgDAO.findAll();
+        for (BangGia bg : all) {
+            if (bg.isHoatDong() && bg.isTrangThai()
+                    && !today.isBefore(bg.getNgayBatDau())
+                    && (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc()))) {
+                return bg;
+            }
+        }
+        return null;
+    }
 }
+// Trigger IDE rebuild: Eclipse please reload此文件

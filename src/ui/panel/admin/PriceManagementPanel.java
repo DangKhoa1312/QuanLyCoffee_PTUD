@@ -143,7 +143,6 @@ public class PriceManagementPanel extends JPanel {
     }
 
     private void loadData() {
-        controller.autoUpdateStatus();
         performSearch();
     }
 
@@ -239,28 +238,34 @@ public class PriceManagementPanel extends JPanel {
             if (!(v instanceof BangGia)) return lbl;
 
             BangGia bg = (BangGia) v;
-            java.time.LocalDate today = java.time.LocalDate.now();
+            String status = controller.getVisualStatus(bg);
+            lbl.setText("● " + status);
 
-            if (!bg.isHoatDong()) {
-                lbl.setForeground(new Color(150, 150, 150));
-                lbl.setText("● Đã ẩn");
-                lbl.setFont(new Font("Roboto", Font.ITALIC, 13));
-            } else if (bg.isTrangThai()) {
-                lbl.setForeground(new Color(39, 174, 96));
-                lbl.setText("● Đang áp dụng");
-                lbl.setFont(new Font("Roboto", Font.BOLD, 13));
-            } else if (bg.getNgayBatDau() != null && today.isBefore(bg.getNgayBatDau())) {
-                lbl.setForeground(new Color(52, 152, 219));
-                lbl.setText("● Đang chờ");
-                lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
-            } else if (bg.getNgayKetThuc() != null && today.isAfter(bg.getNgayKetThuc())) {
-                lbl.setForeground(new Color(231, 76, 60));
-                lbl.setText("● Hết hạn");
-                lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
-            } else {
-                lbl.setForeground(new Color(230, 126, 34));
-                lbl.setText("● Dự phòng");
-                lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
+            switch (status) {
+                case "Đã ẩn":
+                    lbl.setForeground(new Color(150, 150, 150));
+                    lbl.setFont(new Font("Roboto", Font.ITALIC, 13));
+                    break;
+                case "Đang áp dụng":
+                    lbl.setForeground(new Color(39, 174, 96)); // Xanh lá
+                    lbl.setFont(new Font("Roboto", Font.BOLD, 13));
+                    break;
+                case "Tạm ngưng":
+                    lbl.setForeground(new Color(189, 195, 199)); // Xám tro
+                    lbl.setFont(new Font("Roboto", Font.BOLD, 13));
+                    break;
+                case "Đang chờ":
+                    lbl.setForeground(new Color(52, 152, 219)); // Xanh dương
+                    lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
+                    break;
+                case "Hết hạn":
+                    lbl.setForeground(new Color(231, 76, 60)); // Đỏ
+                    lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
+                    break;
+                case "Dự phòng":
+                    lbl.setForeground(new Color(230, 126, 34)); // Cam
+                    lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
+                    break;
             }
             return lbl;
         }

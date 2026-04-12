@@ -101,7 +101,7 @@ public class MonDAOImpl implements MonDAO {
     @Override
     public List<Mon> findByLoai(LoaiMon loaiMon) {
         List<Mon> list = new ArrayList<>();
-        String sql = "SELECT * FROM Mon WHERE loaiMon=? ORDER BY maMon";
+        String sql = "SELECT * FROM Mon WHERE loaiMon=? AND trangThai=1 ORDER BY maMon";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, loaiMon.name());
             ResultSet rs = ps.executeQuery();
