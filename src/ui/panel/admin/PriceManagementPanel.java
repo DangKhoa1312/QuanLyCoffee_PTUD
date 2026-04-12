@@ -10,17 +10,22 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
 import java.awt.*;
 import java.util.List;
 
 /**
  * PriceManagementPanel: Quản lý danh mục các Bảng giá.
+ * Hỗ trợ: tìm kiếm, lọc trạng thái, hiện/ẩn bảng giá đã ẩn, Soft Delete.
  */
 public class PriceManagementPanel extends JPanel {
 
     private final PriceController controller = new PriceController();
     private JTable table;
     private DefaultTableModel tableModel;
+    private JTextField txtSearch;
+    private JComboBox<String> cbFilterStatus;
+    private JCheckBox chkShowHidden;
 
     private final Color PRIMARY_COLOR = new Color(41, 128, 185);
     private final Color BG_COLOR = new Color(245, 247, 250);
@@ -68,14 +73,45 @@ public class PriceManagementPanel extends JPanel {
         btnAdd.addActionListener(e -> handleAdd());
         pnlTitle.add(btnAdd, BorderLayout.EAST);
         pnlHeader.add(pnlTitle);
+        pnlHeader.add(Box.createVerticalStrut(15));
+
+        // 3. Filter Card
+        JPanel pnlFilter = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 12));
+        pnlFilter.setBackground(Color.WHITE);
+        pnlFilter.setBorder(new LineBorder(new Color(230, 230, 230), 1));
+
+        JLabel lblSearchIcon = new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY));
+        txtSearch = new JTextField(25);
+        txtSearch.setPreferredSize(new Dimension(0, 35));
+        txtSearch.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override public void keyReleased(java.awt.event.KeyEvent e) { performSearch(); }
+        });
+
+        cbFilterStatus = new JComboBox<>(new String[]{"Tất cả", "Hiệu lực", "Hết hiệu lực"});
+        cbFilterStatus.setPreferredSize(new Dimension(150, 35));
+        cbFilterStatus.addActionListener(e -> performSearch());
+
+        pnlFilter.add(lblSearchIcon);
+        pnlFilter.add(txtSearch);
+        pnlFilter.add(new JLabel("Trạng thái: "));
+        pnlFilter.add(cbFilterStatus);
+        pnlFilter.add(new JLabel("  |  "));
+
+        chkShowHidden = new JCheckBox("Hiện bảng giá đã ẩn");
+        chkShowHidden.setOpaque(false);
+        chkShowHidden.setFont(new Font("Roboto", Font.PLAIN, 13));
+        chkShowHidden.addActionListener(e -> performSearch());
+        pnlFilter.add(chkShowHidden);
+
+        pnlHeader.add(pnlFilter);
 
         add(pnlHeader, BorderLayout.NORTH);
     }
 
     private void initTable() {
-        String[] cols = {"Mã bảng giá", "Tên bảng giá", "Ngày bắt đầu", "Ngày kết thúc", "Trạng thái"};
+        String[] cols = {"Mã bảng giá", "Tên bảng giá", "Ngày bắt đầu", "Ngày kết thúc", "Trạng thái", "Thao tác"};
         tableModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+            @Override public boolean isCellEditable(int r, int c) { return c == 5; }
         };
 
         table = new JTable(tableModel);
@@ -84,52 +120,92 @@ public class PriceManagementPanel extends JPanel {
         table.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 14));
         table.getTableHeader().setBackground(new Color(236, 240, 241));
         table.setShowVerticalLines(false);
-        
+
         table.setDefaultRenderer(Object.class, new ZebraRenderer());
         table.getColumnModel().getColumn(4).setCellRenderer(new StatusRenderer());
-        
+        table.getColumnModel().getColumn(5).setCellRenderer(new ActionRenderer());
+        table.getColumnModel().getColumn(5).setCellEditor(new ActionEditor());
+        table.getColumnModel().getColumn(5).setPreferredWidth(180);
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
+        add(scroll, BorderLayout.CENTER);
+
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2 && table.getSelectedRow() != -1) {
-                    int row = table.getSelectedRow();
-                    // Re-fetch to ensure freshest data
-                    BangGia fresh = controller.getAllBangGia().stream()
-                        .filter(b -> b.getMaBangGia().equals(table.getValueAt(row, 0)))
-                        .findFirst().orElse(null);
-                    if (fresh != null) handleConfigPrices(fresh);
+                    BangGia current = (BangGia) tableModel.getValueAt(table.getSelectedRow(), 5);
+                    handleEdit(current);
                 }
             }
         });
-
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(new LineBorder(new Color(230,230,230)));
-        add(scroll, BorderLayout.CENTER);
     }
 
     private void loadData() {
+        controller.autoUpdateStatus();
+        performSearch();
+    }
+
+    private void performSearch() {
         tableModel.setRowCount(0);
-        controller.autoUpdateStatus(); // Kiểm tra tự động trước khi load
         List<BangGia> list = controller.getAllBangGia();
+
+        String kw = txtSearch != null ? txtSearch.getText().toLowerCase() : "";
+        int filterStatus = cbFilterStatus != null ? cbFilterStatus.getSelectedIndex() : 0;
+        boolean showHidden = chkShowHidden != null && chkShowHidden.isSelected();
+
         for (BangGia bg : list) {
+            // 1. Lọc theo Soft Delete
+            if (!showHidden && !bg.isHoatDong()) continue;
+
+            // 2. Lọc theo từ khóa (Mã hoặc Tên)
+            if (!kw.isEmpty()
+                    && !bg.getTenBangGia().toLowerCase().contains(kw)
+                    && !bg.getMaBangGia().toLowerCase().contains(kw)) {
+                continue;
+            }
+
+            // 3. Lọc theo trạng thái hiệu lực (trangThai)
+            if (filterStatus == 1 && !bg.isTrangThai()) continue;
+            if (filterStatus == 2 && bg.isTrangThai()) continue;
+
             tableModel.addRow(new Object[]{
                 bg.getMaBangGia(),
                 bg.getTenBangGia(),
                 bg.getNgayBatDau(),
                 bg.getNgayKetThuc() != null ? bg.getNgayKetThuc() : "Vô thời hạn",
-                bg.isTrangThai()
+                bg,   // col 4 → StatusRenderer dùng BangGia object
+                bg    // col 5 → ActionRenderer/Editor dùng BangGia object
             });
         }
     }
 
     private void handleAdd() {
+        BangGia win = controller.getWinningPriceList();
+        String sourceMaBG = null;
+
+        if (win != null) {
+            String[] options = {"Sử dụng giá hiện tại (Khuyên dùng)", "Bắt đầu từ bảng rỗng (0đ)"};
+            int choice = JOptionPane.showOptionDialog(this,
+                "Bạn muốn khởi tạo giá như thế nào?",
+                "Tạo Bảng Giá Mới",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+
+            if (choice == 0) sourceMaBG = win.getMaBangGia();
+            else if (choice == -1) return; // Hủy
+        }
+
         BangGia bg = new BangGia();
         bg.setMaBangGia(controller.generateNextMaBG());
         bg.setNgayBatDau(java.time.LocalDate.now());
-        bg.setTrangThai(true);
-        ui.dialog.PriceDetailDialog dlg = new ui.dialog.PriceDetailDialog((Frame) SwingUtilities.getWindowAncestor(this), bg, false);
+        bg.setTrangThai(false);
+        bg.setHoatDong(true);
+
+        ui.dialog.PriceMasterDialog dlg = new ui.dialog.PriceMasterDialog(
+            (Frame) SwingUtilities.getWindowAncestor(this), bg, false, sourceMaBG);
         dlg.setVisible(true);
-        loadData();
+        if (dlg.isConfirmed()) loadData();
     }
 
     // --- RENDERERS & EDITORS ---
@@ -137,7 +213,21 @@ public class PriceManagementPanel extends JPanel {
     class ZebraRenderer extends DefaultTableCellRenderer {
         @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
             Component comp = super.getTableCellRendererComponent(t, v, isS, hasF, r, c);
-            if (!isS) comp.setBackground(r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255));
+
+            // Lấy BangGia từ cột 4
+            Object raw = t.getModel().getValueAt(r, 4);
+            if (raw instanceof BangGia) {
+                BangGia bg = (BangGia) raw;
+                if (!bg.isHoatDong()) {
+                    comp.setForeground(new Color(160, 160, 160));
+                    if (!isS) comp.setBackground(new Color(245, 245, 245));
+                } else {
+                    comp.setForeground(t.getForeground());
+                    if (!isS) comp.setBackground(r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255));
+                }
+            } else {
+                if (!isS) comp.setBackground(r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255));
+            }
             return comp;
         }
     }
@@ -146,16 +236,120 @@ public class PriceManagementPanel extends JPanel {
         @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
             JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, v, isS, hasF, r, c);
             lbl.setHorizontalAlignment(CENTER);
-            boolean active = (boolean) v;
-            lbl.setForeground(active ? new Color(39, 174, 96) : Color.GRAY);
-            lbl.setText(active ? "● Đang áp dụng" : "● Tạm ngừng");
+            if (!(v instanceof BangGia)) return lbl;
+
+            BangGia bg = (BangGia) v;
+            java.time.LocalDate today = java.time.LocalDate.now();
+
+            if (!bg.isHoatDong()) {
+                lbl.setForeground(new Color(150, 150, 150));
+                lbl.setText("● Đã ẩn");
+                lbl.setFont(new Font("Roboto", Font.ITALIC, 13));
+            } else if (bg.isTrangThai()) {
+                lbl.setForeground(new Color(39, 174, 96));
+                lbl.setText("● Đang áp dụng");
+                lbl.setFont(new Font("Roboto", Font.BOLD, 13));
+            } else if (bg.getNgayBatDau() != null && today.isBefore(bg.getNgayBatDau())) {
+                lbl.setForeground(new Color(52, 152, 219));
+                lbl.setText("● Đang chờ");
+                lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
+            } else if (bg.getNgayKetThuc() != null && today.isAfter(bg.getNgayKetThuc())) {
+                lbl.setForeground(new Color(231, 76, 60));
+                lbl.setText("● Hết hạn");
+                lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
+            } else {
+                lbl.setForeground(new Color(230, 126, 34));
+                lbl.setText("● Dự phòng");
+                lbl.setFont(new Font("Roboto", Font.PLAIN, 13));
+            }
             return lbl;
         }
     }
 
-    private void handleConfigPrices(BangGia bg) {
-        ui.dialog.PriceDetailDialog dlg = new ui.dialog.PriceDetailDialog((Frame) SwingUtilities.getWindowAncestor(this), bg, true);
+    class ActionRenderer extends DefaultTableCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
+            Object raw = t.getModel().getValueAt(r, 4);
+            JPanel p = createActionPanel();
+            p.setBackground(isS ? t.getSelectionBackground() : (r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
+
+            if (raw instanceof BangGia && !((BangGia) raw).isHoatDong()) {
+                p.getComponent(0).setEnabled(false);
+                p.getComponent(1).setEnabled(false);
+            }
+            return p;
+        }
+    }
+
+    private JPanel createActionPanel() {
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 10));
+        p.setOpaque(true);
+        p.add(createBtn(FontAwesome.PENCIL, new Color(52, 152, 219)));
+        p.add(createBtn(FontAwesome.TRASH, new Color(231, 76, 60)));
+        return p;
+    }
+
+    class ActionEditor extends AbstractCellEditor implements TableCellEditor {
+        private JPanel p;
+        private BangGia current;
+
+        public ActionEditor() {
+            p = createActionPanel();
+            JButton btnEdit = (JButton) p.getComponent(0);
+            btnEdit.addActionListener(e -> { stopCellEditing(); handleEdit(current); });
+
+            JButton btnDel = (JButton) p.getComponent(1);
+            btnDel.addActionListener(e -> { stopCellEditing(); handleDelete(current); });
+        }
+
+        @Override public Component getTableCellEditorComponent(JTable t, Object v, boolean isS, int r, int c) {
+            current = (BangGia) v;
+            p.setBackground(t.getSelectionBackground());
+            p.getComponent(0).setEnabled(current.isHoatDong());
+            p.getComponent(1).setEnabled(current.isHoatDong());
+            return p;
+        }
+
+        @Override public Object getCellEditorValue() { return current; }
+    }
+
+    private JButton createBtn(FontAwesome icon, Color color) {
+        JButton b = new JButton(IconFontSwing.buildIcon(icon, 18, color));
+        b.setBorderPainted(false);
+        b.setContentAreaFilled(false);
+        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return b;
+    }
+
+    private void handleEdit(BangGia bg) {
+        ui.dialog.PriceMasterDialog dlg = new ui.dialog.PriceMasterDialog(
+            (Frame) SwingUtilities.getWindowAncestor(this), bg, true, null);
         dlg.setVisible(true);
-        loadData();
+        if (dlg.isConfirmed()) loadData();
+    }
+
+    private void handleDelete(BangGia bg) {
+        if (!bg.isHoatDong()) return;
+
+        // GUARD: không cho ẩn bảng giá duy nhất đang hoạt động
+        if (controller.countActivePriceLists() <= 1) {
+            JOptionPane.showMessageDialog(this,
+                "<html><b>Không thể ẩn bảng giá này!</b><br>" +
+                "Hệ thống bắt buộc phải có ít nhất một bảng giá hoạt động để bán hàng.</html>",
+                "Lỗi bảo mật", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int opt = JOptionPane.showConfirmDialog(this,
+            "<html>Ẩn bảng giá '<b>" + bg.getTenBangGia() + "</b>'?<br>" +
+            "Dữ liệu lịch sử vẫn được bảo toàn nhưng bảng giá sẽ không còn áp dụng được nữa.</html>",
+            "Xác nhận Ẩn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (opt == JOptionPane.YES_OPTION) {
+            if (controller.deleteBangGia(bg.getMaBangGia())) {
+                loadData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi khi ẩn bảng giá!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

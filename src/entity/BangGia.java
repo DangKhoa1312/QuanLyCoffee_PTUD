@@ -7,18 +7,22 @@ public class BangGia {
     private String    tenBangGia;
     private LocalDate ngayBatDau;
     private LocalDate ngayKetThuc;
-    private boolean   trangThai; // true = đang áp dụng
+    private boolean   trangThai; // true = đang áp dụng (theo thời gian)
+    private boolean   hoatDong;   // true = chưa bị xóa (Soft Delete)
 
-    public BangGia() {}
+    public BangGia() {
+        this.hoatDong = true;
+    }
 
     public BangGia(String maBangGia, String tenBangGia,
                    LocalDate ngayBatDau, LocalDate ngayKetThuc,
-                   boolean trangThai) {
+                   boolean trangThai, boolean hoatDong) {
         this.maBangGia   = maBangGia;
         this.tenBangGia  = tenBangGia;
         this.ngayBatDau  = ngayBatDau;
         this.ngayKetThuc = ngayKetThuc;
         this.trangThai   = trangThai;
+        this.hoatDong    = hoatDong;
     }
 
     public String getMaBangGia()          { return maBangGia; }
@@ -35,6 +39,9 @@ public class BangGia {
 
     public boolean isTrangThai()           { return trangThai; }
     public void    setTrangThai(boolean v) { this.trangThai = v; }
+
+    public boolean isHoatDong()           { return hoatDong; }
+    public void    setHoatDong(boolean v) { this.hoatDong = v; }
 
     @Override
     public String toString() {

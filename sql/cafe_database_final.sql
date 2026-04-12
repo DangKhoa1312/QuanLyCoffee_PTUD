@@ -114,11 +114,12 @@ CREATE TABLE BangGia (
     maBangGia   VARCHAR(20)   NOT NULL,
     tenBangGia  NVARCHAR(100) NOT NULL,
     ngayBatDau  DATE          NOT NULL,
-    ngayKetThuc DATE          NOT NULL,
+    ngayKetThuc DATE          NULL,         -- NULL = vô thời hạn
     trangThai   BIT           NOT NULL DEFAULT 1,
+    hoatDong    BIT           NOT NULL DEFAULT 1, -- Soft Delete: 0 = đã ẩn
 
-    CONSTRAINT PK_BangGia   PRIMARY KEY (maBangGia),
-    CONSTRAINT CHK_BG_Ngay  CHECK (ngayKetThuc >= ngayBatDau)
+    CONSTRAINT PK_BangGia   PRIMARY KEY (maBangGia)
+    -- CHK_BG_Ngay bỏ vì ngayKetThuc có thể NULL
 );
 GO
 

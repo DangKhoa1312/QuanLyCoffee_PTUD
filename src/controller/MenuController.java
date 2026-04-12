@@ -76,6 +76,11 @@ public class MenuController {
     public List<Size> getSizeOfMon(String maMon) {
         return sizeDAO.findByMon(maMon);
     }
+
+    /** Alias dùng cho PriceController/PriceMasterDialog */
+    public List<Size> getAllSizesOfMon(String maMon) {
+        return sizeDAO.findByMon(maMon);
+    }
     
     public Size getSizeById(String maSize) {
         return sizeDAO.findById(maSize);

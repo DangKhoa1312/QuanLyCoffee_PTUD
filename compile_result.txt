@@ -1,0 +1,8 @@
+﻿javac : Note: Some input files use or override a deprecated API.
+At line:1 char:151
++ ... ding ASCII; javac -encoding UTF-8 -cp "lib\flatlaf-3.4.1.jar;lib\jcal ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Note: Some inpu...deprecated API.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Note: Recompile with -Xlint:deprecation for details.

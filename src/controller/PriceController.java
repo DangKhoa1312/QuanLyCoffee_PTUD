@@ -32,11 +32,12 @@ public class PriceController {
         return bgDAO.insert(bg);
     }
 
+    /** Soft Delete: đặt hoatDong=0 */
     public boolean deleteBangGia(String maBG) {
         return bgDAO.delete(maBG);
     }
 
-    public String generateNextMaBG() { return IDGenerator.newMaBangGia(); }
+    public String generateNextMaBG()   { return IDGenerator.newMaBangGia(); }
     public String generateNextMaBGCT() { return IDGenerator.newMaBangGiaChiTiet(); }
 
     /**
@@ -67,14 +68,13 @@ public class PriceController {
 
     /**
      * Điều chỉnh giá hàng loạt theo phần trăm hoặc số tiền cố định.
-     * @param percent Tỉ lệ phần trăm (Ví dụ: 0.1 là tăng 10%, -0.05 là giảm 5%)
-     * @param fixedAmount Số tiền cố định cộng thêm (Ví dụ: 5000)
+     * @param percent     Tỉ lệ phần trăm (0.1 = tăng 10%, -0.05 = giảm 5%)
+     * @param fixedAmount Số tiền cộng thêm cố định (VD: 5000)
      */
     public void batchAdjustPrice(String maBG, double percent, double fixedAmount) {
         List<BangGiaChiTiet> details = bgctDAO.findByBangGia(maBG);
         for (BangGiaChiTiet d : details) {
             double newPrice = d.getGiaBan() * (1 + percent) + fixedAmount;
-            // Làm tròn đến hàng nghìn (Tùy chọn cho đẹp)
             newPrice = Math.round(newPrice / 1000.0) * 1000.0;
             d.setGiaBan(newPrice);
             bgctDAO.update(d);
@@ -82,45 +82,78 @@ public class PriceController {
     }
 
     /**
-     * Lấy giá chi tiết của một bảng giá cụ thể
+     * Lấy giá chi tiết của một bảng giá cụ thể.
      */
     public List<BangGiaChiTiet> getDetailsOf(String maBG) {
         return bgctDAO.findByBangGia(maBG);
     }
-    
+
     public boolean saveDetail(BangGiaChiTiet detail, boolean exists) {
         if (exists) return bgctDAO.update(detail);
         return bgctDAO.insert(detail);
     }
 
     /**
-     * Tự động cập nhật trạng thái bảng giá dựa trên ngày hiện tại.
-     * Kích hoạt bảng giá nếu hôm nay nằm trong [ngayBatDau, ngayKetThuc].
+     * Lấy bảng giá đang có hiệu lực cao nhất (Winning Price List) cho POS.
+     * Điều kiện: hoatDong=true, ngayBatDau <= hôm nay, ngayKetThuc null hoặc >= hôm nay.
+     * Ưu tiên bảng có ngayBatDau mới nhất (findAll() đã ORDER BY ngayBatDau DESC).
      */
-    public void autoUpdateStatus() {
+    public BangGia getWinningPriceList() {
         LocalDate today = LocalDate.now();
         List<BangGia> all = bgDAO.findAll();
-        
-        // Find all price lists covering today
-        List<BangGia> validToday = all.stream()
-                .filter(bg -> !today.isBefore(bg.getNgayBatDau()) && 
-                             (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc())))
-                .sorted((b1, b2) -> {
-                    int res = b2.getNgayBatDau().compareTo(b1.getNgayBatDau()); // Latest start date first
-                    if (res == 0) return b2.getMaBangGia().compareTo(b1.getMaBangGia()); // Then by ID
-                    return res;
-                })
-                .toList();
+        for (BangGia bg : all) {
+            if (bg.isHoatDong()
+                    && !today.isBefore(bg.getNgayBatDau())
+                    && (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc()))) {
+                return bg;
+            }
+        }
+        return null;
+    }
 
-        // The first list in the sorted list is the winner
-        String activeMaBG = validToday.isEmpty() ? null : validToday.get(0).getMaBangGia();
+    /**
+     * Tự động cập nhật trạng thái bảng giá dựa trên ngày hiện tại.
+     * Logic: Chỉ có bảng giá Winner (mới nhất, hiệu lực hôm nay) mới có trangThai=1.
+     * Các bảng khác dù hợp lệ ngày nhưng sẽ là trangThai=0 (Standby).
+     * Cập nhật DB chỉ khi có thay đổi (giảm số lần ghi).
+     */
+    public void autoUpdateStatus() {
+        BangGia winner = getWinningPriceList();
+        List<BangGia> all = bgDAO.findAll();
 
         for (BangGia bg : all) {
-            boolean shouldBeActive = bg.getMaBangGia().equals(activeMaBG);
-            if (bg.isTrangThai() != shouldBeActive) {
-                bg.setTrangThai(shouldBeActive);
+            boolean isWinner = (winner != null && bg.getMaBangGia().equals(winner.getMaBangGia()));
+            if (bg.isTrangThai() != isWinner) {
+                bg.setTrangThai(isWinner);
                 bgDAO.update(bg);
             }
         }
+    }
+
+    /**
+     * Đếm số lượng bảng giá đang hoạt động (chưa bị xóa mềm).
+     */
+    public long countActivePriceLists() {
+        return bgDAO.findAll().stream().filter(BangGia::isHoatDong).count();
+    }
+
+    /**
+     * Kiểm tra xem bảng giá có đủ giá cho tất cả món/size đang kinh doanh không.
+     * Dùng để cảnh báo khi có món mới chưa được định giá.
+     */
+    public boolean isBangGiaComplete(String maBG) {
+        dao.MonDAO monDAO = new dao.impl.MonDAOImpl();
+        List<entity.Mon> allMon = monDAO.findAll();
+        List<BangGiaChiTiet> details = getDetailsOf(maBG);
+
+        int totalSizes = 0;
+        for (entity.Mon m : allMon) {
+            if (m.isTrangThai()) {
+                List<Size> sizes = sizeDAO.findByMon(m.getMaMon());
+                // Size trong TARGET không có trangThai DB column → mặc định luôn active
+                totalSizes += sizes.size();
+            }
+        }
+        return details.size() >= totalSizes;
     }
 }
