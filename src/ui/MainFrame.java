@@ -284,7 +284,10 @@ public class MainFrame extends JFrame {
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setBorder(new EmptyBorder(0, 16, 0, 0));
-        btn.putClientProperty("FlatLaf.style", "arc: 10; borderWidth: 0; focusWidth: 0; hoverBackground: #714c34");
+        btn.putClientProperty("JButton.buttonArc", 10);
+        btn.putClientProperty("JButton.borderWidth", 0);
+        btn.putClientProperty("JButton.focusWidth", 0);
+        btn.putClientProperty("JButton.hoverBackground", new Color(113, 76, 52)); // #714c34
 
         btn.putClientProperty("full_text", text);
         sidebarButtons.add(btn);

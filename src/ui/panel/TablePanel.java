@@ -126,7 +126,8 @@ public class TablePanel extends JPanel {
         
         JButton btnRefresh = new JButton(" ↻ Làm mới");
         btnRefresh.setFont(new Font("Roboto", Font.BOLD, 14));
-        btnRefresh.putClientProperty("FlatLaf.style", "arc: 10; margin: 8,15,8,15");
+        btnRefresh.putClientProperty("JButton.buttonArc", 10);
+        btnRefresh.putClientProperty("JButton.margin", new java.awt.Insets(8, 15, 8, 15));
         btnRefresh.addActionListener(e -> loadKhuVucView());
         
         // Group refresh button on right side
@@ -178,7 +179,8 @@ public class TablePanel extends JPanel {
 
         JButton btnBack = new JButton("⬅ Quản Lý Khu Vực");
         btnBack.setFont(new Font("Roboto", Font.BOLD, 14));
-        btnBack.putClientProperty("FlatLaf.style", "arc: 10; margin: 8,15,8,15");
+        btnBack.putClientProperty("JButton.buttonArc", 10);
+        btnBack.putClientProperty("JButton.margin", new java.awt.Insets(8, 15, 8, 15));
         btnBack.addActionListener(e -> {
             loadKhuVucView();
             cardLayout.show(cardContainer, "KHU_VUC");
@@ -197,7 +199,9 @@ public class TablePanel extends JPanel {
         
         JButton btnRefresh = new JButton(" ↻ Làm mới");
         btnRefresh.setFont(new Font("Roboto", Font.BOLD, 14));
-        btnRefresh.putClientProperty("FlatLaf.style", "arc: 10; margin: 8,15,8,15; background: #eef2fb");
+        btnRefresh.putClientProperty("JButton.buttonArc", 10);
+        btnRefresh.putClientProperty("JButton.margin", new java.awt.Insets(8, 15, 8, 15));
+        btnRefresh.setBackground(new Color(238, 242, 251)); // #eef2fb
         btnRefresh.addActionListener(e -> {
             if(currentKhuVuc != null) loadBanViewInternal(currentKhuVuc);
         });
@@ -617,7 +621,8 @@ public class TablePanel extends JPanel {
      * Phải dùng CompoundBorder để duy trì khoảng cách nội dung (padding) không bị nhảy khi hover.
      */
     private void setCardStyleWithPadding(JPanel p, int arc, String hexColor, int padV, int padH) {
-        p.putClientProperty("FlatLaf.style", "arc: " + arc + "; border: 1,1,1,1," + hexColor + ";");
+        p.putClientProperty("JComponent.arc", arc);
+        p.setBorder(BorderFactory.createLineBorder(Color.decode(hexColor), 1));
         p.setBorder(BorderFactory.createCompoundBorder(
             p.getBorder(), // Đây là FlatRoundBorder do FlatLaf vừa tạo ra
             new EmptyBorder(padV, padH, padV, padH)

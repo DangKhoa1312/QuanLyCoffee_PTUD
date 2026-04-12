@@ -208,7 +208,7 @@ public class TableManagementPanel extends JPanel {
         // Info Card
         JPanel cardInfo = new JPanel(new BorderLayout());
         cardInfo.setBackground(Color.WHITE);
-        cardInfo.putClientProperty("FlatLaf.style", "arc: 10");
+        cardInfo.putClientProperty("JComponent.arc", 10);
         cardInfo.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         JPanel pnlInfoText = new JPanel(new GridLayout(3, 1, 0, 8));

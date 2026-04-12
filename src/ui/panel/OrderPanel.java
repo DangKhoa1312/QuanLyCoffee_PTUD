@@ -71,7 +71,9 @@ public class OrderPanel extends JPanel {
 
         JButton btnBack = new JButton("⬅ Quay lại");
         btnBack.setFont(new Font("Roboto", Font.BOLD, 15));
-        btnBack.putClientProperty("FlatLaf.style", "borderWidth:0; background:null; foreground: #666666");
+        btnBack.putClientProperty("JButton.borderWidth", 0);
+        btnBack.setBackground(null);
+        btnBack.setForeground(new Color(102, 102, 102)); // #666666
         btnBack.setFocusable(false);
         btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnBack.addActionListener(e -> {
@@ -143,9 +145,15 @@ public class OrderPanel extends JPanel {
         JToggleButton btn = new JToggleButton(title);
         btn.setFont(new Font("Roboto", Font.BOLD, 15));
         
-        btn.putClientProperty("FlatLaf.style", "arc: 15; margin: 12,20,12,20; borderWidth: 0;" +
-            "selectedBackground: #714c34; selectedForeground: #ffffff;" + 
-            "background: null; foreground: #4a3628; hoverBackground: #e8ecef; focusWidth: 0");
+        btn.putClientProperty("JButton.buttonArc", 15);
+        btn.putClientProperty("JButton.margin", new java.awt.Insets(12, 20, 12, 20));
+        btn.putClientProperty("JButton.borderWidth", 0);
+        btn.putClientProperty("JButton.selectedBackground", new Color(113, 76, 52)); // #714c34
+        btn.putClientProperty("JButton.selectedForeground", Color.WHITE);
+        btn.putClientProperty("JButton.hoverBackground", new Color(232, 236, 239)); // #e8ecef
+        btn.putClientProperty("JButton.focusWidth", 0);
+        btn.setBackground(null);
+        btn.setForeground(new Color(74, 54, 40)); // #4a3628
             
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -204,7 +212,8 @@ public class OrderPanel extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setPreferredSize(new Dimension(165, 230));
         card.setBackground(Color.WHITE);
-        card.putClientProperty("FlatLaf.style", "arc: 20; border: 1,1,1,1,#e8e8e8;"); 
+        card.putClientProperty("JComponent.arc", 20);
+        card.setBorder(BorderFactory.createLineBorder(new Color(232, 232, 232), 1)); // #e8e8e8 
         
         // Image Area
         JLabel lblImage = new JLabel();
@@ -216,7 +225,7 @@ public class OrderPanel extends JPanel {
         jiconfont.IconCode iconCode = isDisabled ? FontAwesome.BAN : FontAwesome.COFFEE; 
         Color iconColor = isDisabled ? new Color(200, 150, 150) : new Color(139, 90, 43);
         lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(iconCode, 50, iconColor));
-        lblImage.putClientProperty("FlatLaf.style", "arc: 20");
+        lblImage.putClientProperty("JComponent.arc", 20);
 
         JPanel pnlTop = new JPanel(new BorderLayout());
         pnlTop.setOpaque(false);
@@ -255,7 +264,10 @@ public class OrderPanel extends JPanel {
         // Nút Thêm
         JButton btnAdd = new JButton("+ Thêm");
         btnAdd.setFont(new Font("Roboto", Font.BOLD, 13));
-        btnAdd.putClientProperty("FlatLaf.style", "arc: 15; background: #f0f0f0; foreground: #333333; borderWidth: 0;");
+        btnAdd.putClientProperty("JButton.buttonArc", 15);
+        btnAdd.setBackground(new Color(240, 240, 240)); // #f0f0f0
+        btnAdd.setForeground(new Color(51, 51, 51)); // #333333
+        btnAdd.putClientProperty("JButton.borderWidth", 0);
         btnAdd.setCursor(isDisabled ? Cursor.getDefaultCursor() : Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAdd.setFocusable(false);
         btnAdd.setEnabled(!isDisabled);
@@ -325,7 +337,7 @@ public class OrderPanel extends JPanel {
     private JPanel createCartPanel() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
-        p.putClientProperty("FlatLaf.style", "arc: 20"); 
+        p.putClientProperty("JComponent.arc", 20); 
         p.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Tiêu đề
@@ -341,7 +353,10 @@ public class OrderPanel extends JPanel {
         JButton btnTuyChonTop = new JButton("Chuyển / Ghép bàn");
         btnTuyChonTop.setFont(new Font("Roboto", Font.BOLD, 12));
         btnTuyChonTop.setBackground(new Color(245, 245, 245));
-        btnTuyChonTop.putClientProperty("FlatLaf.style", "arc: 10; margin: 5,12,5,12; borderWidth:1; borderColor: #e0e0e0");
+        btnTuyChonTop.putClientProperty("JButton.buttonArc", 10);
+        btnTuyChonTop.putClientProperty("JButton.margin", new java.awt.Insets(5, 12, 5, 12));
+        btnTuyChonTop.putClientProperty("JButton.borderWidth", 1);
+        btnTuyChonTop.putClientProperty("JButton.borderColor", new Color(224, 224, 224)); // #e0e0e0
         btnTuyChonTop.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnTuyChonTop.addActionListener(e -> moTuyChonBan());
         topCart.add(btnTuyChonTop, BorderLayout.EAST);
@@ -409,7 +424,9 @@ public class OrderPanel extends JPanel {
         btnLuu.setFont(new Font("Roboto", Font.BOLD, 15));
         btnLuu.setBackground(new Color(39, 174, 96)); // Xanh lá
         btnLuu.setForeground(Color.WHITE);
-        btnLuu.putClientProperty("FlatLaf.style", "arc: 12; margin: 12,0,12,0; borderWidth:0");
+        btnLuu.putClientProperty("JButton.buttonArc", 12);
+        btnLuu.putClientProperty("JButton.margin", new java.awt.Insets(12, 0, 12, 0));
+        btnLuu.putClientProperty("JButton.borderWidth", 0);
         btnLuu.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLuu.addActionListener(e -> saveDonHang());
 
@@ -417,7 +434,9 @@ public class OrderPanel extends JPanel {
         btnThanhToan.setFont(new Font("Roboto", Font.BOLD, 15));
         btnThanhToan.setBackground(new Color(74, 54, 40)); // Nâu
         btnThanhToan.setForeground(Color.WHITE);
-        btnThanhToan.putClientProperty("FlatLaf.style", "arc: 12; margin: 12,0,12,0; borderWidth:0");
+        btnThanhToan.putClientProperty("JButton.buttonArc", 12);
+        btnThanhToan.putClientProperty("JButton.margin", new java.awt.Insets(12, 0, 12, 0));
+        btnThanhToan.putClientProperty("JButton.borderWidth", 0);
         btnThanhToan.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnThanhToan.addActionListener(e -> moThanhToan());
 
@@ -432,7 +451,9 @@ public class OrderPanel extends JPanel {
         btnClear.setFont(new Font("Roboto", Font.PLAIN, 12));
         btnClear.setBackground(new Color(250, 230, 230));
         btnClear.setForeground(new Color(200, 50, 50));
-        btnClear.putClientProperty("FlatLaf.style", "arc: 10; margin: 8,0,8,0; borderWidth:0");
+        btnClear.putClientProperty("JButton.buttonArc", 10);
+        btnClear.putClientProperty("JButton.margin", new java.awt.Insets(8, 0, 8, 0));
+        btnClear.putClientProperty("JButton.borderWidth", 0);
         btnClear.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnClear.addActionListener(e -> xoaMonKhoiGio());
 
@@ -440,7 +461,9 @@ public class OrderPanel extends JPanel {
         btnHuyDon.setFont(new Font("Roboto", Font.PLAIN, 12));
         btnHuyDon.setBackground(new Color(250, 230, 230));
         btnHuyDon.setForeground(new Color(200, 50, 50));
-        btnHuyDon.putClientProperty("FlatLaf.style", "arc: 10; margin: 8,0,8,0; borderWidth:0");
+        btnHuyDon.putClientProperty("JButton.buttonArc", 10);
+        btnHuyDon.putClientProperty("JButton.margin", new java.awt.Insets(8, 0, 8, 0));
+        btnHuyDon.putClientProperty("JButton.borderWidth", 0);
         btnHuyDon.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnHuyDon.addActionListener(e -> huyDonHangAction());
 
