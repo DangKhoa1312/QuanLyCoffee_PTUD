@@ -201,7 +201,7 @@ public class MainFrame extends JFrame {
 
         // Placeholders cho các module chưa build
         contentPanel.add(buildPlaceholder("🕐  Lịch Sử Ca Làm Việc",  "Module đang phát triển..."), "LICH_SU_CA");
-        contentPanel.add(buildPlaceholder("🫧  Quản Lý Topping",       "Module đang phát triển..."), "ADMIN_TOPPING");
+        contentPanel.add(new ui.panel.admin.ToppingManagementPanel(), "ADMIN_TOPPING");
         contentPanel.add(buildPlaceholder("⚗️  Công Thức Pha Chế",     "Module đang phát triển..."), "ADMIN_CONG_THUC");
     }
 

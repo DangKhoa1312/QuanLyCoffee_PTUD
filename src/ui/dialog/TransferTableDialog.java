@@ -17,19 +17,19 @@ public class TransferTableDialog extends JDialog {
     private final DonHang donHangHienTai;
     private final Ban banNguon;
     private final TableController tableController;
+    private final int mode; // 1: Chuyển Bàn, 2: Ghép Bàn
     private boolean success = false;
 
-    private JRadioButton rbChuyenBan;
-    private JRadioButton rbGopBan;
     private JComboBox<BanItem> cbDanhSachBan;
 
-    public TransferTableDialog(JFrame parent, Ban banNguon, DonHang donHang) {
-        super(parent, "Tùy Chọn Chuyển / Gộp Bàn", true);
+    public TransferTableDialog(JFrame parent, Ban banNguon, DonHang donHang, int mode) {
+        super(parent, mode == 1 ? "Tùy Chọn Chuyển Bàn" : "Tùy Chọn Ghép Bàn", true);
         this.banNguon = banNguon;
         this.donHangHienTai = donHang;
+        this.mode = mode;
         this.tableController = new TableController();
 
-        setSize(520, 320);
+        setSize(450, 220);
         setLocationRelativeTo(parent);
         setResizable(false);
 
@@ -48,41 +48,17 @@ public class TransferTableDialog extends JDialog {
         main.add(lblTitle, BorderLayout.NORTH);
 
         // ── Khung giữa: Thao tác ──
-        JPanel pnlCenter = new JPanel(new GridLayout(2, 1, 0, 10));
+        JPanel pnlCenter = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pnlCenter.setOpaque(false);
+        pnlCenter.setBorder(new EmptyBorder(10, 0, 10, 0));
 
-        JPanel pnlRadio = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        pnlRadio.setOpaque(false);
-
-        rbChuyenBan = new JRadioButton("Chuyển sang Bàn mới");
-        rbGopBan = new JRadioButton("Gộp vào Bàn khác");
-        rbChuyenBan.setOpaque(false);
-        rbGopBan.setOpaque(false);
-        rbChuyenBan.setFont(new Font("Roboto", Font.BOLD, 14));
-        rbGopBan.setFont(new Font("Roboto", Font.BOLD, 14));
-
-        ButtonGroup group = new ButtonGroup();
-        group.add(rbChuyenBan);
-        group.add(rbGopBan);
-        pnlRadio.add(rbChuyenBan);
-        pnlRadio.add(rbGopBan);
-        rbChuyenBan.setSelected(true);
-
-        rbChuyenBan.addActionListener(e -> loadComboData());
-        rbGopBan.addActionListener(e -> loadComboData());
-
-        pnlCenter.add(pnlRadio);
-
-        JPanel pnlCombo = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        pnlCombo.setOpaque(false);
-        pnlCombo.add(new JLabel("Chọn Bàn Đích:"));
+        pnlCenter.add(new JLabel("Chọn Bàn Đích:"));
         
         cbDanhSachBan = new JComboBox<>();
         cbDanhSachBan.setPreferredSize(new Dimension(250, 32));
         cbDanhSachBan.setFont(new Font("Roboto", Font.PLAIN, 14));
-        pnlCombo.add(cbDanhSachBan);
+        pnlCenter.add(cbDanhSachBan);
 
-        pnlCenter.add(pnlCombo);
         main.add(pnlCenter, BorderLayout.CENTER);
 
         // ── Bot Buttons ──
@@ -107,14 +83,14 @@ public class TransferTableDialog extends JDialog {
 
     private void loadComboData() {
         cbDanhSachBan.removeAllItems();
-        if (rbChuyenBan.isSelected()) {
+        if (mode == 1) { // Chuyển Bàn -> Bàn đích là bàn trống
             List<Ban> banTrongs = tableController.getBanTrong();
             for (Ban b : banTrongs) {
                 if (!"MANG_VE".equals(b.getMaBan())) {
                     cbDanhSachBan.addItem(new BanItem(b, " (Trống)"));
                 }
             }
-        } else {
+        } else if (mode == 2) { // Ghép bàn -> Bàn đích là bàn có khách
             List<Ban> banCoKhach = tableController.getBanDangCoKhach();
             for (Ban b : banCoKhach) {
                 if (!b.getMaBan().equals(banNguon.getMaBan()) && !"MANG_VE".equals(b.getMaBan())) {
@@ -132,10 +108,10 @@ public class TransferTableDialog extends JDialog {
         }
 
         try {
-            if (rbChuyenBan.isSelected()) {
+            if (mode == 1) {
                 tableController.chuyenBan(donHangHienTai.getMaDonHang(), banNguon.getMaBan(), selected.ban.getMaBan());
                 JOptionPane.showMessageDialog(this, "Đã CHUYỂN BÀN thành công!");
-            } else {
+            } else if (mode == 2) {
                 DonHang dhDich = tableController.getDonHangDangMo(selected.ban.getMaBan());
                 if (dhDich == null) {
                     JOptionPane.showMessageDialog(this, "Bàn đích không có đơn đang mở!");

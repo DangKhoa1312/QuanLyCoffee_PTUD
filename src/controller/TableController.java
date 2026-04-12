@@ -169,4 +169,30 @@ public class TableController {
         // Cập nhật trạng thái bàn nguồn trong DB
         banDAO.updateTrangThai(maBanNguon, TrangThaiBan.TRONG);
     }
+
+    /**
+     * Tách món từ bàn nguồn sang bàn đích (tạo đơn mới nếu bàn đích trống).
+     */
+    public void tachMon(String maDonNguon, String maBanNguon, String maBanDich, java.util.Map<dto.CartItem, Integer> transferData) {
+        DonHang dhDich = orderManager.getOrderByBan(maBanDich);
+        if (dhDich == null) {
+            // Lưu ý: Bàn đích trống -> tạo đơn mới
+            Ban banDichObj = banDAO.findById(maBanDich);
+            DonHang dhNguon = orderManager.getOrder(maDonNguon);
+            String maCa = dhNguon != null ? dhNguon.getMaCa() : "";
+            String maNV = dhNguon != null ? dhNguon.getMaNV() : "";
+            dhDich = orderManager.createOrder(banDichObj, maCa, maNV);
+            banDAO.updateTrangThai(maBanDich, TrangThaiBan.CO_KHACH);
+        }
+        
+        orderManager.tachMon(maDonNguon, dhDich.getMaDonHang(), transferData);
+
+        // Nếu bàn nguồn không còn món nào, hủy đơn nguồn và cập nhật bảng nguồn -> Trống
+        if (orderManager.getCart(maDonNguon).isEmpty()) {
+            DonHang dhNguon = orderManager.getOrder(maDonNguon);
+            if (dhNguon != null) dhNguon.setTrangThai(enums.TrangThaiDonHang.DA_HUY);
+            orderManager.removeOrder(maDonNguon);
+            banDAO.updateTrangThai(maBanNguon, TrangThaiBan.TRONG);
+        }
+    }
 }
