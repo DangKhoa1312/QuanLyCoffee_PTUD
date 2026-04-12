@@ -90,6 +90,7 @@ CREATE TABLE Size (
     maSize  VARCHAR(20)  NOT NULL,
     tenSize NVARCHAR(10) NOT NULL,
     maMon   VARCHAR(20)  NOT NULL,
+    trangThai BIT        NOT NULL DEFAULT 1, -- 1 = đang bán, 0 = tạm ngưng size này
 
     CONSTRAINT PK_Size      PRIMARY KEY (maSize),
     CONSTRAINT FK_Size_Mon  FOREIGN KEY (maMon) REFERENCES Mon(maMon) ON DELETE CASCADE,
