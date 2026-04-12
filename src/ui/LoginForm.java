@@ -183,6 +183,8 @@ public class LoginForm extends JFrame {
         } catch (Exception e) {
             System.err.println("FlatLaf init failed");
         }
+        // Đăng ký FontAwesome một lần duy nhất cho toàn ứng dụng
+        jiconfont.swing.IconFontSwing.register(jiconfont.icons.FontAwesome.getIconFont());
         SwingUtilities.invokeLater(() -> new LoginForm().setVisible(true));
     }
 }
