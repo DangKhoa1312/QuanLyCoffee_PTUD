@@ -116,17 +116,19 @@ public class PriceMasterDialog extends JDialog {
         gbc.insets = new Insets(4, 5, 4, 5);
         gbc.weightx = 1.0;
 
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         JLabel lblMa = new JLabel("Mã bảng giá:");
         lblMa.setFont(new Font("Roboto", Font.BOLD, 12));
         pnl.add(lblMa, gbc);
-        
+
         gbc.gridx = 1;
         JLabel lblTen = new JLabel("Tên bảng giá (*):");
         lblTen.setFont(new Font("Roboto", Font.BOLD, 12));
         pnl.add(lblTen, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         txtMa = new JTextField();
         txtMa.setEditable(false);
         txtMa.setPreferredSize(new Dimension(0, 32));
@@ -137,7 +139,8 @@ public class PriceMasterDialog extends JDialog {
         txtTen.setPreferredSize(new Dimension(0, 32));
         pnl.add(txtTen, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         gbc.insets = new Insets(10, 5, 4, 5);
         JLabel lblBD = new JLabel("Ngày bắt đầu:");
         lblBD.setFont(new Font("Roboto", Font.BOLD, 12));
@@ -148,7 +151,8 @@ public class PriceMasterDialog extends JDialog {
         lblKT.setFont(new Font("Roboto", Font.BOLD, 12));
         pnl.add(lblKT, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridy = 3;
         gbc.insets = new Insets(4, 5, 4, 5);
         dcBatDau = new JDateChooser();
         dcBatDau.setPreferredSize(new Dimension(0, 32));
@@ -161,7 +165,8 @@ public class PriceMasterDialog extends JDialog {
         dcKetThuc.setDateFormatString("yyyy-MM-dd");
         pnl.add(dcKetThuc, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.insets = new Insets(10, 5, 0, 5);
         chkStatus = new JCheckBox("Kích hoạt ngay (Áp dụng cho POS)");
@@ -178,8 +183,10 @@ public class PriceMasterDialog extends JDialog {
         });
 
         if (!bangGia.isHoatDong()) {
-            txtTen.setEditable(false); dcBatDau.setEnabled(false);
-            dcKetThuc.setEnabled(false); chkStatus.setEnabled(false);
+            txtTen.setEditable(false);
+            dcBatDau.setEnabled(false);
+            dcKetThuc.setEnabled(false);
+            chkStatus.setEnabled(false);
         }
 
         return pnl;
@@ -326,7 +333,8 @@ public class PriceMasterDialog extends JDialog {
         gbc.weightx = 1.0;
 
         // Clone row
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         JLabel lblCl = new JLabel("1. Sao chép giá từ:");
         lblCl.setFont(new Font("Roboto", Font.BOLD, 12));
         toolBox.add(lblCl, gbc);
@@ -337,7 +345,8 @@ public class PriceMasterDialog extends JDialog {
         cbCloneSource = new JComboBox<>();
         List<BangGia> lists = priceController.getAllBangGia();
         for (BangGia b : lists) {
-            if (!b.getMaBangGia().equals(bangGia.getMaBangGia()) && b.isHoatDong()) cbCloneSource.addItem(b);
+            if (!b.getMaBangGia().equals(bangGia.getMaBangGia()) && b.isHoatDong())
+                cbCloneSource.addItem(b);
         }
         cbCloneSource.setPreferredSize(new Dimension(0, 32));
         pnlClone.add(cbCloneSource, BorderLayout.CENTER);
@@ -364,7 +373,7 @@ public class PriceMasterDialog extends JDialog {
         GridBagConstraints gbcAdj = new GridBagConstraints();
         gbcAdj.fill = GridBagConstraints.HORIZONTAL;
         gbcAdj.insets = new Insets(0, 0, 0, 10);
-        
+
         gbcAdj.weightx = 0.2;
         pnlAdj.add(new JLabel("Tăng/Giảm %:"), gbcAdj);
         gbcAdj.weightx = 0.3;
@@ -379,7 +388,7 @@ public class PriceMasterDialog extends JDialog {
         txtFixed = new JTextField("0");
         txtFixed.setPreferredSize(new Dimension(0, 32));
         pnlAdj.add(txtFixed, gbcAdj);
-        
+
         toolBox.add(pnlAdj, gbc);
 
         gbc.gridy = 5;
@@ -390,8 +399,10 @@ public class PriceMasterDialog extends JDialog {
         toolBox.add(btnAdjust, gbc);
 
         if (!bangGia.isHoatDong()) {
-            cbCloneSource.setEnabled(false); btnClone.setEnabled(false);
-            txtPercent.setEditable(false); txtFixed.setEditable(false);
+            cbCloneSource.setEnabled(false);
+            btnClone.setEnabled(false);
+            txtPercent.setEditable(false);
+            txtFixed.setEditable(false);
             btnAdjust.setEnabled(false);
         }
 
@@ -402,7 +413,7 @@ public class PriceMasterDialog extends JDialog {
         JPanel f = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
         f.setOpaque(false);
 
-        JButton btnSave = new JButton(" LƯU TOÀN BỘ");
+        JButton btnSave = new JButton(" LƯU ");
         btnSave.setPreferredSize(new Dimension(150, 40));
         btnSave.setBackground(new Color(46, 204, 113));
         btnSave.setForeground(Color.WHITE);
@@ -466,7 +477,8 @@ public class PriceMasterDialog extends JDialog {
                 if (price == null && sourceDetails != null) {
                     for (BangGiaChiTiet sd : sourceDetails) {
                         if (sd.getMaSize().equals(s.getMaSize())) {
-                            if (sd.getGiaBan() > 0) price = sd.getGiaBan();
+                            if (sd.getGiaBan() > 0)
+                                price = sd.getGiaBan();
                             break;
                         }
                     }
@@ -614,16 +626,17 @@ public class PriceMasterDialog extends JDialog {
                     if (val == null || Double.parseDouble(val.toString()) <= 0) {
                         String tenMon = (String) model.getValueAt(i, 0);
                         String sizeMon = (String) model.getValueAt(i, 1);
-                        
+
                         // Bật bộ lọc Missing Price để sếp nhìn thấy ngay
                         chkMissingPrice.setSelected(true);
-                        
+
                         JOptionPane.showMessageDialog(this,
                                 "<html><b style='color:red'>LỖI DỮ LIỆU: TỒN TẠI MÓN CHƯA ĐỊNH GIÁ!</b><br><br>"
-                                        + "Món <b>[" + tenMon + " - " + sizeMon + "]</b> chưa được thiết lập giá bán.<br>"
+                                        + "Món <b>[" + tenMon + " - " + sizeMon
+                                        + "]</b> chưa được thiết lập giá bán.<br>"
                                         + "Hệ thống sẽ <b>không lưu</b> bất kỳ dữ liệu nào cho đến khi toàn bộ thực đơn được điền giá đầy đủ (Tránh bán 0đ).</html>",
                                 "Stop - Yêu cầu nhập giá", JOptionPane.ERROR_MESSAGE);
-                        
+
                         // Scroll tới item lỗi nếu vẫn còn hiển thị trên lưới
                         try {
                             int viewRow = table.convertRowIndexToView(i);
@@ -631,8 +644,9 @@ public class PriceMasterDialog extends JDialog {
                                 table.setRowSelectionInterval(viewRow, viewRow);
                                 table.scrollRectToVisible(table.getCellRect(viewRow, 0, true));
                             }
-                        } catch (Exception ignored) {}
-                        
+                        } catch (Exception ignored) {
+                        }
+
                         return; // Ngừng quá trình lưu
                     }
                 }
@@ -653,9 +667,10 @@ public class PriceMasterDialog extends JDialog {
                 Object val = model.getValueAt(i, 2);
                 Boolean dishActive = (Boolean) model.getValueAt(i, 4);
                 Boolean sizeActive = (Boolean) model.getValueAt(i, 5);
-                
+
                 // Bỏ qua nếu món bị ẩn VÀ không có giá
-                if ((dishActive == null || !dishActive || sizeActive == null || !sizeActive) && (val == null || Double.parseDouble(val.toString()) <= 0)) {
+                if ((dishActive == null || !dishActive || sizeActive == null || !sizeActive)
+                        && (val == null || Double.parseDouble(val.toString()) <= 0)) {
                     continue;
                 }
 
@@ -719,15 +734,18 @@ public class PriceMasterDialog extends JDialog {
             if (isInactive) {
                 comp.setForeground(COLOR_INACTIVE);
                 comp.setFont(FONT_ITALIC);
-                if (!isS) comp.setBackground(new Color(242, 242, 242));
+                if (!isS)
+                    comp.setBackground(new Color(242, 242, 242));
             } else if (isMissingPrice) {
                 comp.setForeground(new Color(192, 57, 43)); // Cảnh báo Đỏ đậm
                 comp.setFont(new Font("Roboto", Font.BOLD, 14));
-                if (!isS) comp.setBackground(new Color(255, 235, 238)); // Nền hồng nhạt báo lỗi
+                if (!isS)
+                    comp.setBackground(new Color(255, 235, 238)); // Nền hồng nhạt báo lỗi
             } else {
                 comp.setForeground(t.getForeground());
                 comp.setFont(FONT_NORMAL);
-                if (!isS) comp.setBackground(t.getBackground());
+                if (!isS)
+                    comp.setBackground(t.getBackground());
             }
 
             if (c == 2) {

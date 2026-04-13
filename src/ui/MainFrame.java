@@ -34,6 +34,7 @@ public class MainFrame extends JFrame {
     private ui.panel.OrderPanel     orderPanel;
     private ui.panel.InvoicePanel   invoicePanel;
     private ui.panel.StatisticPanel statisticPanel;
+    private ui.panel.admin.ShiftManagementPanel shiftManagementPanel;
 
     // ── Header ───────────────────────────────────────────────────────────────
     private JLabel lblClock;
@@ -199,8 +200,9 @@ public class MainFrame extends JFrame {
         contentPanel.add(new StaffManagementPanel(),                "ADMIN_NHAN_VIEN");
         contentPanel.add(new ui.panel.admin.WarehouseManagementPanel(), "ADMIN_KHO");
 
-        // Placeholders cho các module chưa build
-        contentPanel.add(buildPlaceholder("🕐  Lịch Sử Ca Làm Việc",  "Module đang phát triển..."), "LICH_SU_CA");
+        // Admin panels
+        shiftManagementPanel = new ui.panel.admin.ShiftManagementPanel();
+        contentPanel.add(shiftManagementPanel, "LICH_SU_CA");
 
         contentPanel.add(new ui.panel.admin.ToppingManagementPanel(), "ADMIN_TOPPING");
         contentPanel.add(new ui.panel.admin.RecipeManagementPanel(), "ADMIN_CONG_THUC");
@@ -228,6 +230,9 @@ public class MainFrame extends JFrame {
                 break;
             case "THONG_KE":
                 statisticPanel.loadCharts();
+                break;
+            case "LICH_SU_CA":
+                // shiftManagementPanel.loadData(); // Nếu muốn refresh mỗi lần vào
                 break;
             default:
                 break;
