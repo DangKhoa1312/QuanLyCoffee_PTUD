@@ -15,24 +15,27 @@ public class NguyenLieuDAOImpl implements NguyenLieuDAO {
     }
 
     private NguyenLieu mapRow(ResultSet rs) throws SQLException {
-        return new NguyenLieu(
+        NguyenLieu nl = new NguyenLieu(
             rs.getString("maNL"),
             rs.getString("tenNL"),
             rs.getString("donViTinh"),
             rs.getDouble("donGiaNhap"),
-            rs.getDate("ngayHetHan") != null ? rs.getDate("ngayHetHan").toLocalDate() : null
+            rs.getDate("ngayHetHan") != null ? rs.getDate("ngayHetHan").toLocalDate() : null,
+            rs.getString("loaiNL")
         );
+        return nl;
     }
 
     @Override
     public boolean insert(NguyenLieu nl) {
-        String sql = "INSERT INTO NguyenLieu(maNL, tenNL, donViTinh, donGiaNhap, ngayHetHan) VALUES(?,?,?,?,?)";
+        String sql = "INSERT INTO NguyenLieu(maNL, tenNL, donViTinh, donGiaNhap, ngayHetHan, loaiNL) VALUES(?,?,?,?,?,?)";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, nl.getMaNL());
             ps.setString(2, nl.getTenNL());
             ps.setString(3, nl.getDonViTinh());
             ps.setDouble(4, nl.getDonGiaNhap());
             ps.setDate(5, nl.getNgayHetHan() != null ? Date.valueOf(nl.getNgayHetHan()) : null);
+            ps.setNString(6, nl.getLoaiNL() != null ? nl.getLoaiNL() : "Chính");
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("NguyenLieuDAOImpl.insert: " + e.getMessage());
@@ -42,13 +45,14 @@ public class NguyenLieuDAOImpl implements NguyenLieuDAO {
 
     @Override
     public boolean update(NguyenLieu nl) {
-        String sql = "UPDATE NguyenLieu SET tenNL=?, donViTinh=?, donGiaNhap=?, ngayHetHan=? WHERE maNL=?";
+        String sql = "UPDATE NguyenLieu SET tenNL=?, donViTinh=?, donGiaNhap=?, ngayHetHan=?, loaiNL=? WHERE maNL=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, nl.getTenNL());
             ps.setString(2, nl.getDonViTinh());
             ps.setDouble(3, nl.getDonGiaNhap());
             ps.setDate(4, nl.getNgayHetHan() != null ? Date.valueOf(nl.getNgayHetHan()) : null);
-            ps.setString(5, nl.getMaNL());
+            ps.setNString(5, nl.getLoaiNL() != null ? nl.getLoaiNL() : "Chính");
+            ps.setString(6, nl.getMaNL());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("NguyenLieuDAOImpl.update: " + e.getMessage());

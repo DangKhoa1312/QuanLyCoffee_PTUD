@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "LoginForm",
+            "request": "launch",
+            "mainClass": "ui.LoginForm",
+            "projectName": "QuanLyCaFe_Final_d233ded8"
+        },
+        {
+            "type": "java",
             "name": "Run LoginForm",
             "request": "launch",
             "mainClass": "ui.LoginForm",
