@@ -166,7 +166,7 @@ public class LoginForm extends JFrame {
         left.add(content, BorderLayout.CENTER);
 
         // Copyright bottom
-        JLabel copy = new JLabel("© 2024 Coffee 11:01", SwingConstants.CENTER);
+        JLabel copy = new JLabel("© 2026 Coffee 11:01", SwingConstants.CENTER);
         copy.setFont(new Font("SansSerif", Font.PLAIN, 11));
         copy.setForeground(new Color(120, 95, 65));
         copy.setBorder(new EmptyBorder(0, 0, 18, 0));
