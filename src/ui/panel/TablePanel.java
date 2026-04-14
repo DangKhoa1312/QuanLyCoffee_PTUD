@@ -1,11 +1,14 @@
 package ui.panel;
 
 import controller.OrderController;
+import controller.ReservationController;
 import controller.TableController;
 import entity.Ban;
+import entity.DatBan;
 import entity.DonHang;
 import entity.KhuVuc;
 import enums.TrangThaiBan;
+import enums.TrangThaiDatBan;
 import ui.dialog.TakeawayListDialog;
 import utils.OrderManager;
 
@@ -23,6 +26,7 @@ public class TablePanel extends JPanel {
 
     private final TableController tableController;
     private final OrderController orderController;
+    private final ReservationController reservationController;
 
     private CardLayout cardLayout;
     private JPanel cardContainer;
@@ -51,8 +55,9 @@ public class TablePanel extends JPanel {
     public TablePanel() {
         tableController = new TableController();
         orderController = new OrderController();
+        reservationController = new ReservationController();
         setLayout(new BorderLayout());
-        setBackground(new Color(245, 247, 250)); // Nền xám nhạt theo design
+        setBackground(new Color(245, 247, 250));
         initUI();
         loadKhuVucView();
     }
@@ -567,14 +572,33 @@ public class TablePanel extends JPanel {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (clickListener == null) return;
 
-                // Bug 2: Phân nhánh xử lý đúng theo trạng thái bàn
                 if (ban.getTrangThai() == TrangThaiBan.CO_KHACH) {
-                    // Bàn đang có khách → lấy đơn hàng đang mở và tiếp tục phục vụ
+                    // Nếu có đặt bàn đã xác nhận -> hiện lại thông tin (yêu cầu của user)
+                    DatBan db = reservationController.findDatBanHienTaiCuaBan(ban.getMaBan());
+                    if (db != null && db.getTrangThai() == TrangThaiDatBan.DA_XAC_NHAN) {
+                        String thoiGian = db.getThoiGianDen() != null
+                            ? java.time.format.DateTimeFormatter.ofPattern("HH:mm  dd/MM/yyyy").format(db.getThoiGianDen()) : "?";
+                        String msg = "<html>"
+                            + "<b style='color:#2980B9;font-size:13px;'>ℹ️ THÔNG TIN ĐẶT BÀN (ĐÃ XÁC NHẬN)</b>"
+                            + "<hr style='border:1px solid #ddd;'/>"
+                            + "<table style='font-size:12px;'>"
+                            + "<tr><td><b>Khách:&nbsp;</b></td><td>" + db.getTenKhach() + "</td></tr>"
+                            + "<tr><td><b>SĐT:&nbsp;</b></td><td>" + (db.getSoDienThoai() != null ? db.getSoDienThoai() : "—") + "</td></tr>"
+                            + "<tr><td><b>Số người:&nbsp;</b></td><td>" + db.getSoLuongNguoi() + " người</td></tr>"
+                            + "<tr><td><b>Giờ đến:&nbsp;</b></td><td>" + thoiGian + "</td></tr>"
+                            + "</table>"
+                            + "<hr style='border:1px solid #ddd;'/>"
+                            + "Đang phục vụ... Nhấn OK để vào màn hình gọi món."
+                            + "</html>";
+                        JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(card), msg, "Thông tin đặt bàn", JOptionPane.INFORMATION_MESSAGE);
+                    }
+
+                    // Tiếp tục phục vụ (lấy đơn hàng đang mở)
                     DonHang dh = tableController.getDonHangDangMo(ban.getMaBan());
                     if (dh != null) {
                         clickListener.onTableClicked(ban, dh);
                     } else {
-                        // Không tìm được đơn trên RAM (có thể app restart) → tạo mới
+                        // Không tìm được đơn trên RAM (có thể app restart) -> tạo mới
                         int xn = JOptionPane.showConfirmDialog(
                             SwingUtilities.getWindowAncestor(card),
                             "Bàn đang có khách nhưng không tìm thấy đơn hàng đang mở.\nBạn có muốn tạo đơn mới cho bàn này không?",
@@ -584,17 +608,40 @@ public class TablePanel extends JPanel {
                         }
                     }
                 } else if (ban.getTrangThai() == TrangThaiBan.DA_DAT_TRUOC) {
-                    // Bàn đã đặt trước → thông báo, hỏi có mở không
+                    // Bàn đã đặt trước (chờ xác nhận)
+                    DatBan db = reservationController.findDatBanHienTaiCuaBan(ban.getMaBan());
+                    String msg;
+                    if (db != null) {
+                        String thoiGian = db.getThoiGianDen() != null
+                            ? java.time.format.DateTimeFormatter.ofPattern("HH:mm  dd/MM/yyyy").format(db.getThoiGianDen()) : "?";
+                        msg = "<html>"
+                            + "<b style='color:#E74C3C;font-size:13px;'>⚠️ BÀN ĐÃ ĐƯỢC ĐẶT TRƯỚC</b>"
+                            + "<hr style='border:1px solid #ddd;'/>"
+                            + "<table style='font-size:12px;'>"
+                            + "<tr><td><b>Khách:&nbsp;</b></td><td>" + db.getTenKhach() + "</td></tr>"
+                            + "<tr><td><b>SĐT:&nbsp;</b></td><td>" + (db.getSoDienThoai() != null ? db.getSoDienThoai() : "—") + "</td></tr>"
+                            + "<tr><td><b>Số người:&nbsp;</b></td><td>" + db.getSoLuongNguoi() + " người</td></tr>"
+                            + "<tr><td><b>Giờ đến:&nbsp;</b></td><td>" + thoiGian + "</td></tr>"
+                            + "</table>"
+                            + "<hr style='border:1px solid #ddd;'/>"
+                            + "<b>XÁC NHẬN KHÁCH ĐÃ ĐẾN VÀ MỞ BÀN?</b>"
+                            + "</html>";
+                    } else {
+                        msg = "Bàn \"" + ban.getSoBan() + "\" đã được đặt trước.\nBạn có muốn mở phục vụ cho bàn này không?";
+                    }
                     int xn = JOptionPane.showConfirmDialog(
-                        SwingUtilities.getWindowAncestor(card),
-                        "Bàn \"" + ban.getSoBan() + "\" đã được đặt trước.\nBạn có muốn mở phục vụ cho bàn này không?",
-                        "Bàn đã đặt trước", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                        SwingUtilities.getWindowAncestor(card), msg, "Bàn đã đặt trước", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
                     if (xn == JOptionPane.YES_OPTION) {
-                        DonHang dh = tableController.getDonHangDangMo(ban.getMaBan());
-                        clickListener.onTableClicked(ban, dh);
+                        if (db != null) {
+                            // Chuyển sang DA_XAC_NHAN -> Bàn tự động chuyển sang CO_KHACH
+                            reservationController.xacNhan(db.getMaDatBan());
+                        }
+                        // Mở màn hình gọi món
+                        clickListener.onTableClicked(ban, null);
                     }
                 } else {
-                    // Bàn TRONG hoặc trạng thái khác → mở bình thường
+                    // Bàn TRONG hoặc trạng thái khác -> mở bình thường
                     DonHang dh = tableController.getDonHangDangMo(ban.getMaBan());
                     clickListener.onTableClicked(ban, dh);
                 }
@@ -602,6 +649,44 @@ public class TablePanel extends JPanel {
         });
 
         return card;
+    }
+
+    public void simulateTableClick(String maBan) {
+        if (clickListener == null || maBan == null) return;
+        
+        Ban targetBan = null;
+        for (Ban b : tableController.getAllBan()) {
+            if (b.getMaBan().equals(maBan)) {
+                targetBan = b;
+                break;
+            }
+        }
+        
+        if (targetBan != null) {
+            DonHang dh = tableController.getDonHangDangMo(maBan);
+            // Chuyển sang màn hình đơn hàng
+            clickListener.onTableClicked(targetBan, dh);
+            
+            // Xong thì hiện thông tin đặt bàn
+            entity.DatBan db = reservationController.findDatBanHienTaiCuaBan(maBan);
+            if (db != null && db.getTrangThai() == enums.TrangThaiDatBan.DA_XAC_NHAN) {
+                String thoiGian = db.getThoiGianDen() != null
+                            ? java.time.format.DateTimeFormatter.ofPattern("HH:mm  dd/MM/yyyy").format(db.getThoiGianDen()) : "?";
+                String msg = "<html>"
+                            + "<b style='color:#2980B9;font-size:13px;'>ℹ️ THÔNG TIN ĐẶT BÀN (ĐÃ XÁC NHẬN)</b>"
+                            + "<hr style='border:1px solid #ddd;'/>"
+                            + "<table style='font-size:12px;'>"
+                            + "<tr><td><b>Khách:&nbsp;</b></td><td>" + db.getTenKhach() + "</td></tr>"
+                            + "<tr><td><b>SĐT:&nbsp;</b></td><td>" + (db.getSoDienThoai() != null ? db.getSoDienThoai() : "—") + "</td></tr>"
+                            + "<tr><td><b>Số người:&nbsp;</b></td><td>" + db.getSoLuongNguoi() + " người</td></tr>"
+                            + "<tr><td><b>Giờ đến:&nbsp;</b></td><td>" + thoiGian + "</td></tr>"
+                            + "</table>"
+                            + "<hr style='border:1px solid #ddd;'/>"
+                            + "Đang phục vụ... Nhấn OK để hiển thị thông tin gọi món."
+                            + "</html>";
+                JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this), msg, "Thông tin đặt bàn", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
     }
 
     public void refreshData() {

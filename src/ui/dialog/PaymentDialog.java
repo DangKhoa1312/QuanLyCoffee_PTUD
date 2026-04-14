@@ -1,10 +1,13 @@
 package ui.dialog;
 
 import controller.PaymentController;
+import controller.ReservationController;
 import dto.CartItem;
+import entity.DatBan;
 import entity.DonHang;
 import entity.HoaDon;
 import enums.HinhThucThanhToan;
+import enums.TrangThaiDatBan;
 import exception.AppException;
 import utils.OrderManager;
 import utils.PDFPrinter;
@@ -28,6 +31,7 @@ public class PaymentDialog extends JDialog {
 
     private final DonHang donHang;
     private final PaymentController paymentController;
+    private final ReservationController reservationController;
     private boolean isPaid = false;
 
     private JRadioButton rbTienMat;
@@ -45,6 +49,7 @@ public class PaymentDialog extends JDialog {
         super(parent, "Thanh Toán Đơn Hàng", true);
         this.donHang = donHang;
         this.paymentController = new PaymentController();
+        this.reservationController = new ReservationController();
         this.tongTienDon = donHang.getTongTienTamTinh();
         this.tongPhaiTra = tongTienDon;
 
@@ -268,6 +273,16 @@ public class PaymentDialog extends JDialog {
 
             HoaDon hd = paymentController.thanhToan(donHang, cart, tongPhaiTra, ht);
             isPaid = true;
+
+            // Tích hợp đặt bàn: nếu bàn này có đặt bàn hiệu lực thì gán maHD và đổi DA_DEN
+            if (donHang.getMaBan() != null && !donHang.getMaBan().equals("MANG_VE")) {
+                DatBan db = reservationController.findDatBanHienTaiCuaBan(donHang.getMaBan());
+                if (db != null &&
+                    (db.getTrangThai() == TrangThaiDatBan.DA_XAC_NHAN ||
+                     db.getTrangThai() == TrangThaiDatBan.DA_DEN)) {
+                    reservationController.daDen(db.getMaDatBan(), hd.getMaHD());
+                }
+            }
 
             JOptionPane.showMessageDialog(this, "Đã thanh toán thành công mã " + hd.getMaHD() + "!", "Thành Công", JOptionPane.INFORMATION_MESSAGE);
             dispose();

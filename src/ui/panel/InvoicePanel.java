@@ -114,11 +114,11 @@ public class InvoicePanel extends JPanel {
             tableModel.addRow(new Object[]{
                 hd.getMaHD(),
                 hd.getMaBan() != null ? hd.getMaBan() : "Mang về",
-                hd.getLoaiDon() != null ? hd.getLoaiDon().name() : "",
+                hd.getLoaiDon() != null ? hd.getLoaiDon().getLabel() : "",
                 nf.format(hd.getTongTienPhaiTra()) + " đ",
                 time,
-                hd.getHinhThucThanhToan() == null ? "" : hd.getHinhThucThanhToan().name(),
-                hd.getTrangThai().name(),
+                hd.getHinhThucThanhToan() == null ? "" : hd.getHinhThucThanhToan().getLabel(),
+                hd.getTrangThai().getLabel(),
                 hd.getMaNV()
             });
         }
