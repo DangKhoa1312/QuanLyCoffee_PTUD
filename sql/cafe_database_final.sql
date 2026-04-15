@@ -146,9 +146,11 @@ CREATE TABLE NguyenLieu (
     donViTinh   NVARCHAR(20)  NOT NULL,
     donGiaNhap  DECIMAL(10,2) NOT NULL DEFAULT 0,
     ngayHetHan  DATE          NULL,
+    loaiNL      NVARCHAR(20)  NOT NULL DEFAULT N'Chính',
 
-    CONSTRAINT PK_NguyenLieu  PRIMARY KEY (maNL),
-    CONSTRAINT CHK_NL_DonGia  CHECK (donGiaNhap >= 0)
+    CONSTRAINT PK_NguyenLieu   PRIMARY KEY (maNL),
+    CONSTRAINT CHK_NL_DonGia   CHECK (donGiaNhap >= 0),
+    CONSTRAINT CHK_NL_LoaiNL   CHECK (loaiNL IN (N'Chính', N'Phụ'))
 );
 GO
 
@@ -352,3 +354,19 @@ GO
 PRINT 'Thiet lap Database v10 Thanh Cong!';
 PRINT 'DonHang/ChiTietDonHang chi luu tren RAM (khong co trong DB)';
 PRINT 'ChiTietHoaDon/ChiTietHoaDonTopping duoc luu vao DB khi thanh toan';
+GO
+
+-- ================================================================
+-- ALTER SCRIPT: Thêm cột loaiNL vào bảng NguyenLieu (cho DB cũ)
+-- ================================================================
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('NguyenLieu') AND name = 'loaiNL')
+BEGIN
+    ALTER TABLE NguyenLieu ADD loaiNL NVARCHAR(20) NOT NULL DEFAULT N'Chính';
+    ALTER TABLE NguyenLieu ADD CONSTRAINT CHK_NL_LoaiNL CHECK (loaiNL IN (N'Chính', N'Phụ'));
+    PRINT N'Đã thêm cột loaiNL vào bảng NguyenLieu thành công!';
+END
+ELSE
+BEGIN
+    PRINT N'Cột loaiNL đã tồn tại trong bảng NguyenLieu.';
+END
+GO

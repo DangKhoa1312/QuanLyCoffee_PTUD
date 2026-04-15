@@ -164,8 +164,20 @@ public class KhoController {
     public boolean processNhapKho(PhieuNhap phieuNhap, List<ChiTietPhieuNhap> chiTietList) {
         if (!phieuNhapDAO.insert(phieuNhap)) return false;
 
-        for (ChiTietPhieuNhap ct : chiTietList) {
+        // Lấy max CTPN hiện tại 1 lần, rồi tăng dần cho mỗi item
+        int maxCTPN = 0;
+        List<ChiTietPhieuNhap> allCTPN = chiTietPNDAO.findAll();
+        for (ChiTietPhieuNhap existing : allCTPN) {
+            try {
+                int num = Integer.parseInt(existing.getMaCTPN().replace("CTPN", ""));
+                if (num > maxCTPN) maxCTPN = num;
+            } catch (NumberFormatException ignored) {}
+        }
+
+        for (int i = 0; i < chiTietList.size(); i++) {
+            ChiTietPhieuNhap ct = chiTietList.get(i);
             ct.setMaPN(phieuNhap.getMaPN());
+            ct.setMaCTPN(String.format("CTPN%03d", maxCTPN + i + 1));
             ct.tinhThanhTien();
             if (!chiTietPNDAO.insert(ct)) return false;
 
@@ -190,5 +202,15 @@ public class KhoController {
             }
         }
         return true;
+    }
+
+    /** Xuất kho: trừ số lượng tồn kho */
+    public boolean xuatKho(String maTonKho, double soLuong) {
+        return tonKhoDAO.updateSoLuong(maTonKho, -soLuong);
+    }
+
+    /** Nhập kho trả lại: cộng số lượng tồn kho */
+    public boolean nhapKhoTraLai(String maTonKho, double soLuong) {
+        return tonKhoDAO.updateSoLuong(maTonKho, soLuong);
     }
 }

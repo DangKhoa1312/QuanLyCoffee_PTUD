@@ -8,29 +8,34 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 /**
- * Dialog thêm/sửa Nguyên Liệu — phong cách giống StaffDialog (2 card, header màu).
+ * Dialog thêm/sửa/xem Nguyên Liệu.
  * Constructor nhận (Frame, NguyenLieu, boolean isEdit).
+ * Thêm constructor (Frame, NguyenLieu, boolean isEdit, boolean viewOnly) để chỉ xem.
  */
 public class NguyenLieuDialog extends JDialog {
 
-    private JTextField txtMaNL, txtTenNL, txtDonViTinh, txtDonGia, txtHanSD;
+    private JTextField txtMaNL, txtTenNL, txtDonViTinh, txtDonGia;
+    private JComboBox<String> cbLoaiNL;
     private boolean confirmed = false;
     private boolean deleted   = false;
     private final NguyenLieu current;
     private final boolean isEdit;
+    private final boolean viewOnly;
 
     private final Color PRIMARY_COLOR = new Color(41, 128, 185);
 
     public NguyenLieuDialog(Frame owner, NguyenLieu nl, boolean isEdit) {
-        super(owner, isEdit ? "Chi Tiết Nguyên Liệu" : "Thêm Nguyên Liệu Mới", true);
+        this(owner, nl, isEdit, false);
+    }
+
+    public NguyenLieuDialog(Frame owner, NguyenLieu nl, boolean isEdit, boolean viewOnly) {
+        super(owner, viewOnly ? "Xem Chi Tiết Nguyên Liệu" : (isEdit ? "Chi Tiết Nguyên Liệu" : "Thêm Nguyên Liệu Mới"), true);
         this.current = nl;
         this.isEdit = isEdit;
-        setSize(700, 580);
+        this.viewOnly = viewOnly;
+        setSize(750, 580);
         setLocationRelativeTo(owner);
         setResizable(false);
 
@@ -57,7 +62,9 @@ public class NguyenLieuDialog extends JDialog {
         title.setIcon(IconFontSwing.buildIcon(FontAwesome.LEAF, 24, Color.WHITE));
         header.add(title, BorderLayout.WEST);
 
-        JLabel breadcrumb = new JLabel("Kho > Nguyên liệu > " + (isEdit ? "Chi tiết" : "Thêm mới"));
+        String breadText = viewOnly ? "Kho > Nguyên liệu > Xem"
+                         : (isEdit ? "Kho > Nguyên liệu > Chi tiết" : "Kho > Nguyên liệu > Thêm mới");
+        JLabel breadcrumb = new JLabel(breadText);
         breadcrumb.setForeground(new Color(236, 240, 241));
         breadcrumb.setFont(new Font("Roboto", Font.ITALIC, 12));
         header.add(breadcrumb, BorderLayout.EAST);
@@ -89,38 +96,44 @@ public class NguyenLieuDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
+        Color readOnlyBg = new Color(240, 240, 240);
+
         // Mã NL
         addLabelRow(form, gbc, "Mã Nguyên Liệu:", FontAwesome.BARCODE);
         txtMaNL = new JTextField(20);
         txtMaNL.setPreferredSize(new Dimension(0, 35));
         txtMaNL.setEditable(false);
-        txtMaNL.setBackground(new Color(240, 240, 240));
+        txtMaNL.setBackground(readOnlyBg);
         form.add(txtMaNL, gbc); gbc.gridy++;
 
         // Tên NL
         addLabelRow(form, gbc, "Tên Nguyên Liệu*:", FontAwesome.TAG);
         txtTenNL = new JTextField(20);
         txtTenNL.setPreferredSize(new Dimension(0, 35));
+        if (viewOnly) { txtTenNL.setEditable(false); txtTenNL.setBackground(readOnlyBg); }
         form.add(txtTenNL, gbc); gbc.gridy++;
+
+        // Loại Nguyên Liệu
+        addLabelRow(form, gbc, "Loại Nguyên Liệu*:", FontAwesome.LIST);
+        cbLoaiNL = new JComboBox<>(new String[]{"Chính", "Phụ"});
+        cbLoaiNL.setPreferredSize(new Dimension(0, 35));
+        cbLoaiNL.setFont(new Font("Roboto", Font.PLAIN, 14));
+        if (viewOnly) { cbLoaiNL.setEnabled(false); }
+        form.add(cbLoaiNL, gbc); gbc.gridy++;
 
         // ĐV Tính
         addLabelRow(form, gbc, "Đơn Vị Tính*:", FontAwesome.BALANCE_SCALE);
         txtDonViTinh = new JTextField(20);
         txtDonViTinh.setPreferredSize(new Dimension(0, 35));
+        if (viewOnly) { txtDonViTinh.setEditable(false); txtDonViTinh.setBackground(readOnlyBg); }
         form.add(txtDonViTinh, gbc); gbc.gridy++;
 
         // Đơn giá nhập
         addLabelRow(form, gbc, "Đơn Giá Nhập*:", FontAwesome.MONEY);
         txtDonGia = new JTextField(20);
         txtDonGia.setPreferredSize(new Dimension(0, 35));
-        form.add(txtDonGia, gbc); gbc.gridy++;
-
-        // Hạn sử dụng
-        addLabelRow(form, gbc, "Hạn Sử Dụng (dd/MM/yyyy):", FontAwesome.CALENDAR);
-        txtHanSD = new JTextField(20);
-        txtHanSD.setPreferredSize(new Dimension(0, 35));
-        txtHanSD.setToolTipText("Để trống nếu không có hạn sử dụng");
-        form.add(txtHanSD, gbc);
+        if (viewOnly) { txtDonGia.setEditable(false); txtDonGia.setBackground(readOnlyBg); }
+        form.add(txtDonGia, gbc);
 
         card.add(form, BorderLayout.CENTER);
         body.add(card, BorderLayout.CENTER);
@@ -130,31 +143,42 @@ public class NguyenLieuDialog extends JDialog {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 12));
         footer.setOpaque(false);
 
-        if (isEdit) {
-            JButton btnDelete = new JButton("XÓA ");
-            btnDelete.setPreferredSize(new Dimension(120, 40));
-            btnDelete.setBackground(new Color(231, 76, 60));
-            btnDelete.setForeground(Color.WHITE);
-            btnDelete.setFont(new Font("Roboto", Font.BOLD, 13));
-            btnDelete.setIcon(IconFontSwing.buildIcon(FontAwesome.TRASH, 16, Color.WHITE));
-            btnDelete.addActionListener(e -> handleDelete());
-            footer.add(btnDelete);
+        if (viewOnly) {
+            // Chỉ có nút Đóng
+            JButton btnClose = new JButton("ĐÓNG");
+            btnClose.setPreferredSize(new Dimension(120, 40));
+            btnClose.setBackground(PRIMARY_COLOR);
+            btnClose.setForeground(Color.WHITE);
+            btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
+            btnClose.addActionListener(e -> dispose());
+            footer.add(btnClose);
+        } else {
+            if (isEdit) {
+                JButton btnDelete = new JButton("XÓA ");
+                btnDelete.setPreferredSize(new Dimension(120, 40));
+                btnDelete.setBackground(new Color(231, 76, 60));
+                btnDelete.setForeground(Color.WHITE);
+                btnDelete.setFont(new Font("Roboto", Font.BOLD, 13));
+                btnDelete.setIcon(IconFontSwing.buildIcon(FontAwesome.TRASH, 16, Color.WHITE));
+                btnDelete.addActionListener(e -> handleDelete());
+                footer.add(btnDelete);
+            }
+
+            JButton btnCancel = new JButton("HỦY BỎ");
+            btnCancel.setPreferredSize(new Dimension(100, 40));
+            btnCancel.setFont(new Font("Roboto", Font.PLAIN, 13));
+            btnCancel.addActionListener(e -> dispose());
+            footer.add(btnCancel);
+
+            JButton btnSave = new JButton(" LƯU DỮ LIỆU");
+            btnSave.setPreferredSize(new Dimension(150, 40));
+            btnSave.setBackground(new Color(46, 204, 113));
+            btnSave.setForeground(Color.WHITE);
+            btnSave.setFont(new Font("Roboto", Font.BOLD, 13));
+            btnSave.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 16, Color.WHITE));
+            btnSave.addActionListener(e -> handleSave());
+            footer.add(btnSave);
         }
-
-        JButton btnCancel = new JButton("HỦY BỎ");
-        btnCancel.setPreferredSize(new Dimension(100, 40));
-        btnCancel.setFont(new Font("Roboto", Font.PLAIN, 13));
-        btnCancel.addActionListener(e -> dispose());
-        footer.add(btnCancel);
-
-        JButton btnSave = new JButton(" LƯU DỮ LIỆU");
-        btnSave.setPreferredSize(new Dimension(150, 40));
-        btnSave.setBackground(new Color(46, 204, 113));
-        btnSave.setForeground(Color.WHITE);
-        btnSave.setFont(new Font("Roboto", Font.BOLD, 13));
-        btnSave.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 16, Color.WHITE));
-        btnSave.addActionListener(e -> handleSave());
-        footer.add(btnSave);
 
         add(footer, BorderLayout.SOUTH);
     }
@@ -172,12 +196,12 @@ public class NguyenLieuDialog extends JDialog {
     private void populateData() {
         if (current == null) return;
         txtMaNL.setText(current.getMaNL());
-        if (isEdit) {
+        if (isEdit || viewOnly) {
             txtTenNL.setText(current.getTenNL());
             txtDonViTinh.setText(current.getDonViTinh());
             txtDonGia.setText(String.valueOf((long) current.getDonGiaNhap()));
-            if (current.getNgayHetHan() != null) {
-                txtHanSD.setText(current.getNgayHetHan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            if (current.getLoaiNL() != null) {
+                cbLoaiNL.setSelectedItem(current.getLoaiNL());
             }
         }
     }
@@ -186,7 +210,7 @@ public class NguyenLieuDialog extends JDialog {
         String tenNL = txtTenNL.getText().trim();
         String donViTinh = txtDonViTinh.getText().trim();
         String donGiaStr = txtDonGia.getText().trim();
-        String hanSDStr = txtHanSD.getText().trim();
+        String loaiNL = (String) cbLoaiNL.getSelectedItem();
 
         if (tenNL.isEmpty() || donViTinh.isEmpty() || donGiaStr.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin (Tên, ĐV tính, Đơn giá).");
@@ -202,20 +226,10 @@ public class NguyenLieuDialog extends JDialog {
             return;
         }
 
-        LocalDate hanSD = null;
-        if (!hanSDStr.isEmpty()) {
-            try {
-                hanSD = LocalDate.parse(hanSDStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            } catch (DateTimeParseException e) {
-                JOptionPane.showMessageDialog(this, "Hạn sử dụng không hợp lệ. Định dạng: dd/MM/yyyy");
-                return;
-            }
-        }
-
         current.setTenNL(tenNL);
         current.setDonViTinh(donViTinh);
         current.setDonGiaNhap(donGia);
-        current.setNgayHetHan(hanSD);
+        current.setLoaiNL(loaiNL);
 
         confirmed = true;
         dispose();
