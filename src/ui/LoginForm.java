@@ -24,15 +24,15 @@ public class LoginForm extends JFrame {
     private JPasswordField txtPassword;
 
     // ── Color palette ──────────────────────────────────────────────────────
-    private static final Color COLOR_DARK      = new Color(28, 20, 14);     // nền tối cà phê
-    private static final Color COLOR_BROWN     = new Color(98, 60, 30);     // nâu đậm
-    private static final Color COLOR_CARAMEL   = new Color(188, 120, 60);   // caramel
-    private static final Color COLOR_CREAM     = new Color(255, 248, 235);  // kem nhạt
-    private static final Color COLOR_WARM_GRAY = new Color(120, 110, 100);  // xám ấm
-    private static final Color COLOR_ACCENT    = new Color(210, 140, 50);   // vàng cà phê
-    private static final Color COLOR_PANEL_BG  = new Color(250, 245, 238);  // nền form
-    private static final Color COLOR_FIELD_BG  = new Color(255, 252, 245);  // nền input
-    private static final Color COLOR_BORDER    = new Color(220, 200, 175);  // viền input
+    private static final Color COLOR_DARK = new Color(28, 20, 14); // nền tối cà phê
+    private static final Color COLOR_BROWN = new Color(98, 60, 30); // nâu đậm
+    private static final Color COLOR_CARAMEL = new Color(188, 120, 60); // caramel
+    private static final Color COLOR_CREAM = new Color(255, 248, 235); // kem nhạt
+    private static final Color COLOR_WARM_GRAY = new Color(120, 110, 100); // xám ấm
+    private static final Color COLOR_ACCENT = new Color(210, 140, 50); // vàng cà phê
+    private static final Color COLOR_PANEL_BG = new Color(250, 245, 238); // nền form
+    private static final Color COLOR_FIELD_BG = new Color(255, 252, 245); // nền input
+    private static final Color COLOR_BORDER = new Color(220, 200, 175); // viền input
 
     public LoginForm() {
         setTitle("COFFEE 11:01 — Đăng Nhập");
@@ -48,7 +48,8 @@ public class LoginForm extends JFrame {
 
     private void initUI() {
         JPanel root = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -67,7 +68,8 @@ public class LoginForm extends JFrame {
     // ── LEFT: Branding panel ───────────────────────────────────────────────
     private JPanel buildLeftPanel() {
         JPanel left = new JPanel(null) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
@@ -85,11 +87,13 @@ public class LoginForm extends JFrame {
 
                 // Hạt cà phê trang trí nhỏ
                 g2.setColor(new Color(210, 140, 50, 60));
-                int[][] dots = {{40,180},{280,80},{300,340},{80,380},{200,440}};
-                for (int[] d : dots) g2.fillOval(d[0]-5, d[1]-5, 10, 10);
+                int[][] dots = { { 40, 180 }, { 280, 80 }, { 300, 340 }, { 80, 380 }, { 200, 440 } };
+                for (int[] d : dots)
+                    g2.fillOval(d[0] - 5, d[1] - 5, 10, 10);
 
                 g2.dispose();
             }
+
             private void drawCircleDecor(Graphics2D g2, int x, int y, int size, Color c) {
                 g2.setColor(c);
                 g2.fillOval(x, y, size, size);
@@ -100,7 +104,8 @@ public class LoginForm extends JFrame {
 
         // Logo icon (giả lập bằng JLabel text lớn với nền tròn)
         JPanel iconWrap = new JPanel(new GridBagLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 GradientPaint gp = new GradientPaint(0, 0, COLOR_CARAMEL, getWidth(), getHeight(), COLOR_ACCENT);
@@ -112,7 +117,7 @@ public class LoginForm extends JFrame {
         iconWrap.setOpaque(false);
         iconWrap.setPreferredSize(new Dimension(90, 90));
         JLabel iconLbl = new JLabel("☕");
-        iconLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        iconLbl.setFont(new Font("Roboto", Font.PLAIN, 40));
         iconWrap.add(iconLbl);
 
         JLabel lblBrand = new JLabel("COFFEE 11:01");
@@ -120,7 +125,8 @@ public class LoginForm extends JFrame {
         lblBrand.setForeground(COLOR_CREAM);
         lblBrand.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel lblTagline = new JLabel("<html><div style='text-align:center;'>Hệ thống quản lý<br>quán cà phê</div></html>");
+        JLabel lblTagline = new JLabel(
+                "<html><div style='text-align:center;'>Hệ thống quản lý<br>quán cà phê</div></html>");
         lblTagline.setFont(new Font("SansSerif", Font.PLAIN, 13));
         lblTagline.setForeground(new Color(200, 175, 140));
         lblTagline.setHorizontalAlignment(SwingConstants.CENTER);
@@ -132,7 +138,7 @@ public class LoginForm extends JFrame {
         sep.setMaximumSize(new Dimension(100, 1));
 
         // Feature bullets
-        String[] features = {"☑  Quản lý bàn & đặt chỗ", "☑  Quản lý đơn hàng", "☑  Báo cáo doanh thu"};
+        String[] features = { "☑  Quản lý bàn & đặt chỗ", "☑  Quản lý đơn hàng", "☑  Báo cáo doanh thu" };
         JPanel featuresPanel = new JPanel();
         featuresPanel.setLayout(new BoxLayout(featuresPanel, BoxLayout.Y_AXIS));
         featuresPanel.setOpaque(false);
@@ -253,8 +259,13 @@ public class LoginForm extends JFrame {
         btnClose.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnClose.addActionListener(e -> System.exit(0));
         btnClose.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btnClose.setForeground(new Color(180, 60, 40)); }
-            public void mouseExited(MouseEvent e) { btnClose.setForeground(COLOR_WARM_GRAY); }
+            public void mouseEntered(MouseEvent e) {
+                btnClose.setForeground(new Color(180, 60, 40));
+            }
+
+            public void mouseExited(MouseEvent e) {
+                btnClose.setForeground(COLOR_WARM_GRAY);
+            }
         });
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.TRAILING, 10, 6));
@@ -274,7 +285,8 @@ public class LoginForm extends JFrame {
         JLabel lbl = new JLabel(text);
         lbl.setFont(new Font("SansSerif", Font.BOLD, 12));
         lbl.setForeground(new Color(80, 60, 40));
-        lbl.setAlignmentX(LEFT_ALIGNMENT);
+        lbl.setAlignmentX(CENTER_ALIGNMENT);
+        lbl.setHorizontalAlignment(SwingConstants.LEFT);
         lbl.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
         return lbl;
     }
@@ -291,7 +303,8 @@ public class LoginForm extends JFrame {
 
     private JButton makeLoginButton() {
         JButton btn = new JButton("ĐĂNG NHẬP") {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 if (getModel().isPressed()) {
@@ -308,7 +321,7 @@ public class LoginForm extends JFrame {
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 // Shadow line
                 g2.setColor(new Color(0, 0, 0, 30));
-                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 10, 10);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -326,7 +339,8 @@ public class LoginForm extends JFrame {
     }
 
     /** Cho phép kéo cửa sổ khi undecorated */
-    private final int[] dragOffset = {0, 0};
+    private final int[] dragOffset = { 0, 0 };
+
     private void addDragSupport(JPanel panel) {
         panel.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
@@ -365,9 +379,10 @@ public class LoginForm extends JFrame {
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE,
                         null,
-                        new String[]{"Mở Ca", "Bỏ Qua"},
+                        new String[] { "Mở Ca", "Bỏ Qua" },
                         "Bỏ Qua");
-                if (choice == 0) showShiftOpenDialog();
+                if (choice == 0)
+                    showShiftOpenDialog();
                 openMainFrame();
             }
 
@@ -375,7 +390,8 @@ public class LoginForm extends JFrame {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi đăng nhập", JOptionPane.WARNING_MESSAGE);
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Lỗi kết nối cơ sở dữ liệu!", "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi kết nối cơ sở dữ liệu!", "Lỗi hệ thống",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
