@@ -34,6 +34,7 @@ public class PhieuNhapDialog extends JDialog {
     private JComboBox<String> cbNCC;
     private JComboBox<String> cbNguyenLieu;
     private JTextField txtSoLuong, txtDonGia;
+    private JLabel lblDonViTinh;
     private JDateChooser dateChooserHetHan;
     private JTable tableItems;
     private DefaultTableModel modelItems;
@@ -112,10 +113,16 @@ public class PhieuNhapDialog extends JDialog {
         cbNguyenLieu.setPreferredSize(new Dimension(220, 32));
         row1.add(cbNguyenLieu);
 
-        row1.add(createLabel("  SL:"));
+        row1.add(createLabel("  Số lượng:"));
         txtSoLuong = new JTextField(6);
         txtSoLuong.setPreferredSize(new Dimension(0, 32));
         row1.add(txtSoLuong);
+
+        lblDonViTinh = new JLabel("");
+        lblDonViTinh.setFont(new Font("Roboto", Font.BOLD, 13));
+        lblDonViTinh.setForeground(new Color(41, 128, 185));
+        lblDonViTinh.setPreferredSize(new Dimension(80, 32));
+        row1.add(lblDonViTinh);
 
         row1.add(createLabel("  Đơn giá:"));
         txtDonGia = new JTextField(8);
@@ -231,12 +238,21 @@ public class PhieuNhapDialog extends JDialog {
 
         // Auto-fill đơn giá khi chọn nguyên liệu
         cbNguyenLieu.addActionListener(e -> autoFillDonGia());
+
+        // Set initial value
+        if (!listNL.isEmpty()) {
+            autoFillDonGia();
+        }
     }
 
     private void autoFillDonGia() {
         int idx = cbNguyenLieu.getSelectedIndex();
         if (idx >= 0 && idx < listNL.size()) {
             txtDonGia.setText(String.valueOf((long) listNL.get(idx).getDonGiaNhap()));
+            String dvt = listNL.get(idx).getDonViTinh();
+            lblDonViTinh.setText(dvt != null ? dvt : "");
+        } else {
+            lblDonViTinh.setText("");
         }
     }
 

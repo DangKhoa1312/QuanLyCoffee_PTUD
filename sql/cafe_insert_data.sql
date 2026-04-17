@@ -128,15 +128,15 @@ INSERT INTO BangGiaChiTiet (maBGCT, giaBan, maSize, maBangGia) VALUES
 GO
 
 -- 9. NguyenLieu
-INSERT INTO NguyenLieu (maNL, tenNL, donViTinh, donGiaNhap, ngayHetHan) VALUES
-('NL001', N'Trà đen',          'gram',  150,   NULL),
-('NL002', N'Sữa tươi',         'ml',    25,    '2026-04-01'),
-('NL003', N'Sữa đặc',          'gram',  50,    '2026-06-01'),
-('NL004', N'Đường',            'gram',  20,    NULL),
-('NL005', N'Trân châu đen',    'gram',  200,   '2026-03-30'),
-('NL006', N'Bột matcha',       'gram',  800,   '2026-12-31'),
-('NL007', N'Cà phê rang xay',  'gram',  300,   NULL),
-('NL008', N'Đá viên',          'gram',  5,     NULL);
+INSERT INTO NguyenLieu (maNL, tenNL, donViTinh, donGiaNhap, ngayHetHan, donViDongGoi) VALUES
+('NL001', N'Trà đen',          'g',   150,   NULL,            N'Gói'),
+('NL002', N'Sữa tươi',         'ml',  25,    '2026-04-01',    N'Hộp'),
+('NL003', N'Sữa đặc',          'g',   50,    '2026-06-01',    N'Hộp'),
+('NL004', N'Đường',            'g',   20,    NULL,            N'Bịch'),
+('NL005', N'Trân châu đen',    'g',   200,   '2026-03-30',    N'Gói'),
+('NL006', N'Bột matcha',       'g',   800,   '2026-12-31',    N'Hộp'),
+('NL007', N'Cà phê rang xay',  'g',   300,   NULL,            N'Bịch'),
+('NL008', N'Đá viên',          'g',   5,     NULL,            N'Bịch');
 GO
 
 -- 10. DinhMucNguyenLieu

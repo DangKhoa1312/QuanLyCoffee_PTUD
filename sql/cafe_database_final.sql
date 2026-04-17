@@ -141,16 +141,15 @@ GO
 
 -- 9. NguyenLieu
 CREATE TABLE NguyenLieu (
-    maNL        VARCHAR(20)   NOT NULL,
-    tenNL       NVARCHAR(100) NOT NULL,
-    donViTinh   NVARCHAR(20)  NOT NULL,
-    donGiaNhap  DECIMAL(10,2) NOT NULL DEFAULT 0,
-    ngayHetHan  DATE          NULL,
-    loaiNL      NVARCHAR(20)  NOT NULL DEFAULT N'Chính',
+    maNL         VARCHAR(20)   NOT NULL,
+    tenNL        NVARCHAR(100) NOT NULL,
+    donViTinh    NVARCHAR(20)  NOT NULL,
+    donGiaNhap   DECIMAL(10,2) NOT NULL DEFAULT 0,
+    ngayHetHan   DATE          NULL,
+    donViDongGoi NVARCHAR(50)  NULL,
 
     CONSTRAINT PK_NguyenLieu   PRIMARY KEY (maNL),
-    CONSTRAINT CHK_NL_DonGia   CHECK (donGiaNhap >= 0),
-    CONSTRAINT CHK_NL_LoaiNL   CHECK (loaiNL IN (N'Chính', N'Phụ'))
+    CONSTRAINT CHK_NL_DonGia   CHECK (donGiaNhap >= 0)
 );
 GO
 
@@ -238,6 +237,34 @@ CREATE TABLE ChiTietPhieuNhap (
     CONSTRAINT FK_CTPN_NL   FOREIGN KEY (maNL) REFERENCES NguyenLieu(maNL),
     CONSTRAINT CHK_CTPN_SL  CHECK (soLuong > 0),
     CONSTRAINT CHK_CTPN_Gia CHECK (donGia >= 0)
+);
+GO
+
+-- 15b. PhieuXuat
+CREATE TABLE PhieuXuat (
+    maPX     VARCHAR(20)   NOT NULL,
+    ngayXuat DATETIME      NOT NULL DEFAULT GETDATE(),
+    lyDoXuat NVARCHAR(200) NULL,
+    maNV     VARCHAR(20)   NOT NULL,
+    maKho    VARCHAR(20)   NOT NULL,
+
+    CONSTRAINT PK_PhieuXuat   PRIMARY KEY (maPX),
+    CONSTRAINT FK_PX_NhanVien FOREIGN KEY (maNV)  REFERENCES NhanVien(maNV),
+    CONSTRAINT FK_PX_Kho      FOREIGN KEY (maKho) REFERENCES Kho(maKho)
+);
+GO
+
+-- 15c. ChiTietPhieuXuat
+CREATE TABLE ChiTietPhieuXuat (
+    maCTPX  VARCHAR(20)   NOT NULL,
+    soLuong DECIMAL(10,3) NOT NULL,
+    maPX    VARCHAR(20)   NOT NULL,
+    maNL    VARCHAR(20)   NOT NULL,
+
+    CONSTRAINT PK_CTPX      PRIMARY KEY (maCTPX),
+    CONSTRAINT FK_CTPX_PX   FOREIGN KEY (maPX) REFERENCES PhieuXuat(maPX) ON DELETE CASCADE,
+    CONSTRAINT FK_CTPX_NL   FOREIGN KEY (maNL) REFERENCES NguyenLieu(maNL),
+    CONSTRAINT CHK_CTPX_SL  CHECK (soLuong > 0)
 );
 GO
 
@@ -352,22 +379,7 @@ CREATE INDEX IX_CTHD_Mon              ON ChiTietHoaDon (maMon);
 CREATE INDEX IX_Ban_KhuVuc            ON Ban (maKhuVuc, trangThai);
 GO
 
-PRINT 'Thiet lap Database v10 Thanh Cong!';
-PRINT 'DonHang/ChiTietDonHang chi luu tren RAM (khong co trong DB)';
-PRINT 'ChiTietHoaDon/ChiTietHoaDonTopping duoc luu vao DB khi thanh toan';
-GO
-
--- ================================================================
--- ALTER SCRIPT: Thêm cột loaiNL vào bảng NguyenLieu (cho DB cũ)
--- ================================================================
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('NguyenLieu') AND name = 'loaiNL')
-BEGIN
-    ALTER TABLE NguyenLieu ADD loaiNL NVARCHAR(20) NOT NULL DEFAULT N'Chính';
-    ALTER TABLE NguyenLieu ADD CONSTRAINT CHK_NL_LoaiNL CHECK (loaiNL IN (N'Chính', N'Phụ'));
-    PRINT N'Đã thêm cột loaiNL vào bảng NguyenLieu thành công!';
-END
-ELSE
-BEGIN
-    PRINT N'Cột loaiNL đã tồn tại trong bảng NguyenLieu.';
-END
+PRINT N'Thiết lập Database v11 Thành Công!';
+PRINT N'Đã thêm bảng PhieuXuat, ChiTietPhieuXuat';
+PRINT N'Đã thay loaiNL bằng donViDongGoi trong NguyenLieu';
 GO

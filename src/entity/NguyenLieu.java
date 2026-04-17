@@ -7,21 +7,19 @@ public class NguyenLieu {
     private String    tenNL;
     private String    donViTinh;
     private double    donGiaNhap;
-    private LocalDate ngayHetHan; // nullable
-    private String    loaiNL;     // "Chính" hoặc "Phụ"
+    private LocalDate ngayHetHan;     // nullable
+    private String    donViDongGoi;   // "Hộp", "Bịch", "Chai", ...
 
-    public NguyenLieu() {
-        this.loaiNL = "Chính";
-    }
+    public NguyenLieu() {}
 
     public NguyenLieu(String maNL, String tenNL, String donViTinh,
-                      double donGiaNhap, LocalDate ngayHetHan, String loaiNL) {
-        this.maNL       = maNL;
-        this.tenNL      = tenNL;
-        this.donViTinh  = donViTinh;
-        this.donGiaNhap = donGiaNhap;
-        this.ngayHetHan = ngayHetHan;
-        this.loaiNL     = loaiNL != null ? loaiNL : "Chính";
+                      double donGiaNhap, LocalDate ngayHetHan, String donViDongGoi) {
+        this.maNL         = maNL;
+        this.tenNL        = tenNL;
+        this.donViTinh    = donViTinh;
+        this.donGiaNhap   = donGiaNhap;
+        this.ngayHetHan   = ngayHetHan;
+        this.donViDongGoi = donViDongGoi;
     }
 
     public String getMaNL()          { return maNL; }
@@ -39,11 +37,15 @@ public class NguyenLieu {
     public LocalDate getNgayHetHan()             { return ngayHetHan; }
     public void      setNgayHetHan(LocalDate v)  { this.ngayHetHan = v; }
 
-    public String getLoaiNL()          { return loaiNL; }
-    public void   setLoaiNL(String v)  { this.loaiNL = v; }
+    public String getDonViDongGoi()          { return donViDongGoi; }
+    public void   setDonViDongGoi(String v)  { this.donViDongGoi = v; }
+
+    // Giữ lại getLoaiNL/setLoaiNL để tương thích ngược (trả về null)
+    public String getLoaiNL()          { return null; }
+    public void   setLoaiNL(String v)  { /* không dùng nữa */ }
 
     @Override
     public String toString() {
-        return "NguyenLieu{" + maNL + ", " + tenNL + ", " + donViTinh + ", " + loaiNL + "}";
+        return "NguyenLieu{" + maNL + ", " + tenNL + ", " + donViTinh + ", dongGoi=" + donViDongGoi + "}";
     }
 }

@@ -6,6 +6,13 @@
             "name": "LoginForm",
             "request": "launch",
             "mainClass": "ui.LoginForm",
+            "projectName": "QuanLyCaFe_Final_b3c3b583"
+        },
+        {
+            "type": "java",
+            "name": "LoginForm",
+            "request": "launch",
+            "mainClass": "ui.LoginForm",
             "projectName": "QuanLyCaFe_Final_d233ded8"
         },
         {

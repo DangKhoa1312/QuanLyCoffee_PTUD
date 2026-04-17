@@ -18,11 +18,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Panel Quản Lý Kho — Giao diện admin với 4 tab:
- *  1. Tồn Kho  — xem chi tiết, nhập kho, xuất kho, tìm kiếm
- *  2. Nguyên Liệu — double-click mở chi tiết
- *  3. Nhà Cung Cấp — double-click mở chi tiết
- *  4. Phiếu Nhập — xem phiếu + tạo phiếu mới
+ * Panel Quan Ly Kho — Giao dien admin voi 3 tab:
+ *  1. Ton Kho  — xem chi tiet, loc trang thai
+ *  2. Phieu Nhap — xem phieu + tao phieu moi + quan ly NL / NCC
+ *  3. Phieu Xuat — xem phieu xuat + tao phieu xuat
  */
 public class WarehouseManagementPanel extends JPanel {
 
@@ -33,25 +32,19 @@ public class WarehouseManagementPanel extends JPanel {
     private final Color WARN_COLOR    = new Color(231, 76, 60);
     private final Color OK_COLOR      = new Color(39, 174, 96);
 
-    // ── Tab: Tồn Kho ──
+    // -- Tab: Ton Kho --
     private DefaultTableModel tonKhoModel;
     private JTable tonKhoTable;
-    private JComboBox<String> cbFilterLoaiNL;
-    private JTextField txtTonKhoSearch;
+    private JTextField txtSearchTonKho;
+    private JComboBox<String> cbFilterTrangThai;
 
-    // ── Tab: Nguyên Liệu ──
-    private DefaultTableModel nlModel;
-    private JTable nlTable;
-    private JTextField txtNLSearch;
-
-    // ── Tab: Nhà Cung Cấp ──
-    private DefaultTableModel nccModel;
-    private JTable nccTable;
-    private JTextField txtNCCSearch;
-
-    // ── Tab: Phiếu Nhập ──
+    // -- Tab: Phieu Nhap --
     private DefaultTableModel pnModel;
     private JTable pnTable;
+
+    // -- Tab: Phieu Xuat --
+    private DefaultTableModel pxModel;
+    private JTable pxTable;
 
     public WarehouseManagementPanel() {
         setLayout(new BorderLayout(0, 0));
@@ -64,9 +57,9 @@ public class WarehouseManagementPanel extends JPanel {
         loadAllData();
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // HEADER
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     private JPanel buildHeader() {
         JPanel pnl = new JPanel();
         pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
@@ -74,10 +67,10 @@ public class WarehouseManagementPanel extends JPanel {
 
         JPanel bc = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         bc.setOpaque(false);
-        JLabel lbcGray = new JLabel("Admin / Quản Trị / ");
+        JLabel lbcGray = new JLabel("Admin / Qu\u1EA3n Tr\u1ECB / ");
         lbcGray.setForeground(Color.GRAY);
         lbcGray.setFont(new Font("Roboto", Font.PLAIN, 13));
-        JLabel lbcCurrent = new JLabel("Quản Lý Kho");
+        JLabel lbcCurrent = new JLabel("Qu\u1EA3n L\u00FD Kho");
         lbcCurrent.setFont(new Font("Roboto", Font.BOLD, 13));
         lbcCurrent.setForeground(PRIMARY_COLOR);
         bc.add(lbcGray); bc.add(lbcCurrent);
@@ -86,7 +79,7 @@ public class WarehouseManagementPanel extends JPanel {
 
         JPanel titleBar = new JPanel(new BorderLayout());
         titleBar.setOpaque(false);
-        JLabel title = new JLabel("QUẢN LÝ KHO HÀNG");
+        JLabel title = new JLabel("QU\u1EA2N L\u00DD KHO H\u00C0NG");
         title.setFont(new Font("Roboto", Font.BOLD, 24));
         title.setForeground(new Color(44, 62, 80));
         title.setIcon(IconFontSwing.buildIcon(FontAwesome.ARCHIVE, 28, PRIMARY_COLOR));
@@ -97,23 +90,22 @@ public class WarehouseManagementPanel extends JPanel {
         return pnl;
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // TABS
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     private JTabbedPane buildTabs() {
         JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP);
         tabs.setFont(new Font("Roboto", Font.BOLD, 13));
         tabs.setBackground(Color.WHITE);
-        tabs.addTab("  📦 Tồn Kho  ",      buildTonKhoTab());
-        tabs.addTab("  🌿 Nguyên Liệu  ",  buildNguyenLieuTab());
-        tabs.addTab("  🚚 Nhà Cung Cấp  ", buildNhaCungCapTab());
-        tabs.addTab("  📋 Phiếu Nhập  ",   buildPhieuNhapTab());
+        tabs.addTab("  \uD83D\uDCE6 T\u1ED3n Kho  ",      buildTonKhoTab());
+        tabs.addTab("  \uD83D\uDCCB Phi\u1EBFu Nh\u1EADp  ",   buildPhieuNhapTab());
+        tabs.addTab("  \uD83D\uDCE4 Phi\u1EBFu Xu\u1EA5t  ",   buildPhieuXuatTab());
         return tabs;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // TAB 1: TỒN KHO — xem chi tiết + nhập/xuất kho + tìm kiếm
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
+    // TAB 1: TON KHO — xem chi tiet + loc trang thai
+    // ===============================================================
     private JPanel buildTonKhoTab() {
         JPanel p = new JPanel(new BorderLayout(0, 12));
         p.setOpaque(false);
@@ -124,33 +116,34 @@ public class WarehouseManagementPanel extends JPanel {
         topBar.setBackground(Color.WHITE);
         topBar.setBorder(new LineBorder(new Color(230, 230, 230)));
 
-        // Left: Search + Filter
+        // Left: Search + Filter Trạng Thái
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
         leftPanel.setOpaque(false);
 
         leftPanel.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY)));
-        txtTonKhoSearch = new JTextField(18);
-        txtTonKhoSearch.setPreferredSize(new Dimension(0, 35));
-        txtTonKhoSearch.setFont(new Font("Roboto", Font.PLAIN, 14));
-        txtTonKhoSearch.setToolTipText("Tìm theo mã hoặc tên nguyên liệu");
-        txtTonKhoSearch.addKeyListener(new KeyAdapter() {
+        txtSearchTonKho = new JTextField(18);
+        txtSearchTonKho.setPreferredSize(new Dimension(0, 35));
+        txtSearchTonKho.setFont(new Font("Roboto", Font.PLAIN, 14));
+        txtSearchTonKho.setToolTipText("Tìm kiếm nguyên liệu...");
+        txtSearchTonKho.addKeyListener(new KeyAdapter() {
             @Override public void keyReleased(KeyEvent e) { loadTonKhoData(); }
         });
-        leftPanel.add(txtTonKhoSearch);
+        leftPanel.add(txtSearchTonKho);
 
+        leftPanel.add(Box.createHorizontalStrut(10));
         leftPanel.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.FILTER, 16, Color.GRAY)));
-        leftPanel.add(new JLabel("Loại NL:"));
-        cbFilterLoaiNL = new JComboBox<>(new String[]{"Tất cả", "Chính", "Phụ"});
-        cbFilterLoaiNL.setPreferredSize(new Dimension(120, 35));
-        cbFilterLoaiNL.setFont(new Font("Roboto", Font.PLAIN, 14));
-        cbFilterLoaiNL.addActionListener(e -> loadTonKhoData());
-        leftPanel.add(cbFilterLoaiNL);
+        leftPanel.add(new JLabel("Trạng thái:"));
+        cbFilterTrangThai = new JComboBox<>(new String[]{"Tất cả", "Bình thường", "Sắp hết", "Hết hàng"});
+        cbFilterTrangThai.setPreferredSize(new Dimension(150, 35));
+        cbFilterTrangThai.setFont(new Font("Roboto", Font.PLAIN, 14));
+        cbFilterTrangThai.addActionListener(e -> loadTonKhoData());
+        leftPanel.add(cbFilterTrangThai);
 
         topBar.add(leftPanel, BorderLayout.WEST);
         p.add(topBar, BorderLayout.NORTH);
 
-        // Table — columns: Mã Nguyên Liệu, Loại NL, Tên NL, ĐVT, Tồn Kho, Mức TT, Ngày CN, Trạng Thái
-        String[] cols = {"Mã Nguyên Liệu", "Loại NL", "Tên Nguyên Liệu", "ĐVT",
+        // Table
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Tính",
                          "Tồn Kho", "Mức Tối Thiểu", "Ngày Cập Nhật", "Trạng Thái"};
         tonKhoModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -158,11 +151,10 @@ public class WarehouseManagementPanel extends JPanel {
         tonKhoTable = buildStyledTable(tonKhoModel);
         tonKhoTable.setDefaultRenderer(Object.class, new TonKhoRenderer());
         tonKhoTable.getColumnModel().getColumn(0).setPreferredWidth(130);
-        tonKhoTable.getColumnModel().getColumn(1).setPreferredWidth(80);
-        tonKhoTable.getColumnModel().getColumn(2).setPreferredWidth(180);
-        tonKhoTable.getColumnModel().getColumn(7).setPreferredWidth(100);
+        tonKhoTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+        tonKhoTable.getColumnModel().getColumn(6).setPreferredWidth(120);
 
-        // Double-click → xem chi tiết style dialog
+        // Double-click -> xem chi tiet
         tonKhoTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2) {
@@ -176,7 +168,7 @@ public class WarehouseManagementPanel extends JPanel {
         scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
         p.add(scroll, BorderLayout.CENTER);
 
-        JLabel hint = new JLabel("  Nhấp đúp vào hàng để xem chi tiết nguyên liệu");
+        JLabel hint = new JLabel("  Nh\u1EA5p \u0111\u00FAp v\u00E0o h\u00E0ng \u0111\u1EC3 xem chi ti\u1EBFt nguy\u00EAn li\u1EC7u");
         hint.setFont(new Font("Roboto", Font.ITALIC, 12));
         hint.setForeground(Color.GRAY);
         hint.setBorder(new EmptyBorder(5, 5, 0, 0));
@@ -185,144 +177,37 @@ public class WarehouseManagementPanel extends JPanel {
         return p;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // TAB 2: NGUYÊN LIỆU — double-click mở chi tiết
-    // ═══════════════════════════════════════════════════════════════
-    private JPanel buildNguyenLieuTab() {
-        JPanel p = new JPanel(new BorderLayout(0, 12));
-        p.setOpaque(false);
-        p.setBorder(new EmptyBorder(12, 5, 5, 5));
-
-        JPanel bar = new JPanel(new BorderLayout());
-        bar.setBackground(Color.WHITE);
-        bar.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(230, 230, 230)),
-            new EmptyBorder(8, 15, 8, 15)
-        ));
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        left.setOpaque(false);
-        left.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY)));
-        txtNLSearch = new JTextField(22);
-        txtNLSearch.setPreferredSize(new Dimension(0, 35));
-        txtNLSearch.setFont(new Font("Roboto", Font.PLAIN, 14));
-        txtNLSearch.addKeyListener(new KeyAdapter() {
-            @Override public void keyReleased(KeyEvent e) { searchNguyenLieu(); }
-        });
-        left.add(txtNLSearch);
-        bar.add(left, BorderLayout.WEST);
-
-        JButton btnAdd = createSmallBtn("  Thêm", FontAwesome.PLUS, new Color(46, 204, 113));
-        btnAdd.setPreferredSize(new Dimension(180, 40));
-        btnAdd.setFont(new Font("Roboto", Font.BOLD, 14));
-        btnAdd.addActionListener(e -> handleAddNL());
-        bar.add(btnAdd, BorderLayout.EAST);
-        p.add(bar, BorderLayout.NORTH);
-
-        // Table — columns: Mã NL, Tên NL, Loại NL, ĐVT, Đơn Giá Nhập, Object (hidden)
-        String[] cols = {"Mã NL", "Tên Nguyên Liệu", "Loại NL", "Đơn Vị Tính", "Đơn Giá Nhập", "Object"};
-        nlModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
-        nlTable = buildStyledTable(nlModel);
-        nlTable.setDefaultRenderer(Object.class, new ZebraRenderer());
-        nlTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-        nlTable.removeColumn(nlTable.getColumnModel().getColumn(5));
-
-        nlTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = nlTable.getSelectedRow();
-                    if (row >= 0) {
-                        NguyenLieu nl = (NguyenLieu) nlModel.getValueAt(row, 5);
-                        handleEditNL(nl);
-                    }
-                }
-            }
-        });
-
-        JScrollPane scroll = new JScrollPane(nlTable);
-        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
-        p.add(scroll, BorderLayout.CENTER);
-        return p;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // TAB 3: NHÀ CUNG CẤP — double-click mở chi tiết
-    // ═══════════════════════════════════════════════════════════════
-    private JPanel buildNhaCungCapTab() {
-        JPanel p = new JPanel(new BorderLayout(0, 12));
-        p.setOpaque(false);
-        p.setBorder(new EmptyBorder(12, 5, 5, 5));
-
-        JPanel bar = new JPanel(new BorderLayout());
-        bar.setBackground(Color.WHITE);
-        bar.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(230, 230, 230)),
-            new EmptyBorder(8, 15, 8, 15)
-        ));
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        left.setOpaque(false);
-        left.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY)));
-        txtNCCSearch = new JTextField(22);
-        txtNCCSearch.setPreferredSize(new Dimension(0, 35));
-        txtNCCSearch.setFont(new Font("Roboto", Font.PLAIN, 14));
-        txtNCCSearch.addKeyListener(new KeyAdapter() {
-            @Override public void keyReleased(KeyEvent e) { searchNhaCungCap(); }
-        });
-        left.add(txtNCCSearch);
-        bar.add(left, BorderLayout.WEST);
-
-        JButton btnAdd = createSmallBtn("  Thêm Nhà Cung Cấp", FontAwesome.PLUS, new Color(46, 204, 113));
-        btnAdd.addActionListener(e -> handleAddNCC());
-        bar.add(btnAdd, BorderLayout.EAST);
-        p.add(bar, BorderLayout.NORTH);
-
-        // Table — hidden col 5 giữ NhaCungCap object
-        String[] cols = {"Mã NCC", "Tên Nhà Cung Cấp", "Số Điện Thoại", "Email", "Địa Chỉ", "Object"};
-        nccModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
-        nccTable = buildStyledTable(nccModel);
-        nccTable.setDefaultRenderer(Object.class, new ZebraRenderer());
-        nccTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-        nccTable.removeColumn(nccTable.getColumnModel().getColumn(5));
-
-        nccTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = nccTable.getSelectedRow();
-                    if (row >= 0) {
-                        NhaCungCap ncc = (NhaCungCap) nccModel.getValueAt(row, 5);
-                        handleEditNCC(ncc);
-                    }
-                }
-            }
-        });
-
-        JScrollPane scroll = new JScrollPane(nccTable);
-        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
-        p.add(scroll, BorderLayout.CENTER);
-        return p;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // TAB 4: PHIẾU NHẬP — xem phiếu + tạo phiếu mới
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
+    // TAB 2: PHIEU NHAP — xem phieu + tao phieu moi + nut NL/NCC
+    // ===============================================================
     private JPanel buildPhieuNhapTab() {
         JPanel p = new JPanel(new BorderLayout(0, 12));
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(12, 5, 5, 5));
 
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 8));
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
         bar.setBackground(Color.WHITE);
         bar.setBorder(new LineBorder(new Color(230, 230, 230)));
+
+        // Nut Nguyen Lieu
+        JButton btnNguyenLieu = createSmallBtn("  Nguyên Liệu", FontAwesome.LEAF, new Color(52, 152, 219));
+        btnNguyenLieu.setPreferredSize(new Dimension(160, 35));
+        btnNguyenLieu.addActionListener(e -> openNguyenLieuListDialog());
+
+        // Nut Nha Cung Cap
+        JButton btnNhaCungCap = createSmallBtn("  Nhà Cung Cấp", FontAwesome.TRUCK, new Color(155, 89, 182));
+        btnNhaCungCap.setPreferredSize(new Dimension(170, 35));
+        btnNhaCungCap.addActionListener(e -> openNhaCungCapListDialog());
+
+        JButton btnRefresh = createSmallBtn("Làm mới", FontAwesome.REFRESH, new Color(220, 220, 220));
+        btnRefresh.addActionListener(e -> loadPhieuNhapData());
 
         JButton btnNhapHang = createSmallBtn("  Tạo Phiếu Nhập", FontAwesome.DOWNLOAD, new Color(46, 204, 113));
         btnNhapHang.setPreferredSize(new Dimension(180, 35));
         btnNhapHang.addActionListener(e -> handleTaoPhieuNhap());
 
-        JButton btnRefresh = createSmallBtn("Làm mới", FontAwesome.REFRESH, new Color(220, 220, 220));
-        btnRefresh.addActionListener(e -> loadPhieuNhapData());
+        bar.add(btnNguyenLieu);
+        bar.add(btnNhaCungCap);
         bar.add(btnRefresh);
         bar.add(btnNhapHang);
         p.add(bar, BorderLayout.NORTH);
@@ -354,105 +239,113 @@ public class WarehouseManagementPanel extends JPanel {
         return p;
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
+    // TAB 3: PHIEU XUAT — xem phieu xuat + tao phieu xuat
+    // ===============================================================
+    private JPanel buildPhieuXuatTab() {
+        JPanel p = new JPanel(new BorderLayout(0, 12));
+        p.setOpaque(false);
+        p.setBorder(new EmptyBorder(12, 5, 5, 5));
+
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 8));
+        bar.setBackground(Color.WHITE);
+        bar.setBorder(new LineBorder(new Color(230, 230, 230)));
+
+        JButton btnRefresh = createSmallBtn("Làm mới", FontAwesome.REFRESH, new Color(220, 220, 220));
+        btnRefresh.addActionListener(e -> loadPhieuXuatData());
+
+        JButton btnXuatKho = createSmallBtn("  Tạo Phiếu Xuất", FontAwesome.UPLOAD, new Color(231, 76, 60));
+        btnXuatKho.setPreferredSize(new Dimension(180, 35));
+        btnXuatKho.addActionListener(e -> handleTaoPhieuXuat());
+
+        bar.add(btnRefresh);
+        bar.add(btnXuatKho);
+        p.add(bar, BorderLayout.NORTH);
+
+        String[] cols = {"Mã Phiếu", "Ngày Xuất", "Lý Do", "Nhân Viên", "Số NL"};
+        pxModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        pxTable = buildStyledTable(pxModel);
+        pxTable.setDefaultRenderer(Object.class, new ZebraRenderer());
+        pxTable.getColumnModel().getColumn(1).setPreferredWidth(155);
+        pxTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+
+        pxTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) viewPhieuXuatDetail();
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(pxTable);
+        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
+        p.add(scroll, BorderLayout.CENTER);
+
+        JLabel hint = new JLabel("  Nhấp đúp vào phiếu để xem chi tiết xuất kho");
+        hint.setFont(new Font("Roboto", Font.ITALIC, 12));
+        hint.setForeground(Color.GRAY);
+        hint.setBorder(new EmptyBorder(5, 5, 0, 0));
+        p.add(hint, BorderLayout.SOUTH);
+        return p;
+    }
+
+    // ===============================================================
     // LOAD DATA
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     private void loadAllData() {
         loadTonKhoData();
-        loadNguyenLieuData();
-        loadNhaCungCapData();
         loadPhieuNhapData();
+        loadPhieuXuatData();
     }
 
     private void loadTonKhoData() {
         tonKhoModel.setRowCount(0);
         List<TonKho> list = controller.getAllTonKho();
-        String filterLoai = (String) cbFilterLoaiNL.getSelectedItem();
-        String searchKw = txtTonKhoSearch.getText().toLowerCase().trim();
+        String filterTrangThai = (String) cbFilterTrangThai.getSelectedItem();
+        String searchKw = txtSearchTonKho.getText().toLowerCase().trim();
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         for (TonKho tk : list) {
             NguyenLieu nl = controller.getNguyenLieuById(tk.getMaNL());
             String tenNL  = nl != null ? nl.getTenNL() : tk.getMaNL();
             String dvt    = nl != null ? nl.getDonViTinh() : "";
-            String loaiNL = nl != null && nl.getLoaiNL() != null ? nl.getLoaiNL() : "Chính";
 
-            // Filter by loại NL
-            if (filterLoai != null && !"Tất cả".equals(filterLoai)) {
-                if (!loaiNL.equals(filterLoai)) continue;
+            // Tìm kiếm theo tên hoặc mã nguyên liệu
+            if (!searchKw.isEmpty()) {
+                if (!tenNL.toLowerCase().contains(searchKw) && !tk.getMaNL().toLowerCase().contains(searchKw)) {
+                    continue;
+                }
             }
 
-            // Filter by search keyword
-            if (!searchKw.isEmpty()) {
-                if (!tenNL.toLowerCase().contains(searchKw) &&
-                    !tk.getMaNL().toLowerCase().contains(searchKw)) continue;
+            // Xác định trạng thái
+            String status;
+            if (tk.getSoLuongTon() <= 0) {
+                status = "Hết hàng";
+            } else if (tk.isSapHet()) {
+                status = "Sắp hết";
+            } else {
+                status = "Bình thường";
+            }
+
+            // Lọc theo trạng thái
+            if (filterTrangThai != null && !"Tất cả".equals(filterTrangThai)) {
+                if (!status.equals(filterTrangThai)) continue;
             }
 
             String ngayCN = tk.getNgayCapNhat() != null ? tk.getNgayCapNhat().format(fmt) : "";
-            String status = tk.isSapHet() ? "⚠ Sắp hết" : "✓ Bình thường";
+            String statusDisplay;
+            if ("Hết hàng".equals(status)) {
+                statusDisplay = "\u274C Hết hàng";
+            } else if ("Sắp hết".equals(status)) {
+                statusDisplay = "\u26A0 Sắp hết";
+            } else {
+                statusDisplay = "\u2713 Bình thường";
+            }
 
             tonKhoModel.addRow(new Object[]{
-                tk.getMaNL(), loaiNL, tenNL, dvt,
-                tk.getSoLuongTon(), tk.getMucToiThieu(), ngayCN, status
+                tk.getMaNL(), tenNL, dvt,
+                tk.getSoLuongTon(), tk.getMucToiThieu(), ngayCN, statusDisplay
             });
-        }
-    }
-
-    private void loadNguyenLieuData() {
-        nlModel.setRowCount(0);
-        for (NguyenLieu nl : controller.getAllNguyenLieu()) {
-            nlModel.addRow(new Object[]{
-                nl.getMaNL(), nl.getTenNL(),
-                nl.getLoaiNL() != null ? nl.getLoaiNL() : "Chính",
-                nl.getDonViTinh(),
-                CurrencyUtils.formatNoUnit(nl.getDonGiaNhap()) + " đ",
-                nl
-            });
-        }
-    }
-
-    private void searchNguyenLieu() {
-        String kw = txtNLSearch.getText().toLowerCase().trim();
-        nlModel.setRowCount(0);
-        for (NguyenLieu nl : controller.getAllNguyenLieu()) {
-            if (nl.getTenNL().toLowerCase().contains(kw) || nl.getMaNL().toLowerCase().contains(kw)) {
-                nlModel.addRow(new Object[]{
-                    nl.getMaNL(), nl.getTenNL(),
-                    nl.getLoaiNL() != null ? nl.getLoaiNL() : "Chính",
-                    nl.getDonViTinh(),
-                    CurrencyUtils.formatNoUnit(nl.getDonGiaNhap()) + " đ",
-                    nl
-                });
-            }
-        }
-    }
-
-    private void loadNhaCungCapData() {
-        nccModel.setRowCount(0);
-        for (NhaCungCap ncc : controller.getAllNhaCungCap()) {
-            nccModel.addRow(new Object[]{
-                ncc.getMaNCC(), ncc.getTenNCC(),
-                ncc.getSoDienThoai() != null ? ncc.getSoDienThoai() : "",
-                ncc.getEmail() != null ? ncc.getEmail() : "",
-                ncc.getDiaChi() != null ? ncc.getDiaChi() : "",
-                ncc
-            });
-        }
-    }
-
-    private void searchNhaCungCap() {
-        String kw = txtNCCSearch.getText().toLowerCase().trim();
-        nccModel.setRowCount(0);
-        for (NhaCungCap ncc : controller.getAllNhaCungCap()) {
-            if (ncc.getTenNCC().toLowerCase().contains(kw) || ncc.getMaNCC().toLowerCase().contains(kw)) {
-                nccModel.addRow(new Object[]{
-                    ncc.getMaNCC(), ncc.getTenNCC(),
-                    ncc.getSoDienThoai() != null ? ncc.getSoDienThoai() : "",
-                    ncc.getEmail() != null ? ncc.getEmail() : "",
-                    ncc.getDiaChi() != null ? ncc.getDiaChi() : "",
-                    ncc
-                });
-            }
         }
     }
 
@@ -471,19 +364,33 @@ public class WarehouseManagementPanel extends JPanel {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // HANDLERS — TỒN KHO
-    // ═══════════════════════════════════════════════════════════════
+    private void loadPhieuXuatData() {
+        pxModel.setRowCount(0);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        for (PhieuXuat px : controller.getAllPhieuXuat()) {
+            List<ChiTietPhieuXuat> chiTiet = controller.getChiTietByPhieuXuat(px.getMaPX());
+            pxModel.addRow(new Object[]{
+                px.getMaPX(),
+                px.getNgayXuat() != null ? px.getNgayXuat().format(fmt) : "",
+                px.getLyDoXuat() != null ? px.getLyDoXuat() : "",
+                px.getMaNV(),
+                chiTiet.size() + " nguyên liệu"
+            });
+        }
+    }
+
+    // ===============================================================
+    // HANDLERS — TON KHO
+    // ===============================================================
 
     private void viewTonKhoDetailDialog(int row) {
         String maNL     = (String) tonKhoModel.getValueAt(row, 0);
-        String loaiNL   = (String) tonKhoModel.getValueAt(row, 1);
-        String tenNL    = (String) tonKhoModel.getValueAt(row, 2);
-        String dvt      = (String) tonKhoModel.getValueAt(row, 3);
-        Object tonObj   = tonKhoModel.getValueAt(row, 4);
-        Object mucTTObj = tonKhoModel.getValueAt(row, 5);
-        String ngayCN   = (String) tonKhoModel.getValueAt(row, 6);
-        String trangThai = (String) tonKhoModel.getValueAt(row, 7);
+        String tenNL    = (String) tonKhoModel.getValueAt(row, 1);
+        String dvt      = (String) tonKhoModel.getValueAt(row, 2);
+        Object tonObj   = tonKhoModel.getValueAt(row, 3);
+        Object mucTTObj = tonKhoModel.getValueAt(row, 4);
+        String ngayCN   = (String) tonKhoModel.getValueAt(row, 5);
+        String trangThai = (String) tonKhoModel.getValueAt(row, 6);
 
         String tonKho = tonObj != null ? String.valueOf(tonObj) : "0";
         String mucTT  = mucTTObj != null ? String.valueOf(mucTTObj) : "0";
@@ -491,6 +398,7 @@ public class WarehouseManagementPanel extends JPanel {
         // Lấy thêm thông tin từ NguyenLieu
         NguyenLieu nl = controller.getNguyenLieuById(maNL);
         String donGia = nl != null ? CurrencyUtils.formatNoUnit(nl.getDonGiaNhap()) + " đ" : "";
+        String dongGoi = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "--";
         String ngayHH = "";
         if (nl != null && nl.getNgayHetHan() != null) {
             ngayHH = nl.getNgayHetHan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -499,7 +407,7 @@ public class WarehouseManagementPanel extends JPanel {
         // Tạo JDialog
         JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
                 "Chi Tiết Tồn Kho: " + tenNL, true);
-        dlg.setSize(550, 480);
+        dlg.setSize(550, 500);
         dlg.setLocationRelativeTo(this);
         dlg.setLayout(new BorderLayout(0, 10));
         dlg.getContentPane().setBackground(new Color(245, 247, 250));
@@ -530,11 +438,11 @@ public class WarehouseManagementPanel extends JPanel {
         infoPanel.add(createStyledLabel("Tên Nguyên Liệu:", true));
         infoPanel.add(createStyledLabel(tenNL, false));
 
-        infoPanel.add(createStyledLabel("Loại Nguyên Liệu:", true));
-        infoPanel.add(createStyledLabel(loaiNL, false));
-
         infoPanel.add(createStyledLabel("Đơn Vị Tính:", true));
         infoPanel.add(createStyledLabel(dvt, false));
+
+        infoPanel.add(createStyledLabel("Đơn Vị Đóng Gói:", true));
+        infoPanel.add(createStyledLabel(dongGoi, false));
 
         infoPanel.add(createStyledLabel("Đơn Giá Nhập:", true));
         infoPanel.add(createStyledLabel(donGia, false));
@@ -542,22 +450,22 @@ public class WarehouseManagementPanel extends JPanel {
         infoPanel.add(createStyledLabel("Số Lượng Tồn:", true));
         JLabel lblTon = createStyledLabel(tonKho, false);
         lblTon.setFont(new Font("Roboto", Font.BOLD, 14));
-        lblTon.setForeground(trangThai.contains("Sắp hết") ? WARN_COLOR : OK_COLOR);
+        lblTon.setForeground(trangThai.contains("Sắp hết") || trangThai.contains("Hết hàng") ? WARN_COLOR : OK_COLOR);
         infoPanel.add(lblTon);
 
         infoPanel.add(createStyledLabel("Mức Tối Thiểu:", true));
         infoPanel.add(createStyledLabel(mucTT, false));
 
         infoPanel.add(createStyledLabel("Ngày Hết Hạn:", true));
-        infoPanel.add(createStyledLabel(ngayHH.isEmpty() ? "—" : ngayHH, false));
+        infoPanel.add(createStyledLabel(ngayHH.isEmpty() ? "--" : ngayHH, false));
 
         infoPanel.add(createStyledLabel("Ngày Cập Nhật:", true));
-        infoPanel.add(createStyledLabel(ngayCN.isEmpty() ? "—" : ngayCN, false));
+        infoPanel.add(createStyledLabel(ngayCN.isEmpty() ? "--" : ngayCN, false));
 
         infoPanel.add(createStyledLabel("Trạng Thái:", true));
         JLabel lblStatus = createStyledLabel(trangThai, false);
         lblStatus.setFont(new Font("Roboto", Font.BOLD, 13));
-        lblStatus.setForeground(trangThai.contains("Sắp hết") ? WARN_COLOR : OK_COLOR);
+        lblStatus.setForeground(trangThai.contains("Sắp hết") || trangThai.contains("Hết hàng") ? WARN_COLOR : OK_COLOR);
         infoPanel.add(lblStatus);
 
         JPanel infoWrapper = new JPanel(new BorderLayout());
@@ -566,7 +474,7 @@ public class WarehouseManagementPanel extends JPanel {
         infoWrapper.add(infoPanel, BorderLayout.CENTER);
         dlg.add(infoWrapper, BorderLayout.CENTER);
 
-        // Nút đóng
+        // Nut dong
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
         btnPanel.setOpaque(false);
         JButton btnClose = new JButton("Đóng");
@@ -581,103 +489,302 @@ public class WarehouseManagementPanel extends JPanel {
         dlg.setVisible(true);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // HANDLERS — NGUYÊN LIỆU
-    // ═══════════════════════════════════════════════════════════════
-    private void handleAddNL() {
-        NguyenLieu nl = new NguyenLieu();
-        nl.setMaNL(controller.generateNextMaNL());
-        ui.dialog.NguyenLieuDialog dlg =
-            new ui.dialog.NguyenLieuDialog((Frame) SwingUtilities.getWindowAncestor(this), nl, false);
-        dlg.setVisible(true);
-        if (dlg.isConfirmed()) {
-            try {
-                if (controller.addNguyenLieu(nl)) {
-                    loadNguyenLieuData();
-                    JOptionPane.showMessageDialog(this, "Thêm nguyên liệu thành công!");
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
+    // ===============================================================
+    // HANDLERS — NGUYEN LIEU (popup dialog)
+    // ===============================================================
+    private void openNguyenLieuListDialog() {
+        JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Quản Lý Nguyên Liệu", true);
+        dlg.setSize(950, 650);
+        dlg.setLocationRelativeTo(this);
+        dlg.setLayout(new BorderLayout(0, 10));
+        dlg.getContentPane().setBackground(new Color(245, 247, 250));
 
-    private void handleEditNL(NguyenLieu nl) {
-        ui.dialog.NguyenLieuDialog dlg =
-            new ui.dialog.NguyenLieuDialog((Frame) SwingUtilities.getWindowAncestor(this), nl, true);
-        dlg.setVisible(true);
-        if (dlg.isConfirmed()) {
-            if (dlg.isDeleted()) {
-                if (controller.deleteNguyenLieu(nl.getMaNL())) {
-                    loadNguyenLieuData();
-                    loadTonKhoData();
-                    JOptionPane.showMessageDialog(this, "Đã xóa nguyên liệu!");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Không thể xóa (có thể đang được sử dụng)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            } else {
+        // Top bar: search + add
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(Color.WHITE);
+        bar.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(230, 230, 230)),
+            new EmptyBorder(8, 15, 8, 15)
+        ));
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.setOpaque(false);
+        left.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY)));
+        JTextField txtSearch = new JTextField(22);
+        txtSearch.setPreferredSize(new Dimension(0, 35));
+        txtSearch.setFont(new Font("Roboto", Font.PLAIN, 14));
+        left.add(txtSearch);
+        bar.add(left, BorderLayout.WEST);
+
+        JButton btnAdd = createSmallBtn("  Thêm", FontAwesome.PLUS, new Color(46, 204, 113));
+        btnAdd.setPreferredSize(new Dimension(180, 40));
+        btnAdd.setFont(new Font("Roboto", Font.BOLD, 14));
+        bar.add(btnAdd, BorderLayout.EAST);
+
+        JPanel topWrapper = new JPanel(new BorderLayout());
+        topWrapper.setOpaque(false);
+        topWrapper.setBorder(new EmptyBorder(10, 10, 0, 10));
+        topWrapper.add(bar, BorderLayout.CENTER);
+        dlg.add(topWrapper, BorderLayout.NORTH);
+
+        // Table
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Đóng Gói", "Đơn Vị Tính", "Đơn Giá Nhập", "Object"};
+        DefaultTableModel nlModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable nlTable = buildStyledTable(nlModel);
+        nlTable.setDefaultRenderer(Object.class, new ZebraRenderer());
+        nlTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+        nlTable.removeColumn(nlTable.getColumnModel().getColumn(5));
+
+        // Load data
+        Runnable loadNL = () -> {
+            nlModel.setRowCount(0);
+            String kw = txtSearch.getText().toLowerCase().trim();
+            for (NguyenLieu nl : controller.getAllNguyenLieu()) {
+                if (!kw.isEmpty() && !nl.getTenNL().toLowerCase().contains(kw) && !nl.getMaNL().toLowerCase().contains(kw))
+                    continue;
+                nlModel.addRow(new Object[]{
+                    nl.getMaNL(), nl.getTenNL(),
+                    nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "",
+                    nl.getDonViTinh(),
+                    CurrencyUtils.formatNoUnit(nl.getDonGiaNhap()) + " đ",
+                    nl
+                });
+            }
+        };
+        loadNL.run();
+
+        txtSearch.addKeyListener(new KeyAdapter() {
+            @Override public void keyReleased(KeyEvent e) { loadNL.run(); }
+        });
+
+        // Add button
+        btnAdd.addActionListener(e -> {
+            NguyenLieu nl = new NguyenLieu();
+            nl.setMaNL(controller.generateNextMaNL());
+            ui.dialog.NguyenLieuDialog nlDlg =
+                new ui.dialog.NguyenLieuDialog((Frame) SwingUtilities.getWindowAncestor(dlg), nl, false);
+            nlDlg.setVisible(true);
+            if (nlDlg.isConfirmed()) {
                 try {
-                    if (controller.updateNguyenLieu(nl)) {
-                        loadNguyenLieuData();
+                    if (controller.addNguyenLieu(nl)) {
+                        loadNL.run();
                         loadTonKhoData();
-                        JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
+                        JOptionPane.showMessageDialog(dlg, "Thêm nguyên liệu thành công!");
                     }
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(dlg, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
-        }
-    }
+        });
 
-    // ═══════════════════════════════════════════════════════════════
-    // HANDLERS — NHÀ CUNG CẤP
-    // ═══════════════════════════════════════════════════════════════
-    private void handleAddNCC() {
-        NhaCungCap ncc = new NhaCungCap();
-        ncc.setMaNCC(controller.generateNextMaNCC());
-        ui.dialog.NhaCungCapDialog dlg =
-            new ui.dialog.NhaCungCapDialog((Frame) SwingUtilities.getWindowAncestor(this), ncc, false);
-        dlg.setVisible(true);
-        if (dlg.isConfirmed()) {
-            try {
-                if (controller.addNhaCungCap(ncc)) {
-                    loadNhaCungCapData();
-                    JOptionPane.showMessageDialog(this, "Thêm nhà cung cấp thành công!");
+        // Double-click edit
+        nlTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = nlTable.getSelectedRow();
+                    if (row >= 0) {
+                        NguyenLieu nl = (NguyenLieu) nlModel.getValueAt(row, 5);
+                        ui.dialog.NguyenLieuDialog nlDlg =
+                            new ui.dialog.NguyenLieuDialog((Frame) SwingUtilities.getWindowAncestor(dlg), nl, true);
+                        nlDlg.setVisible(true);
+                        if (nlDlg.isConfirmed()) {
+                            if (nlDlg.isDeleted()) {
+                                if (controller.deleteNguyenLieu(nl.getMaNL())) {
+                                    loadNL.run();
+                                    loadTonKhoData();
+                                    JOptionPane.showMessageDialog(dlg, "Đã xóa nguyên liệu!");
+                                } else {
+                                    JOptionPane.showMessageDialog(dlg, "Không thể xóa (có thể đang được sử dụng)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                                }
+                            } else {
+                                try {
+                                    if (controller.updateNguyenLieu(nl)) {
+                                        loadNL.run();
+                                        loadTonKhoData();
+                                        JOptionPane.showMessageDialog(dlg, "Cập nhật thành công!");
+                                    }
+                                } catch (Exception ex) {
+                                    JOptionPane.showMessageDialog(dlg, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                                }
+                            }
+                        }
+                    }
                 }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
-        }
+        });
+
+        JScrollPane scroll = new JScrollPane(nlTable);
+        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
+        JPanel tableWrapper = new JPanel(new BorderLayout());
+        tableWrapper.setOpaque(false);
+        tableWrapper.setBorder(new EmptyBorder(5, 10, 5, 10));
+        tableWrapper.add(scroll, BorderLayout.CENTER);
+        dlg.add(tableWrapper, BorderLayout.CENTER);
+
+        // Bottom
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        btnPanel.setOpaque(false);
+        JButton btnClose = new JButton("Đóng");
+        btnClose.setPreferredSize(new Dimension(100, 35));
+        btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
+        btnClose.setBackground(PRIMARY_COLOR);
+        btnClose.setForeground(Color.WHITE);
+        btnClose.addActionListener(e -> dlg.dispose());
+        btnPanel.add(btnClose);
+        dlg.add(btnPanel, BorderLayout.SOUTH);
+
+        dlg.setVisible(true);
     }
 
-    private void handleEditNCC(NhaCungCap ncc) {
-        ui.dialog.NhaCungCapDialog dlg =
-            new ui.dialog.NhaCungCapDialog((Frame) SwingUtilities.getWindowAncestor(this), ncc, true);
-        dlg.setVisible(true);
-        if (dlg.isConfirmed()) {
-            if (dlg.isDeleted()) {
-                if (controller.deleteNhaCungCap(ncc.getMaNCC())) {
-                    loadNhaCungCapData();
-                    JOptionPane.showMessageDialog(this, "Đã xóa nhà cung cấp!");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Không thể xóa (có phiếu nhập liên quan)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            } else {
+    // ===============================================================
+    // HANDLERS — NHA CUNG CAP (popup dialog)
+    // ===============================================================
+    private void openNhaCungCapListDialog() {
+        JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Quản Lý Nhà Cung Cấp", true);
+        dlg.setSize(950, 650);
+        dlg.setLocationRelativeTo(this);
+        dlg.setLayout(new BorderLayout(0, 10));
+        dlg.getContentPane().setBackground(new Color(245, 247, 250));
+
+        // Top bar
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(Color.WHITE);
+        bar.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(230, 230, 230)),
+            new EmptyBorder(8, 15, 8, 15)
+        ));
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.setOpaque(false);
+        left.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY)));
+        JTextField txtSearch = new JTextField(22);
+        txtSearch.setPreferredSize(new Dimension(0, 35));
+        txtSearch.setFont(new Font("Roboto", Font.PLAIN, 14));
+        left.add(txtSearch);
+        bar.add(left, BorderLayout.WEST);
+
+        JButton btnAdd = createSmallBtn("  Thêm", FontAwesome.PLUS, new Color(46, 204, 113));
+        bar.add(btnAdd, BorderLayout.EAST);
+
+        JPanel topWrapper = new JPanel(new BorderLayout());
+        topWrapper.setOpaque(false);
+        topWrapper.setBorder(new EmptyBorder(10, 10, 0, 10));
+        topWrapper.add(bar, BorderLayout.CENTER);
+        dlg.add(topWrapper, BorderLayout.NORTH);
+
+        // Table
+        String[] cols = {"Mã Nhà Cung Cấp", "Tên Nhà Cung Cấp", "Số Điện Thoại", "Email", "Địa Chỉ", "Object"};
+        DefaultTableModel nccModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable nccTable = buildStyledTable(nccModel);
+        nccTable.setDefaultRenderer(Object.class, new ZebraRenderer());
+        nccTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+        nccTable.removeColumn(nccTable.getColumnModel().getColumn(5));
+
+        // Load data
+        Runnable loadNCC = () -> {
+            nccModel.setRowCount(0);
+            String kw = txtSearch.getText().toLowerCase().trim();
+            for (NhaCungCap ncc : controller.getAllNhaCungCap()) {
+                if (!kw.isEmpty() && !ncc.getTenNCC().toLowerCase().contains(kw) && !ncc.getMaNCC().toLowerCase().contains(kw))
+                    continue;
+                nccModel.addRow(new Object[]{
+                    ncc.getMaNCC(), ncc.getTenNCC(),
+                    ncc.getSoDienThoai() != null ? ncc.getSoDienThoai() : "",
+                    ncc.getEmail() != null ? ncc.getEmail() : "",
+                    ncc.getDiaChi() != null ? ncc.getDiaChi() : "",
+                    ncc
+                });
+            }
+        };
+        loadNCC.run();
+
+        txtSearch.addKeyListener(new KeyAdapter() {
+            @Override public void keyReleased(KeyEvent e) { loadNCC.run(); }
+        });
+
+        // Add button
+        btnAdd.addActionListener(e -> {
+            NhaCungCap ncc = new NhaCungCap();
+            ncc.setMaNCC(controller.generateNextMaNCC());
+            ui.dialog.NhaCungCapDialog nccDlg =
+                new ui.dialog.NhaCungCapDialog((Frame) SwingUtilities.getWindowAncestor(dlg), ncc, false);
+            nccDlg.setVisible(true);
+            if (nccDlg.isConfirmed()) {
                 try {
-                    if (controller.updateNhaCungCap(ncc)) {
-                        loadNhaCungCapData();
-                        JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
+                    if (controller.addNhaCungCap(ncc)) {
+                        loadNCC.run();
+                        JOptionPane.showMessageDialog(dlg, "Thêm nhà cung cấp thành công!");
                     }
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(dlg, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
-        }
+        });
+
+        // Double-click edit
+        nccTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = nccTable.getSelectedRow();
+                    if (row >= 0) {
+                        NhaCungCap ncc = (NhaCungCap) nccModel.getValueAt(row, 5);
+                        ui.dialog.NhaCungCapDialog nccDlg =
+                            new ui.dialog.NhaCungCapDialog((Frame) SwingUtilities.getWindowAncestor(dlg), ncc, true);
+                        nccDlg.setVisible(true);
+                        if (nccDlg.isConfirmed()) {
+                            if (nccDlg.isDeleted()) {
+                                if (controller.deleteNhaCungCap(ncc.getMaNCC())) {
+                                    loadNCC.run();
+                                    JOptionPane.showMessageDialog(dlg, "Đã xóa nhà cung cấp!");
+                                } else {
+                                    JOptionPane.showMessageDialog(dlg, "Không thể xóa (có phiếu nhập liên quan)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                                }
+                            } else {
+                                try {
+                                    if (controller.updateNhaCungCap(ncc)) {
+                                        loadNCC.run();
+                                        JOptionPane.showMessageDialog(dlg, "Cập nhật thành công!");
+                                    }
+                                } catch (Exception ex) {
+                                    JOptionPane.showMessageDialog(dlg, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(nccTable);
+        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
+        JPanel tableWrapper = new JPanel(new BorderLayout());
+        tableWrapper.setOpaque(false);
+        tableWrapper.setBorder(new EmptyBorder(5, 10, 5, 10));
+        tableWrapper.add(scroll, BorderLayout.CENTER);
+        dlg.add(tableWrapper, BorderLayout.CENTER);
+
+        // Bottom
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        btnPanel.setOpaque(false);
+        JButton btnClose = new JButton("Đóng");
+        btnClose.setPreferredSize(new Dimension(100, 35));
+        btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
+        btnClose.setBackground(PRIMARY_COLOR);
+        btnClose.setForeground(Color.WHITE);
+        btnClose.addActionListener(e -> dlg.dispose());
+        btnPanel.add(btnClose);
+        dlg.add(btnPanel, BorderLayout.SOUTH);
+
+        dlg.setVisible(true);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // HANDLERS — PHIẾU NHẬP
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
+    // HANDLERS — PHIEU NHAP
+    // ===============================================================
     private void handleTaoPhieuNhap() {
         ui.dialog.PhieuNhapDialog dlg = new ui.dialog.PhieuNhapDialog((Frame) SwingUtilities.getWindowAncestor(this));
         dlg.setVisible(true);
@@ -697,7 +804,6 @@ public class WarehouseManagementPanel extends JPanel {
         String tongTien = (String) pnModel.getValueAt(row, 4);
         List<ChiTietPhieuNhap> chiTiet = controller.getChiTietByPhieuNhap(maPN);
 
-        // Tạo JDialog chi tiết
         JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Chi Tiết Phiếu Nhập: " + maPN, true);
         dlg.setSize(700, 500);
         dlg.setLocationRelativeTo(this);
@@ -723,8 +829,8 @@ public class WarehouseManagementPanel extends JPanel {
         topWrapper.add(infoPanel, BorderLayout.CENTER);
         dlg.add(topWrapper, BorderLayout.NORTH);
 
-        // Bảng chi tiết
-        String[] cols = {"Mã NL", "Tên Nguyên Liệu", "Số Lượng", "Đơn Giá", "Thành Tiền"};
+        // Bang chi tiet
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Số Lượng", "Đơn Giá", "Thành Tiền"};
         DefaultTableModel detailModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -750,7 +856,93 @@ public class WarehouseManagementPanel extends JPanel {
         tableWrapper.add(scroll, BorderLayout.CENTER);
         dlg.add(tableWrapper, BorderLayout.CENTER);
 
-        // Nút đóng
+        // Nut dong
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        btnPanel.setOpaque(false);
+        JButton btnClose = new JButton("Đóng");
+        btnClose.setPreferredSize(new Dimension(100, 35));
+        btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
+        btnClose.setBackground(PRIMARY_COLOR);
+        btnClose.setForeground(Color.WHITE);
+        btnClose.addActionListener(e -> dlg.dispose());
+        btnPanel.add(btnClose);
+        dlg.add(btnPanel, BorderLayout.SOUTH);
+
+        dlg.setVisible(true);
+    }
+
+    // ===============================================================
+    // HANDLERS — PHIEU XUAT
+    // ===============================================================
+    private void handleTaoPhieuXuat() {
+        ui.dialog.PhieuXuatDialog dlg = new ui.dialog.PhieuXuatDialog((Frame) SwingUtilities.getWindowAncestor(this));
+        dlg.setVisible(true);
+        if (dlg.isConfirmed()) {
+            loadPhieuXuatData();
+            loadTonKhoData();
+        }
+    }
+
+    private void viewPhieuXuatDetail() {
+        int row = pxTable.getSelectedRow();
+        if (row < 0) return;
+        String maPX = (String) pxModel.getValueAt(row, 0);
+        String ngayXuat = (String) pxModel.getValueAt(row, 1);
+        String lyDo = (String) pxModel.getValueAt(row, 2);
+        String maNV = (String) pxModel.getValueAt(row, 3);
+        List<ChiTietPhieuXuat> chiTiet = controller.getChiTietByPhieuXuat(maPX);
+
+        JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Chi Tiết Phiếu Xuất: " + maPX, true);
+        dlg.setSize(650, 450);
+        dlg.setLocationRelativeTo(this);
+        dlg.setLayout(new BorderLayout(0, 10));
+        dlg.getContentPane().setBackground(new Color(245, 247, 250));
+
+        // Header info
+        JPanel infoPanel = new JPanel(new GridLayout(0, 2, 10, 5));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(230, 230, 230)),
+            new EmptyBorder(15, 20, 15, 20)
+        ));
+        infoPanel.add(createStyledLabel("Mã Phiếu:", true)); infoPanel.add(createStyledLabel(maPX, false));
+        infoPanel.add(createStyledLabel("Ngày Xuất:", true)); infoPanel.add(createStyledLabel(ngayXuat, false));
+        infoPanel.add(createStyledLabel("Lý Do:", true)); infoPanel.add(createStyledLabel(lyDo, false));
+        infoPanel.add(createStyledLabel("Nhân Viên:", true)); infoPanel.add(createStyledLabel(maNV, false));
+
+        JPanel topWrapper = new JPanel(new BorderLayout());
+        topWrapper.setOpaque(false);
+        topWrapper.setBorder(new EmptyBorder(15, 15, 0, 15));
+        topWrapper.add(infoPanel, BorderLayout.CENTER);
+        dlg.add(topWrapper, BorderLayout.NORTH);
+
+        // Bang chi tiet
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Tính", "Số Lượng Xuất"};
+        DefaultTableModel detailModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        for (ChiTietPhieuXuat ct : chiTiet) {
+            NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
+            String tenNL = nl != null ? nl.getTenNL() : ct.getMaNL();
+            String dvt = nl != null ? nl.getDonViTinh() : "";
+            detailModel.addRow(new Object[]{
+                ct.getMaNL(), tenNL, dvt,
+                String.format("%.2f", ct.getSoLuong())
+            });
+        }
+        JTable detailTable = buildStyledTable(detailModel);
+        detailTable.setDefaultRenderer(Object.class, new ZebraRenderer());
+        detailTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+        JScrollPane scroll = new JScrollPane(detailTable);
+        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
+
+        JPanel tableWrapper = new JPanel(new BorderLayout());
+        tableWrapper.setOpaque(false);
+        tableWrapper.setBorder(new EmptyBorder(5, 15, 5, 15));
+        tableWrapper.add(scroll, BorderLayout.CENTER);
+        dlg.add(tableWrapper, BorderLayout.CENTER);
+
+        // Nut dong
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         btnPanel.setOpaque(false);
         JButton btnClose = new JButton("Đóng");
@@ -772,9 +964,9 @@ public class WarehouseManagementPanel extends JPanel {
         return lbl;
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // HELPERS — TABLE & BUTTON
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     private JTable buildStyledTable(DefaultTableModel model) {
         JTable t = new JTable(model);
         t.setRowHeight(55);
@@ -799,9 +991,9 @@ public class WarehouseManagementPanel extends JPanel {
         return b;
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // RENDERERS
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     class ZebraRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
@@ -815,15 +1007,15 @@ public class WarehouseManagementPanel extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
             Component c = super.getTableCellRendererComponent(t, v, sel, foc, row, col);
-            Object statusVal = tonKhoModel.getValueAt(row, 7);
-            boolean warn = statusVal != null && statusVal.toString().contains("Sắp hết");
+            Object statusVal = tonKhoModel.getValueAt(row, 6);
+            boolean warn = statusVal != null && (statusVal.toString().contains("S\u1eafp h\u1ebft") || statusVal.toString().contains("H\u1ebft h\u00e0ng"));
             if (!sel) {
                 if (warn) {
                     c.setBackground(new Color(254, 243, 242));
-                    c.setForeground(col == 7 ? WARN_COLOR : Color.BLACK);
+                    c.setForeground(col == 6 ? WARN_COLOR : Color.BLACK);
                 } else {
                     c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(252, 253, 255));
-                    c.setForeground(col == 7 ? OK_COLOR : Color.BLACK);
+                    c.setForeground(col == 6 ? OK_COLOR : Color.BLACK);
                 }
             }
             return c;

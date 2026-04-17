@@ -7,6 +7,7 @@ import dao.impl.TonKhoDAOImpl;
 import dto.CartItem;
 import entity.DinhMucNguyenLieu;
 import entity.TonKho;
+import utils.SessionManager;
 
 import java.util.List;
 
@@ -14,10 +15,12 @@ public class InventoryController {
     
     private final DinhMucNguyenLieuDAO dinhMucDAO;
     private final TonKhoDAO tonKhoDAO;
+    private final KhoController khoController;
 
     public InventoryController() {
         this.dinhMucDAO = new DinhMucNguyenLieuDAOImpl();
         this.tonKhoDAO = new TonKhoDAOImpl();
+        this.khoController = new KhoController();
     }
 
     /**
@@ -47,6 +50,7 @@ public class InventoryController {
     /**
      * Nhận vào list CartItem (Giỏ hàng đã thanh toán), tiến hành trừ kho.
      * Cần nhân Hệ số Size (S: 0.8, M: 1.0, L: 1.2) - (giả định)
+     * Đồng thời tạo phiếu xuất tự động.
      */
     public void deductStock(List<CartItem> cartItems) {
         for (CartItem item : cartItems) {
@@ -76,5 +80,14 @@ public class InventoryController {
                 }
             }
         }
+
+        // Tạo phiếu xuất tự động khi thanh toán
+        String maNV = SessionManager.isLoggedIn() ? SessionManager.getCurrentUser().getMaNV() : "NV001";
+        try {
+            khoController.processXuatKhoFromPayment(cartItems, maNV);
+        } catch (Exception e) {
+            System.err.println("InventoryController: Loi tao phieu xuat tu dong: " + e.getMessage());
+        }
     }
 }
+

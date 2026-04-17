@@ -16,8 +16,9 @@ import java.awt.*;
  */
 public class NguyenLieuDialog extends JDialog {
 
-    private JTextField txtMaNL, txtTenNL, txtDonViTinh, txtDonGia;
-    private JComboBox<String> cbLoaiNL;
+    private JTextField txtMaNL, txtTenNL, txtDonGia;
+    private JComboBox<String> cbDonViTinh;
+    private JComboBox<String> cbDonViDongGoi;
     private boolean confirmed = false;
     private boolean deleted   = false;
     private final NguyenLieu current;
@@ -98,7 +99,7 @@ public class NguyenLieuDialog extends JDialog {
 
         Color readOnlyBg = new Color(240, 240, 240);
 
-        // Mã NL
+        // Mã Nguyên Liệu
         addLabelRow(form, gbc, "Mã Nguyên Liệu:", FontAwesome.BARCODE);
         txtMaNL = new JTextField(20);
         txtMaNL.setPreferredSize(new Dimension(0, 35));
@@ -106,29 +107,32 @@ public class NguyenLieuDialog extends JDialog {
         txtMaNL.setBackground(readOnlyBg);
         form.add(txtMaNL, gbc); gbc.gridy++;
 
-        // Tên NL
+        // Tên Nguyên Liệu
         addLabelRow(form, gbc, "Tên Nguyên Liệu*:", FontAwesome.TAG);
         txtTenNL = new JTextField(20);
         txtTenNL.setPreferredSize(new Dimension(0, 35));
         if (viewOnly) { txtTenNL.setEditable(false); txtTenNL.setBackground(readOnlyBg); }
         form.add(txtTenNL, gbc); gbc.gridy++;
 
-        // Loại Nguyên Liệu
-        addLabelRow(form, gbc, "Loại Nguyên Liệu*:", FontAwesome.LIST);
-        cbLoaiNL = new JComboBox<>(new String[]{"Chính", "Phụ"});
-        cbLoaiNL.setPreferredSize(new Dimension(0, 35));
-        cbLoaiNL.setFont(new Font("Roboto", Font.PLAIN, 14));
-        if (viewOnly) { cbLoaiNL.setEnabled(false); }
-        form.add(cbLoaiNL, gbc); gbc.gridy++;
-
-        // ĐV Tính
+        // Đơn Vị Tính (ComboBox: g, ml, kg, lít)
         addLabelRow(form, gbc, "Đơn Vị Tính*:", FontAwesome.BALANCE_SCALE);
-        txtDonViTinh = new JTextField(20);
-        txtDonViTinh.setPreferredSize(new Dimension(0, 35));
-        if (viewOnly) { txtDonViTinh.setEditable(false); txtDonViTinh.setBackground(readOnlyBg); }
-        form.add(txtDonViTinh, gbc); gbc.gridy++;
+        cbDonViTinh = new JComboBox<>(new String[]{"g", "ml", "kg", "lít"});
+        cbDonViTinh.setPreferredSize(new Dimension(0, 35));
+        cbDonViTinh.setFont(new Font("Roboto", Font.PLAIN, 14));
+        cbDonViTinh.setEditable(true);
+        if (viewOnly) { cbDonViTinh.setEnabled(false); }
+        form.add(cbDonViTinh, gbc); gbc.gridy++;
 
-        // Đơn giá nhập
+        // Đơn Vị Đóng Gói (ComboBox: Hộp, Bịch, Chai, Gói, Lon, Thùng)
+        addLabelRow(form, gbc, "Đơn Vị Đóng Gói*:", FontAwesome.ARCHIVE);
+        cbDonViDongGoi = new JComboBox<>(new String[]{"Hộp", "Bịch", "Chai", "Gói", "Lon", "Thùng", "Túi", "Can"});
+        cbDonViDongGoi.setPreferredSize(new Dimension(0, 35));
+        cbDonViDongGoi.setFont(new Font("Roboto", Font.PLAIN, 14));
+        cbDonViDongGoi.setEditable(true);
+        if (viewOnly) { cbDonViDongGoi.setEnabled(false); }
+        form.add(cbDonViDongGoi, gbc); gbc.gridy++;
+
+        // Đơn Giá Nhập
         addLabelRow(form, gbc, "Đơn Giá Nhập*:", FontAwesome.MONEY);
         txtDonGia = new JTextField(20);
         txtDonGia.setPreferredSize(new Dimension(0, 35));
@@ -198,22 +202,24 @@ public class NguyenLieuDialog extends JDialog {
         txtMaNL.setText(current.getMaNL());
         if (isEdit || viewOnly) {
             txtTenNL.setText(current.getTenNL());
-            txtDonViTinh.setText(current.getDonViTinh());
+            if (current.getDonViTinh() != null) {
+                cbDonViTinh.setSelectedItem(current.getDonViTinh());
+            }
             txtDonGia.setText(String.valueOf((long) current.getDonGiaNhap()));
-            if (current.getLoaiNL() != null) {
-                cbLoaiNL.setSelectedItem(current.getLoaiNL());
+            if (current.getDonViDongGoi() != null) {
+                cbDonViDongGoi.setSelectedItem(current.getDonViDongGoi());
             }
         }
     }
 
     private void handleSave() {
         String tenNL = txtTenNL.getText().trim();
-        String donViTinh = txtDonViTinh.getText().trim();
+        String donViTinh = cbDonViTinh.getSelectedItem() != null ? cbDonViTinh.getSelectedItem().toString().trim() : "";
+        String donViDongGoi = cbDonViDongGoi.getSelectedItem() != null ? cbDonViDongGoi.getSelectedItem().toString().trim() : "";
         String donGiaStr = txtDonGia.getText().trim();
-        String loaiNL = (String) cbLoaiNL.getSelectedItem();
 
         if (tenNL.isEmpty() || donViTinh.isEmpty() || donGiaStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin (Tên, ĐV tính, Đơn giá).");
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin (Tên, Đơn vị tính, Đơn giá).");
             return;
         }
 
@@ -228,8 +234,8 @@ public class NguyenLieuDialog extends JDialog {
 
         current.setTenNL(tenNL);
         current.setDonViTinh(donViTinh);
+        current.setDonViDongGoi(donViDongGoi);
         current.setDonGiaNhap(donGia);
-        current.setLoaiNL(loaiNL);
 
         confirmed = true;
         dispose();
