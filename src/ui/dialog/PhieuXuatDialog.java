@@ -26,6 +26,7 @@ public class PhieuXuatDialog extends JDialog {
     private JComboBox<String> cbNguyenLieu;
     private JTextField txtSoLuong;
     private JLabel lblDonViTinh;
+    private JLabel lblTonKho;
     private JTextField txtLyDo;
     private JTable tableItems;
     private DefaultTableModel modelItems;
@@ -41,7 +42,7 @@ public class PhieuXuatDialog extends JDialog {
 
     public PhieuXuatDialog(Frame owner) {
         super(owner, "Tạo Phiếu Xuất Kho", true);
-        setSize(950, 700);
+        setSize(1050, 750);
         setLocationRelativeTo(owner);
         setResizable(false);
 
@@ -108,6 +109,12 @@ public class PhieuXuatDialog extends JDialog {
         lblDonViTinh.setForeground(new Color(41, 128, 185));
         lblDonViTinh.setPreferredSize(new Dimension(80, 32));
         pnlAddRow.add(lblDonViTinh);
+
+        lblTonKho = new JLabel("");
+        lblTonKho.setFont(new Font("Roboto", Font.BOLD, 13));
+        lblTonKho.setForeground(new Color(39, 174, 96));
+        lblTonKho.setPreferredSize(new Dimension(150, 32));
+        pnlAddRow.add(lblTonKho);
 
         JButton btnAddLine = new JButton("Thêm dòng");
         btnAddLine.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS, 13, Color.WHITE));
@@ -182,21 +189,40 @@ public class PhieuXuatDialog extends JDialog {
             cbNguyenLieu.addItem(nl.getMaNL() + " - " + nl.getTenNL());
         }
 
-        // Auto-update đơn vị tính khi chọn nguyên liệu
-        cbNguyenLieu.addActionListener(e -> {
-            int idx = cbNguyenLieu.getSelectedIndex();
-            if (idx >= 0 && idx < listNL.size()) {
-                String dvt = listNL.get(idx).getDonViTinh();
-                lblDonViTinh.setText(dvt != null ? dvt : "");
-            } else {
-                lblDonViTinh.setText("");
-            }
-        });
+        // Auto-update đơn vị tính và tồn kho khi chọn nguyên liệu
+        cbNguyenLieu.addActionListener(e -> updateNguyenLieuInfo());
 
         // Set initial value
         if (!listNL.isEmpty()) {
-            String dvt = listNL.get(0).getDonViTinh();
+            updateNguyenLieuInfo();
+        }
+    }
+
+    private void updateNguyenLieuInfo() {
+        int idx = cbNguyenLieu.getSelectedIndex();
+        if (idx >= 0 && idx < listNL.size()) {
+            NguyenLieu nl = listNL.get(idx);
+            String dvt = nl.getDonViTinh();
             lblDonViTinh.setText(dvt != null ? dvt : "");
+
+            // Hiển thị tồn kho
+            double tonKho = 0;
+            List<TonKho> allTK = controller.getAllTonKho();
+            for (TonKho tk : allTK) {
+                if (tk.getMaNL().equals(nl.getMaNL())) {
+                    tonKho = tk.getSoLuongTon();
+                    break;
+                }
+            }
+            lblTonKho.setText("Tồn kho: " + String.format("%.1f", tonKho));
+            if (tonKho <= 0) {
+                lblTonKho.setForeground(new Color(231, 76, 60));
+            } else {
+                lblTonKho.setForeground(new Color(39, 174, 96));
+            }
+        } else {
+            lblDonViTinh.setText("");
+            lblTonKho.setText("");
         }
     }
 
