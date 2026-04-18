@@ -14,6 +14,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import javax.imageio.ImageIO;
 
 import jiconfont.icons.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -45,6 +46,7 @@ public class OrderPanel extends JPanel {
     private JTable cartTable;
     private DefaultTableModel cartModel;
     private JLabel lblTotalCart;
+    private JTextField txtSearchMon;
 
     private Runnable onBackAction;
     private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
@@ -148,12 +150,13 @@ public class OrderPanel extends JPanel {
         btn.putClientProperty("JButton.buttonArc", 15);
         btn.putClientProperty("JButton.margin", new java.awt.Insets(12, 20, 12, 20));
         btn.putClientProperty("JButton.borderWidth", 0);
-        btn.putClientProperty("JButton.selectedBackground", new Color(113, 76, 52)); // #714c34
+        btn.putClientProperty("JButton.selectedBackground", new Color(113, 76, 52));
         btn.putClientProperty("JButton.selectedForeground", Color.WHITE);
-        btn.putClientProperty("JButton.hoverBackground", new Color(232, 236, 239)); // #e8ecef
+        btn.putClientProperty("JButton.hoverBackground", new Color(232, 236, 239));
         btn.putClientProperty("JButton.focusWidth", 0);
+        btn.putClientProperty("category", cat); // Lưu category để filterMenu() tra cứu
         btn.setBackground(null);
-        btn.setForeground(new Color(74, 54, 40)); // #4a3628
+        btn.setForeground(new Color(74, 54, 40));
             
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -161,6 +164,8 @@ public class OrderPanel extends JPanel {
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         btn.addActionListener(e -> {
+            // Reset thanh tìm kiếm khi đổi danh mục
+            if (txtSearchMon != null) txtSearchMon.setText("");
             loadMenuToGrid(cat);
         });
 
@@ -175,7 +180,29 @@ public class OrderPanel extends JPanel {
     private JPanel createMenuGridPanel() {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
-        
+
+        // ── Thanh tìm kiếm món ──
+        JPanel searchBar = new JPanel(new BorderLayout(8, 0));
+        searchBar.setOpaque(false);
+        searchBar.setBorder(new EmptyBorder(5, 10, 5, 10));
+
+        JLabel lblSearch = new JLabel();
+        lblSearch.setIcon(jiconfont.swing.IconFontSwing.buildIcon(
+                jiconfont.icons.FontAwesome.SEARCH, 14, new Color(150, 150, 150)));
+        searchBar.add(lblSearch, BorderLayout.WEST);
+
+        txtSearchMon = new JTextField();
+        txtSearchMon.setFont(new Font("Roboto", Font.PLAIN, 14));
+        txtSearchMon.putClientProperty("JTextField.placeholderText", "Tìm tên món...");
+        txtSearchMon.putClientProperty("JComponent.arc", 8);
+        txtSearchMon.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+        });
+        searchBar.add(txtSearchMon, BorderLayout.CENTER);
+        p.add(searchBar, BorderLayout.NORTH);
+
         menuGrid = new JPanel(new utils.WrapLayout(FlowLayout.LEFT, 15, 15));
         menuGrid.setOpaque(false);
         menuGrid.setBorder(new EmptyBorder(0, 10, 20, 10));
@@ -192,20 +219,68 @@ public class OrderPanel extends JPanel {
     
     private void loadMenuToGrid(LoaiMon cat) {
         menuGrid.removeAll();
-        // Nếu cat == null, controller sẽ lấy tất cả do param trong SQL pattern 
-        List<Mon> dsMon = menuController.getMon(cat); 
-
+        List<Mon> dsMon = menuController.getMon(cat);
+        String keyword = (txtSearchMon != null) ? txtSearchMon.getText().trim().toLowerCase() : "";
         for (Mon m : dsMon) {
-            menuGrid.add(createItemCard(m));
+            if (keyword.isEmpty() || m.getTenMon().toLowerCase().contains(keyword)) {
+                menuGrid.add(createItemCard(m));
+            }
         }
-
         menuGrid.revalidate();
         menuGrid.repaint();
     }
+
+    /** Lọc món theo từ khóa trong thanh tìm kiếm (giữ danh mục đang chọn) */
+    private void filterMenu() {
+        // Lấy loại món đang chọn từ category sidebar
+        LoaiMon selectedCat = null;
+        if (bgCategories != null) {
+            java.util.Enumeration<AbstractButton> elements = bgCategories.getElements();
+            while (elements.hasMoreElements()) {
+                AbstractButton btn = elements.nextElement();
+                if (btn.isSelected()) {
+                    Object cat = btn.getClientProperty("category");
+                    if (cat instanceof LoaiMon) selectedCat = (LoaiMon) cat;
+                    break;
+                }
+            }
+        }
+        loadMenuToGrid(selectedCat);
+    }
     
+    /**
+     * Giải quyết đường dẫn file ảnh bằng cách thử nhiều base path.
+     * DB lưu path dạng "images/mon/xxx.jpg" (relative).
+     * App có thể được chạy từ thư mục QuanLyCoffee hoặc thư mục cha.
+     */
+    private java.io.File resolveImageFile(String storedPath) {
+        if (storedPath == null || storedPath.isBlank()) return null;
+
+        // 1. Thử trực tiếp (absolute path hoặc đúng CWD)
+        java.io.File f = new java.io.File(storedPath);
+        if (f.exists()) return f;
+
+        // 2. Thử từ CWD hiện tại
+        f = new java.io.File(System.getProperty("user.dir"), storedPath);
+        if (f.exists()) return f;
+
+        // 3. Thử từ thư mục cha của CWD (trường hợp CWD = .../Project/QuanLyCoffee)
+        java.io.File parentDir = new java.io.File(System.getProperty("user.dir")).getParentFile();
+        if (parentDir != null) {
+            f = new java.io.File(parentDir, storedPath);
+            if (f.exists()) return f;
+        }
+
+        // 4. Tên file thôi — tìm trong images/mon/ relative CWD
+        String fileName = new java.io.File(storedPath).getName();
+        f = new java.io.File(System.getProperty("user.dir"), "images/mon/" + fileName);
+        if (f.exists()) return f;
+
+        return null; // Không tìm thấy
+    }
+
     private JPanel createItemCard(Mon m) {
         boolean isHet = menuController.isHetHang(m.getMaMon());
-        // Bug 1: Kiểm tra trạng thái món — ngưng bán cũng không cho order
         boolean isNgungBan = !m.isTrangThai();
         boolean isDisabled = isHet || isNgungBan;
 
@@ -213,7 +288,7 @@ public class OrderPanel extends JPanel {
         card.setPreferredSize(new Dimension(165, 230));
         card.setBackground(Color.WHITE);
         card.putClientProperty("JComponent.arc", 20);
-        card.setBorder(BorderFactory.createLineBorder(new Color(232, 232, 232), 1)); // #e8e8e8 
+        card.setBorder(BorderFactory.createLineBorder(new Color(232, 232, 232), 1));
         
         // Image Area
         JLabel lblImage = new JLabel();
@@ -222,9 +297,29 @@ public class OrderPanel extends JPanel {
         lblImage.setBackground(isDisabled ? new Color(240, 240, 240) : new Color(248, 249, 250));
         lblImage.setHorizontalAlignment(SwingConstants.CENTER);
         
-        jiconfont.IconCode iconCode = isDisabled ? FontAwesome.BAN : FontAwesome.COFFEE; 
-        Color iconColor = isDisabled ? new Color(200, 150, 150) : new Color(139, 90, 43);
-        lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(iconCode, 50, iconColor));
+        // Load ảnh từ hinhAnh nếu có, ngược lại dùng icon FontAwesome
+        if (isDisabled) {
+            lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.BAN, 50, new Color(200, 150, 150)));
+        } else if (m.getHinhAnh() != null && !m.getHinhAnh().isBlank()) {
+            java.io.File imgFile = resolveImageFile(m.getHinhAnh());
+            if (imgFile != null && imgFile.exists()) {
+                try {
+                    java.awt.image.BufferedImage raw = javax.imageio.ImageIO.read(imgFile);
+                    if (raw != null) {
+                        java.awt.Image scaled = raw.getScaledInstance(165, 130, java.awt.Image.SCALE_SMOOTH);
+                        lblImage.setIcon(new ImageIcon(scaled));
+                    } else {
+                        lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+                    }
+                } catch (Exception imgEx) {
+                    lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+                }
+            } else {
+                lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+            }
+        } else {
+            lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+        }
         lblImage.putClientProperty("JComponent.arc", 20);
 
         JPanel pnlTop = new JPanel(new BorderLayout());
@@ -637,8 +732,9 @@ public class OrderPanel extends JPanel {
         
         if (performSaveOrder()) {
             renderCartTable(); // Cập nhật lại UI để chuyển chữ (Mới) -> (Đã báo bếp) và thể hiện sự được gộp
-            JOptionPane.showMessageDialog(this, "Lưu đơn hàng thành công!");
-            if (onBackAction != null) onBackAction.run();
+            JOptionPane.showMessageDialog(this, "Đã gọi món thành công!",
+                    "Gọi Món", JOptionPane.INFORMATION_MESSAGE);
+            // KHÔNG tự động back: nhân viên cần tiếp tục thao tác trên bàn này
         }
     }
 
@@ -726,26 +822,33 @@ public class OrderPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chỉ có thể đổi/gộp bàn cho đơn hàng đã [Gửi Bếp]!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if ("MANG_VE".equals(currentBan.getMaBan())) {
-            JOptionPane.showMessageDialog(this, "Không cho phép chuyển/gộp đối với đơn Mang về!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
+
         Window win = SwingUtilities.getWindowAncestor(this);
         if (!(win instanceof JFrame)) return;
 
         if (actionType == 1) { // Chuyển bàn
             ui.dialog.TransferTableDialog dlg = new ui.dialog.TransferTableDialog((JFrame) win, currentBan, currentDonHang, 1);
             dlg.setVisible(true);
-            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+            if (dlg.isSuccess()) {
+                // Sau khi chuyển: refresh lại trạng thái rồi quay về sơ đồ bàn
+                if (onBackAction != null) onBackAction.run();
+            }
         } else if (actionType == 2) { // Ghép bàn
             ui.dialog.TransferTableDialog dlg = new ui.dialog.TransferTableDialog((JFrame) win, currentBan, currentDonHang, 2);
             dlg.setVisible(true);
-            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+            if (dlg.isSuccess()) {
+                // Sau khi gộp: bàn nguồn bị xóa -> quay về sơ đồ
+                if (onBackAction != null) onBackAction.run();
+            }
         } else if (actionType == 3) { // Tách món
             ui.dialog.TransferItemsDialog dlg = new ui.dialog.TransferItemsDialog((JFrame) win, currentBan, currentDonHang, cartData);
             dlg.setVisible(true);
-            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+            if (dlg.isSuccess()) {
+                // Sau khi tách: reload giỏ hàng của bàn nguồn
+                cartData = orderController.loadCart(currentDonHang.getMaDonHang());
+                renderCartTable();
+                JOptionPane.showMessageDialog(this, "Tách món thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            }
         }
     }
 }

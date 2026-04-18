@@ -422,9 +422,16 @@ public class MenuDialog extends JDialog {
         chkTrangThai.setSelected(dish.isTrangThai());
         txtMoTa.setText(dish.getMoTa() != null ? dish.getMoTa() : "");
 
-        // Load ảnh preview nếu có
+        // Load ảnh preview nếu có (path có thể là absolute hoặc relative)
         if (selectedImagePath != null && !selectedImagePath.isBlank()) {
-            loadImagePreview(new File(selectedImagePath));
+            File imgFile = new File(selectedImagePath);
+            if (!imgFile.exists()) {
+                // Thử relative từ user.dir
+                imgFile = new File(System.getProperty("user.dir"), selectedImagePath);
+            }
+            if (imgFile.exists()) {
+                loadImagePreview(imgFile);
+            }
         }
 
         // Load danh sách size (chỉ edit mode)
@@ -452,7 +459,8 @@ public class MenuDialog extends JDialog {
 
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File selected = chooser.getSelectedFile();
-            selectedImagePath = IMG_RELATIVE_PREFIX + selected.getName();
+            // Lưu path tuyệt đối để app load được ảnh bất kể thư mục chạy
+            selectedImagePath = selected.getAbsolutePath();
             loadImagePreview(selected);
             updateSaveBtn(); // ảnh thay đổi → check dirty
         }

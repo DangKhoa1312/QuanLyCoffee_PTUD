@@ -573,26 +573,6 @@ public class TablePanel extends JPanel {
                 if (clickListener == null) return;
 
                 if (ban.getTrangThai() == TrangThaiBan.CO_KHACH) {
-                    // Nếu có đặt bàn đã xác nhận -> hiện lại thông tin (yêu cầu của user)
-                    DatBan db = reservationController.findDatBanHienTaiCuaBan(ban.getMaBan());
-                    if (db != null && db.getTrangThai() == TrangThaiDatBan.DA_XAC_NHAN) {
-                        String thoiGian = db.getThoiGianDen() != null
-                            ? java.time.format.DateTimeFormatter.ofPattern("HH:mm  dd/MM/yyyy").format(db.getThoiGianDen()) : "?";
-                        String msg = "<html>"
-                            + "<b style='color:#2980B9;font-size:13px;'>ℹ️ THÔNG TIN ĐẶT BÀN (ĐÃ XÁC NHẬN)</b>"
-                            + "<hr style='border:1px solid #ddd;'/>"
-                            + "<table style='font-size:12px;'>"
-                            + "<tr><td><b>Khách:&nbsp;</b></td><td>" + db.getTenKhach() + "</td></tr>"
-                            + "<tr><td><b>SĐT:&nbsp;</b></td><td>" + (db.getSoDienThoai() != null ? db.getSoDienThoai() : "—") + "</td></tr>"
-                            + "<tr><td><b>Số người:&nbsp;</b></td><td>" + db.getSoLuongNguoi() + " người</td></tr>"
-                            + "<tr><td><b>Giờ đến:&nbsp;</b></td><td>" + thoiGian + "</td></tr>"
-                            + "</table>"
-                            + "<hr style='border:1px solid #ddd;'/>"
-                            + "Đang phục vụ... Nhấn OK để vào màn hình gọi món."
-                            + "</html>";
-                        JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(card), msg, "Thông tin đặt bàn", JOptionPane.INFORMATION_MESSAGE);
-                    }
-
                     // Tiếp tục phục vụ (lấy đơn hàng đang mở)
                     DonHang dh = tableController.getDonHangDangMo(ban.getMaBan());
                     if (dh != null) {
@@ -637,8 +617,9 @@ public class TablePanel extends JPanel {
                             // Chuyển sang DA_XAC_NHAN -> Bàn tự động chuyển sang CO_KHACH
                             reservationController.xacNhan(db.getMaDatBan());
                         }
-                        // Mở màn hình gọi món
-                        clickListener.onTableClicked(ban, null);
+                        // Mở màn hình gọi món (lấy đơn đang mở nếu có)
+                        DonHang dhMoi = tableController.getDonHangDangMo(ban.getMaBan());
+                        clickListener.onTableClicked(ban, dhMoi);
                     }
                 } else {
                     // Bàn TRONG hoặc trạng thái khác -> mở bình thường

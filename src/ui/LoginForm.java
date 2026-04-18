@@ -4,8 +4,6 @@ import com.formdev.flatlaf.FlatClientProperties;
 import controller.AuthController;
 import controller.ShiftController;
 import entity.CaLamViec;
-import entity.NhanVien;
-import enums.VaiTro;
 import exception.AppException;
 
 import javax.swing.*;
@@ -356,35 +354,23 @@ public class LoginForm extends JFrame {
         });
     }
 
-    // ── Business logic (giữ nguyên) ────────────────────────────────────────
+    // ── Business logic ────────────────────────────────────────────────────
     private void handleLogin() {
         try {
-            NhanVien nv = authController.login(txtUsername.getText(), new String(txtPassword.getPassword()));
+            authController.login(txtUsername.getText(), new String(txtPassword.getPassword()));
 
             CaLamViec caHienTai = shiftController.kiemTraCaHienTai();
 
-            if (caHienTai != null) {
-                openMainFrame();
-            } else if (VaiTro.NHAN_VIEN.equals(nv.getVaiTro())) {
-                boolean daChapNhanMoCa = showShiftOpenDialog();
-                if (!daChapNhanMoCa) {
-                    authController.logout();
-                    return;
+            // Nếu chưa có ca đang mở → tự động mở ca (tiền đầu ca = 0)
+            if (caHienTai == null) {
+                try {
+                    shiftController.moCa(0, null);
+                } catch (AppException ex) {
+                    // Có thể bị trùng ca (race condition) → bỏ qua, tiếp tục vào
                 }
-                openMainFrame();
-            } else {
-                int choice = JOptionPane.showOptionDialog(this,
-                        "Bạn có muốn mở ca làm việc không?\n(Bỏ qua nếu chỉ cần xem báo cáo/quản trị)",
-                        "Mở ca làm việc",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        new String[] { "Mở Ca", "Bỏ Qua" },
-                        "Bỏ Qua");
-                if (choice == 0)
-                    showShiftOpenDialog();
-                openMainFrame();
             }
+
+            openMainFrame();
 
         } catch (AppException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi đăng nhập", JOptionPane.WARNING_MESSAGE);
@@ -393,12 +379,6 @@ public class LoginForm extends JFrame {
             JOptionPane.showMessageDialog(this, "Lỗi kết nối cơ sở dữ liệu!", "Lỗi hệ thống",
                     JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-    private boolean showShiftOpenDialog() {
-        ui.dialog.ShiftOpenDialog dlg = new ui.dialog.ShiftOpenDialog(this, shiftController);
-        dlg.setVisible(true);
-        return dlg.isShiftOpened();
     }
 
     private void openMainFrame() {
