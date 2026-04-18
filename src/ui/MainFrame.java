@@ -15,11 +15,12 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Cửa sổ chính của hệ thống COFFEE 11:01.
- * Bố cục: AccordionSidebar (trái) + Header (trên) + ContentPanel/CardLayout (giữa).
+ * Bố cục: AccordionSidebar (trái) + Header (trên) + ContentPanel/CardLayout
+ * (giữa).
  */
 public class MainFrame extends JFrame {
 
-    private final AuthController  authController  = new AuthController();
+    private final AuthController authController = new AuthController();
     private final ShiftController shiftController = new ShiftController();
 
     // ── Sidebar ──────────────────────────────────────────────────────────────
@@ -30,10 +31,11 @@ public class MainFrame extends JFrame {
 
     // ── Panel references (để gọi refresh khi chuyển tab) ────────────────────
     private ui.panel.DashboardPanel dashboardPanel;
-    private ui.panel.TablePanel     tablePanel;
-    private ui.panel.OrderPanel     orderPanel;
-    private ui.panel.InvoicePanel   invoicePanel;
+    private ui.panel.TablePanel tablePanel;
+    private ui.panel.OrderPanel orderPanel;
+    private ui.panel.InvoicePanel invoicePanel;
     private ui.panel.StatisticPanel statisticPanel;
+    private ui.panel.ReservationManagementPanel reservationPanel;
     private ui.panel.admin.ShiftManagementPanel shiftManagementPanel;
 
     // ── Header ───────────────────────────────────────────────────────────────
@@ -41,7 +43,7 @@ public class MainFrame extends JFrame {
     private boolean sidebarVisible = true;
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  CONSTRUCTOR
+    // CONSTRUCTOR
     // ══════════════════════════════════════════════════════════════════════════
     public MainFrame() {
         setTitle("COFFEE 11:01 - Hệ Thống Quản Lý");
@@ -55,7 +57,7 @@ public class MainFrame extends JFrame {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  INIT
+    // INIT
     // ══════════════════════════════════════════════════════════════════════════
     private void initUI() {
         setLayout(new BorderLayout());
@@ -83,7 +85,7 @@ public class MainFrame extends JFrame {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  HEADER
+    // HEADER
     // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildHeader() {
         JPanel header = new JPanel(new BorderLayout());
@@ -118,9 +120,11 @@ public class MainFrame extends JFrame {
         rightPanel.add(lblDiv);
 
         if (SessionManager.isCaDangMo()) {
-            rightPanel.add(createHeaderBtn("Đóng Ca", FontAwesome.LOCK, new Color(220, 38, 38), new Color(254, 242, 242), () -> handleNav("ACTION_DONG_CA")));
+            rightPanel.add(createHeaderBtn("Đóng Ca", FontAwesome.LOCK, new Color(220, 38, 38),
+                    new Color(254, 242, 242), () -> handleNav("ACTION_DONG_CA")));
         }
-        rightPanel.add(createHeaderBtn("Đăng Xuất", FontAwesome.SIGN_OUT, new Color(71, 85, 105), new Color(241, 245, 249), () -> handleNav("ACTION_LOGOUT")));
+        rightPanel.add(createHeaderBtn("Đăng Xuất", FontAwesome.SIGN_OUT, new Color(71, 85, 105),
+                new Color(241, 245, 249), () -> handleNav("ACTION_LOGOUT")));
 
         header.add(rightPanel, BorderLayout.EAST);
 
@@ -132,16 +136,31 @@ public class MainFrame extends JFrame {
             private boolean hovered = false;
             {
                 addMouseListener(new java.awt.event.MouseAdapter() {
-                    @Override public void mouseEntered(java.awt.event.MouseEvent e) { hovered = true; repaint(); }
-                    @Override public void mouseExited(java.awt.event.MouseEvent e)  { hovered = false; repaint(); }
-                    @Override public void mouseClicked(java.awt.event.MouseEvent e) { action.run(); }
+                    @Override
+                    public void mouseEntered(java.awt.event.MouseEvent e) {
+                        hovered = true;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseExited(java.awt.event.MouseEvent e) {
+                        hovered = false;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseClicked(java.awt.event.MouseEvent e) {
+                        action.run();
+                    }
                 });
                 setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 setOpaque(false);
             }
-            @Override protected void paintComponent(Graphics g) {
+
+            @Override
+            protected void paintComponent(Graphics g) {
                 if (hovered) {
-                    Graphics2D g2 = (Graphics2D)g.create();
+                    Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     g2.setColor(hoverBg);
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
@@ -151,7 +170,8 @@ public class MainFrame extends JFrame {
             }
         };
         btn.setBorder(new EmptyBorder(4, 10, 4, 10));
-        if (icon != null) btn.add(new JLabel(IconFontSwing.buildIcon(icon, 14, color)));
+        if (icon != null)
+            btn.add(new JLabel(IconFontSwing.buildIcon(icon, 14, color)));
         JLabel lbl = new JLabel(text);
         lbl.setFont(new Font("Roboto", Font.BOLD, 13));
         lbl.setForeground(color);
@@ -160,7 +180,7 @@ public class MainFrame extends JFrame {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  CONTENT CARDS
+    // CONTENT CARDS
     // ══════════════════════════════════════════════════════════════════════════
     private void buildContentCards() {
         // HOME → Dashboard
@@ -182,8 +202,13 @@ public class MainFrame extends JFrame {
         contentPanel.add(tablePanel, "BAN_HANG");
         contentPanel.add(orderPanel, "GOI_MON");
 
-        // Đặt Bàn (placeholder — sẽ được thay bằng ReservationPanel)
-        contentPanel.add(buildPlaceholder("📅  Đặt Bàn", "Module đang được phát triển trong phiên bản tiếp theo."), "DAT_BAN");
+        // Đặt Bàn
+        reservationPanel = new ui.panel.ReservationManagementPanel();
+        reservationPanel.setNavigationCallback(maBan -> {
+            handleNav("BAN_HANG");
+            tablePanel.simulateTableClick(maBan);
+        });
+        contentPanel.add(reservationPanel, "DAT_BAN");
 
         // Hoá Đơn
         invoicePanel = new ui.panel.InvoicePanel();
@@ -197,10 +222,9 @@ public class MainFrame extends JFrame {
         contentPanel.add(new ui.panel.admin.MenuManagementPanel(), "ADMIN_MON");
         contentPanel.add(new ui.panel.admin.PriceManagementPanel(), "ADMIN_GIA");
         contentPanel.add(new ui.panel.admin.TableManagementPanel(), "ADMIN_BAN");
-        contentPanel.add(new StaffManagementPanel(),                "ADMIN_NHAN_VIEN");
+        contentPanel.add(new StaffManagementPanel(), "ADMIN_NHAN_VIEN");
         contentPanel.add(new ui.panel.admin.WarehouseManagementPanel(), "ADMIN_KHO");
 
-        // Admin panels
         shiftManagementPanel = new ui.panel.admin.ShiftManagementPanel();
         contentPanel.add(shiftManagementPanel, "LICH_SU_CA");
 
@@ -209,7 +233,7 @@ public class MainFrame extends JFrame {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  NAVIGATION HANDLER
+    // NAVIGATION HANDLER
     // ══════════════════════════════════════════════════════════════════════════
     private void handleNav(String key) {
         switch (key) {
@@ -232,7 +256,10 @@ public class MainFrame extends JFrame {
                 statisticPanel.loadCharts();
                 break;
             case "LICH_SU_CA":
-                // shiftManagementPanel.loadData(); // Nếu muốn refresh mỗi lần vào
+                // shiftManagementPanel.loadData();
+                break;
+            case "DAT_BAN":
+                reservationPanel.refresh();
                 break;
             default:
                 break;
@@ -241,7 +268,7 @@ public class MainFrame extends JFrame {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  HELPERS
+    // HELPERS
     // ══════════════════════════════════════════════════════════════════════════
     private void showCard(String name) {
         ((CardLayout) contentPanel.getLayout()).show(contentPanel, name);
@@ -255,9 +282,8 @@ public class MainFrame extends JFrame {
     }
 
     private void startClock() {
-        new Timer(1000, e ->
-            lblClock.setText(LocalTime.now().format(DateTimeFormatter.ofPattern("  HH:mm:ss  ")))
-        ).start();
+        new Timer(1000, e -> lblClock.setText(LocalTime.now().format(DateTimeFormatter.ofPattern("  HH:mm:ss  "))))
+                .start();
     }
 
     private JPanel buildHomePage() {
@@ -313,7 +339,7 @@ public class MainFrame extends JFrame {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  BUSINESS ACTIONS
+    // BUSINESS ACTIONS
     // ══════════════════════════════════════════════════════════════════════════
     private void handleDongCa() {
         if (!SessionManager.isCaDangMo()) {
@@ -342,5 +368,19 @@ public class MainFrame extends JFrame {
         authController.logout();
         new LoginForm().setVisible(true);
         dispose();
+    }
+    // ── Entry Point (For Testing) ──────────────────────────────────────────
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // Register Icon Font for FontAwesome
+        jiconfont.swing.IconFontSwing.register(jiconfont.icons.FontAwesome.getIconFont());
+        
+        SwingUtilities.invokeLater(() -> {
+            new MainFrame().setVisible(true);
+        });
     }
 }

@@ -12,9 +12,11 @@ public class DatBan {
     private LocalDateTime   thoiGianDen;
     private LocalDateTime   thoiGianDat;
     private String          maBan;       // FK Ban
-    private String          maHD;        // FK HoaDon (nullable - gán sau khi khách thanh toán)
+    private String          soBan;       // Tên số bàn để hiển thị (lấy từ bảng Ban)
+    private String          maHD;        // FK HoaDon (nullable)
+    private boolean         hienThi;     // true = hiển thị, false = đã ẩn (soft-delete)
 
-    public DatBan() {}
+    public DatBan() { this.hienThi = true; }
 
     public DatBan(String maDatBan, String tenKhach, String soDienThoai,
                   int soLuongNguoi, TrangThaiDatBan trangThai,
@@ -29,6 +31,16 @@ public class DatBan {
         this.thoiGianDat  = thoiGianDat;
         this.maBan        = maBan;
         this.maHD         = maHD;
+        this.hienThi      = true;
+    }
+
+    public DatBan(String maDatBan, String tenKhach, String soDienThoai,
+                  int soLuongNguoi, TrangThaiDatBan trangThai,
+                  LocalDateTime thoiGianDen, LocalDateTime thoiGianDat,
+                  String maBan, String maHD, boolean hienThi) {
+        this(maDatBan, tenKhach, soDienThoai, soLuongNguoi, trangThai,
+             thoiGianDen, thoiGianDat, maBan, maHD);
+        this.hienThi = hienThi;
     }
 
     public String getMaDatBan()          { return maDatBan; }
@@ -54,9 +66,15 @@ public class DatBan {
 
     public String getMaBan()          { return maBan; }
     public void   setMaBan(String v)  { this.maBan = v; }
+    
+    public String getSoBan()          { return soBan; }
+    public void   setSoBan(String v)  { this.soBan = v; }
 
     public String getMaHD()          { return maHD; }
     public void   setMaHD(String v)  { this.maHD = v; }
+
+    public boolean isHienThi()          { return hienThi; }
+    public void    setHienThi(boolean v){ this.hienThi = v; }
 
     /** Kiểm tra đơn đặt bàn có bị quá hạn không (quá 15 phút so với giờ hẹn) */
     public boolean isQuaHan() {

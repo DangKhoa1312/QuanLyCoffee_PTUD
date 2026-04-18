@@ -327,6 +327,7 @@ CREATE TABLE DatBan (
     thoiGianDat  DATETIME      NOT NULL DEFAULT GETDATE(),
     maBan        VARCHAR(20)   NOT NULL,
     maHD         VARCHAR(20)   NULL,
+    hienThi      BIT           NOT NULL DEFAULT 1,
 
     CONSTRAINT PK_DatBan        PRIMARY KEY (maDatBan),
     CONSTRAINT FK_DB_Ban        FOREIGN KEY (maBan) REFERENCES Ban(maBan),
