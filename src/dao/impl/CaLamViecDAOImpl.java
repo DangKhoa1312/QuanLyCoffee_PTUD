@@ -156,22 +156,29 @@ public class CaLamViecDAOImpl implements CaLamViecDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDouble(1, tongDoanhThu);
             ps.setString(2, maCa);
-            return ps.executeUpdate() > 0;
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                System.err.println("CaLamViecDAO.updateTongDoanhThu: kh\u00f4ng t\u00ecm th\u1ea5y ca " + maCa);
+            }
+            return rows >= 0; // Ch\u1ea5p nh\u1eadn c\u1ea3 0 rows (ca m\u1edbi t\u1ea1o ch\u01b0a c\u00f3 trong DB)
         } catch (SQLException e) {
-            System.err.println("CaLamViecDAO.updateTongDoanhThu: " + e.getMessage());
+            System.err.println("CaLamViecDAO.updateTongDoanhThu: " + e.getMessage() + " [" + e.getSQLState() + "]");
             return false;
         }
     }
 
     @Override
     public boolean dongCa(String maCa) {
-        String sql = "UPDATE CaLamViec SET trangThai='DA_DONG', gioKetThuc=? WHERE maCa=?";
+        String sql = "UPDATE CaLamViec SET trangThai='DA_DONG', gioKetThuc=? WHERE maCa=? AND trangThai='DANG_LAM'";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setTime(1, Time.valueOf(LocalTime.now()));
             ps.setString(2, maCa);
-            return ps.executeUpdate() > 0;
+            int rows = ps.executeUpdate();
+            System.out.println("CaLamViecDAO.dongCa: c\u1eadp nh\u1eadt " + rows + " d\u00f2ng cho ca " + maCa);
+            return rows > 0;
         } catch (SQLException e) {
-            System.err.println("CaLamViecDAO.dongCa: " + e.getMessage());
+            System.err.println("CaLamViecDAO.dongCa l\u1ed7i: " + e.getMessage() + " [" + e.getSQLState() + "] ErrorCode=" + e.getErrorCode());
+            e.printStackTrace();
             return false;
         }
     }

@@ -22,6 +22,31 @@ GO
 USE QuanLyQuanCafe;
 GO
 
+-- Xoá bảng nếu đã tồn tại (theo thứ tự ngược lại của bảng có khoá ngoại)
+IF OBJECT_ID('DatBan', 'U') IS NOT NULL DROP TABLE DatBan;
+IF OBJECT_ID('ChiTietHoaDonTopping', 'U') IS NOT NULL DROP TABLE ChiTietHoaDonTopping;
+IF OBJECT_ID('ChiTietHoaDon', 'U') IS NOT NULL DROP TABLE ChiTietHoaDon;
+IF OBJECT_ID('HoaDon', 'U') IS NOT NULL DROP TABLE HoaDon;
+IF OBJECT_ID('TonKho', 'U') IS NOT NULL DROP TABLE TonKho;
+IF OBJECT_ID('ChiTietPhieuXuat', 'U') IS NOT NULL DROP TABLE ChiTietPhieuXuat;
+IF OBJECT_ID('PhieuXuat', 'U') IS NOT NULL DROP TABLE PhieuXuat;
+IF OBJECT_ID('ChiTietPhieuNhap', 'U') IS NOT NULL DROP TABLE ChiTietPhieuNhap;
+IF OBJECT_ID('PhieuNhap', 'U') IS NOT NULL DROP TABLE PhieuNhap;
+IF OBJECT_ID('Kho', 'U') IS NOT NULL DROP TABLE Kho;
+IF OBJECT_ID('NhaCungCap', 'U') IS NOT NULL DROP TABLE NhaCungCap;
+IF OBJECT_ID('Ban', 'U') IS NOT NULL DROP TABLE Ban;
+IF OBJECT_ID('DinhMucNguyenLieu', 'U') IS NOT NULL DROP TABLE DinhMucNguyenLieu;
+IF OBJECT_ID('NguyenLieu', 'U') IS NOT NULL DROP TABLE NguyenLieu;
+IF OBJECT_ID('BangGiaChiTiet', 'U') IS NOT NULL DROP TABLE BangGiaChiTiet;
+IF OBJECT_ID('BangGia', 'U') IS NOT NULL DROP TABLE BangGia;
+IF OBJECT_ID('Topping', 'U') IS NOT NULL DROP TABLE Topping;
+IF OBJECT_ID('Size', 'U') IS NOT NULL DROP TABLE Size;
+IF OBJECT_ID('Mon', 'U') IS NOT NULL DROP TABLE Mon;
+IF OBJECT_ID('CaLamViec', 'U') IS NOT NULL DROP TABLE CaLamViec;
+IF OBJECT_ID('NhanVien', 'U') IS NOT NULL DROP TABLE NhanVien;
+IF OBJECT_ID('KhuVuc', 'U') IS NOT NULL DROP TABLE KhuVuc;
+GO
+
 -- 1. KhuVuc
 CREATE TABLE KhuVuc (
     maKhuVuc  VARCHAR(20)   NOT NULL,
@@ -87,10 +112,11 @@ GO
 
 -- 5. Size
 CREATE TABLE Size (
-    maSize  VARCHAR(20)  NOT NULL,
-    tenSize NVARCHAR(10) NOT NULL,
-    maMon   VARCHAR(20)  NOT NULL,
-    trangThai BIT        NOT NULL DEFAULT 1, -- 1 = đang bán, 0 = tạm ngưng size này
+    maSize    VARCHAR(20)  NOT NULL,
+    tenSize   NVARCHAR(10) NOT NULL,
+    maMon     VARCHAR(20)  NOT NULL,
+    trangThai BIT          NOT NULL DEFAULT 1, -- 1 = đang bán, 0 = tạm ngưng size này
+    tileSize  DECIMAL(5,2) NOT NULL DEFAULT 1.0, -- Tỉ lệ nhân định mức nguyên liệu
 
     CONSTRAINT PK_Size      PRIMARY KEY (maSize),
     CONSTRAINT FK_Size_Mon  FOREIGN KEY (maMon) REFERENCES Mon(maMon) ON DELETE CASCADE,
@@ -141,12 +167,13 @@ GO
 
 -- 9. NguyenLieu
 CREATE TABLE NguyenLieu (
-    maNL         VARCHAR(20)   NOT NULL,
-    tenNL        NVARCHAR(100) NOT NULL,
-    donViTinh    NVARCHAR(20)  NOT NULL,
-    donGiaNhap   DECIMAL(10,2) NOT NULL DEFAULT 0,
-    ngayHetHan   DATE          NULL,
-    donViDongGoi NVARCHAR(50)  NULL,
+    maNL             VARCHAR(20)   NOT NULL,
+    tenNL            NVARCHAR(100) NOT NULL,
+    donViTinh        NVARCHAR(20)  NOT NULL,
+    donGiaNhap       DECIMAL(10,2) NOT NULL DEFAULT 0,
+    ngayHetHan       DATE          NULL,
+    donViDongGoi     NVARCHAR(50)  NULL,
+    khoiLuongDongGoi FLOAT         NOT NULL DEFAULT 1,
 
     CONSTRAINT PK_NguyenLieu   PRIMARY KEY (maNL),
     CONSTRAINT CHK_NL_DonGia   CHECK (donGiaNhap >= 0)

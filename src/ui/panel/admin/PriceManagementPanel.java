@@ -26,6 +26,7 @@ public class PriceManagementPanel extends JPanel {
     private JTextField txtSearch;
     private JComboBox<String> cbFilterStatus;
     private JCheckBox chkShowHidden;
+    private BangGia cachedWinner = null; // [IMP-05] Cache winner để tránh N DB queries trong renderer
 
     private final Color PRIMARY_COLOR = new Color(41, 128, 185);
     private final Color BG_COLOR = new Color(245, 247, 250);
@@ -148,6 +149,8 @@ public class PriceManagementPanel extends JPanel {
 
     private void performSearch() {
         tableModel.setRowCount(0);
+        // [IMP-05] Cache winner 1 lần duy nhất — tránh gọi DB trong mỗi render cell
+        cachedWinner = controller.getWinningPriceList();
         List<BangGia> list = controller.getAllBangGia();
 
         String kw = txtSearch != null ? txtSearch.getText().toLowerCase() : "";
@@ -158,16 +161,14 @@ public class PriceManagementPanel extends JPanel {
             // 1. Lọc theo Soft Delete
             if (!showHidden && !bg.isHoatDong()) continue;
 
-            // 2. Lọc theo từ khóa (Mã hoặc Tên)
-            if (!kw.isEmpty()
-                    && !bg.getTenBangGia().toLowerCase().contains(kw)
-                    && !bg.getMaBangGia().toLowerCase().contains(kw)) {
-                continue;
-            }
+            // 2. [BUG-06 FIX] Null-safe tìm kiếm — tránh NPE khi tenBangGia = null
+            String tenBG = bg.getTenBangGia() != null ? bg.getTenBangGia().toLowerCase() : "";
+            String maBG  = bg.getMaBangGia()  != null ? bg.getMaBangGia().toLowerCase()  : "";
+            if (!kw.isEmpty() && !tenBG.contains(kw) && !maBG.contains(kw)) continue;
 
             // 3. Lọc theo trạng thái hiệu lực (trangThai)
             if (filterStatus == 1 && !bg.isTrangThai()) continue;
-            if (filterStatus == 2 && bg.isTrangThai()) continue;
+            if (filterStatus == 2 &&  bg.isTrangThai()) continue;
 
             tableModel.addRow(new Object[]{
                 bg.getMaBangGia(),
@@ -207,6 +208,21 @@ public class PriceManagementPanel extends JPanel {
         if (dlg.isConfirmed()) loadData();
     }
 
+    // [IMP-05] Tính trạng thái dùng cachedWinner — không truy vấn DB mỗi lần render
+    private String getVisualStatusCached(BangGia bg) {
+        if (!bg.isHoatDong()) return "Đã ẩn";
+        if (!bg.isTrangThai()) return "Tạm ngưng";
+
+        java.time.LocalDate today = java.time.LocalDate.now();
+        if (bg.getNgayKetThuc() != null && today.isAfter(bg.getNgayKetThuc())) return "Hết hạn";
+        if (bg.getNgayBatDau() != null && today.isBefore(bg.getNgayBatDau()))  return "Đang chờ";
+
+        if (cachedWinner != null && bg.getMaBangGia().equals(cachedWinner.getMaBangGia())) {
+            return "Đang áp dụng";
+        }
+        return "Dự phòng";
+    }
+
     // --- RENDERERS & EDITORS ---
 
     class ZebraRenderer extends DefaultTableCellRenderer {
@@ -238,7 +254,8 @@ public class PriceManagementPanel extends JPanel {
             if (!(v instanceof BangGia)) return lbl;
 
             BangGia bg = (BangGia) v;
-            String status = controller.getVisualStatus(bg);
+            // [IMP-05] Dùng cachedWinner — không gọi DB trong mỗi cell render
+            String status = getVisualStatusCached(bg);
             lbl.setText("● " + status);
 
             switch (status) {

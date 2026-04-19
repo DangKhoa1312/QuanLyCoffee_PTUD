@@ -16,7 +16,7 @@ import java.awt.*;
  */
 public class NguyenLieuDialog extends JDialog {
 
-    private JTextField txtMaNL, txtTenNL, txtDonGia;
+    private JTextField txtMaNL, txtTenNL, txtDonGia, txtKhoiLuongDongGoi;
     private JComboBox<String> cbDonViTinh;
     private JComboBox<String> cbDonViDongGoi;
     private boolean confirmed = false;
@@ -36,7 +36,7 @@ public class NguyenLieuDialog extends JDialog {
         this.current = nl;
         this.isEdit = isEdit;
         this.viewOnly = viewOnly;
-        setSize(750, 580);
+        setSize(850, 650);
         setLocationRelativeTo(owner);
         setResizable(false);
 
@@ -137,7 +137,15 @@ public class NguyenLieuDialog extends JDialog {
         txtDonGia = new JTextField(20);
         txtDonGia.setPreferredSize(new Dimension(0, 35));
         if (viewOnly) { txtDonGia.setEditable(false); txtDonGia.setBackground(readOnlyBg); }
-        form.add(txtDonGia, gbc);
+        form.add(txtDonGia, gbc); gbc.gridy++;
+
+        // Khối Lượng Đóng Gói
+        addLabelRow(form, gbc, "Khối Lượng Đóng Gói*:", FontAwesome.BALANCE_SCALE);
+        txtKhoiLuongDongGoi = new JTextField(20);
+        txtKhoiLuongDongGoi.setPreferredSize(new Dimension(0, 35));
+        txtKhoiLuongDongGoi.setToolTipText("VD: 500 (nghĩa là 1 đơn vị đóng gói = 500 đơn vị tính)");
+        if (viewOnly) { txtKhoiLuongDongGoi.setEditable(false); txtKhoiLuongDongGoi.setBackground(readOnlyBg); }
+        form.add(txtKhoiLuongDongGoi, gbc);
 
         card.add(form, BorderLayout.CENTER);
         body.add(card, BorderLayout.CENTER);
@@ -209,6 +217,7 @@ public class NguyenLieuDialog extends JDialog {
             if (current.getDonViDongGoi() != null) {
                 cbDonViDongGoi.setSelectedItem(current.getDonViDongGoi());
             }
+            txtKhoiLuongDongGoi.setText(current.getKhoiLuongDongGoi() > 0 ? String.valueOf((long) current.getKhoiLuongDongGoi()) : "");
         }
     }
 
@@ -217,9 +226,10 @@ public class NguyenLieuDialog extends JDialog {
         String donViTinh = cbDonViTinh.getSelectedItem() != null ? cbDonViTinh.getSelectedItem().toString().trim() : "";
         String donViDongGoi = cbDonViDongGoi.getSelectedItem() != null ? cbDonViDongGoi.getSelectedItem().toString().trim() : "";
         String donGiaStr = txtDonGia.getText().trim();
+        String klDongGoiStr = txtKhoiLuongDongGoi.getText().trim();
 
-        if (tenNL.isEmpty() || donViTinh.isEmpty() || donGiaStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin (Tên, Đơn vị tính, Đơn giá).");
+        if (tenNL.isEmpty() || donViTinh.isEmpty() || donGiaStr.isEmpty() || klDongGoiStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin (Tên, Đơn vị tính, Đơn giá, Khối lượng đóng gói).");
             return;
         }
 
@@ -232,10 +242,20 @@ public class NguyenLieuDialog extends JDialog {
             return;
         }
 
+        double khoiLuongDG;
+        try {
+            khoiLuongDG = Double.parseDouble(klDongGoiStr);
+            if (khoiLuongDG <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Khối lượng đóng gói phải là số > 0.");
+            return;
+        }
+
         current.setTenNL(tenNL);
         current.setDonViTinh(donViTinh);
         current.setDonViDongGoi(donViDongGoi);
         current.setDonGiaNhap(donGia);
+        current.setKhoiLuongDongGoi(khoiLuongDG);
 
         confirmed = true;
         dispose();

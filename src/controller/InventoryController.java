@@ -57,13 +57,8 @@ public class InventoryController {
             String maMon = item.getMon().getMaMon();
             int qty = item.getSoLuong();
             
-            // Xử lý hệ số hao hụt do Size
-            double heSoSize = 1.0;
-            if (item.getSize() != null) {
-                String tenSize = item.getSize().getTenSize().toUpperCase();
-                if (tenSize.contains("S")) heSoSize = 0.8;
-                else if (tenSize.contains("L")) heSoSize = 1.25;
-            }
+            // [FIX] Lấy tỉ lệ từ thuộc tính tileSize của Size — không hardcode theo tên
+            double heSoSize = (item.getSize() != null) ? item.getSize().getTileSize() : 1.0;
 
             List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
             for (DinhMucNguyenLieu dm : dinhmucs) {
@@ -88,6 +83,70 @@ public class InventoryController {
         } catch (Exception e) {
             System.err.println("InventoryController: Loi tao phieu xuat tu dong: " + e.getMessage());
         }
+    }
+
+    /** Ngưỡng cảnh báo: còn bán được ≤ bao nhiêu phần thì hiện ⚠ */
+    public static final int NGUONG_CANH_BAO = 10;
+
+    /**
+     * Tính số phần còn bán được cho 1 món (dựa trên TonKho / DinhMuc).
+     * Trả về Integer.MAX_VALUE nếu món không có định mức (vd: nước suối chai).
+     * Trả về 0 nếu bất kỳ nguyên liệu nào đã hết.
+     */
+    public int getSoLuongConBanDuoc(String maMon) {
+        List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
+        if (dinhmucs.isEmpty()) return Integer.MAX_VALUE; // Không có định mức → luôn bán được
+
+        List<TonKho> allKho = tonKhoDAO.findAll();
+        int minServings = Integer.MAX_VALUE;
+
+        for (DinhMucNguyenLieu dm : dinhmucs) {
+            if (dm.getSoLuong() <= 0) continue;
+
+            // Tìm tồn kho tương ứng
+            double tongTon = 0;
+            for (TonKho tk : allKho) {
+                if (tk.getMaNL().equals(dm.getMaNL())) {
+                    tongTon += tk.getSoLuongTon();
+                }
+            }
+
+            int servings = (int) Math.floor(tongTon / dm.getSoLuong());
+            if (servings < minServings) {
+                minServings = servings;
+            }
+        }
+        return minServings;
+    }
+
+    /**
+     * Lấy danh sách tên nguyên liệu đang sắp hết cho 1 món.
+     * Chỉ trả về các NL mà số phần còn lại ≤ NGUONG_CANH_BAO.
+     */
+    public List<String> getCanhBaoNguyenLieu(String maMon) {
+        List<String> warnings = new java.util.ArrayList<>();
+        List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
+        List<TonKho> allKho = tonKhoDAO.findAll();
+
+        for (DinhMucNguyenLieu dm : dinhmucs) {
+            if (dm.getSoLuong() <= 0) continue;
+
+            double tongTon = 0;
+            for (TonKho tk : allKho) {
+                if (tk.getMaNL().equals(dm.getMaNL())) {
+                    tongTon += tk.getSoLuongTon();
+                }
+            }
+
+            int servings = (int) Math.floor(tongTon / dm.getSoLuong());
+            if (servings <= NGUONG_CANH_BAO) {
+                // Lấy tên nguyên liệu
+                entity.NguyenLieu nl = new dao.impl.NguyenLieuDAOImpl().findById(dm.getMaNL());
+                String tenNL = (nl != null) ? nl.getTenNL() : dm.getMaNL();
+                warnings.add(tenNL + " (còn " + servings + " phần)");
+            }
+        }
+        return warnings;
     }
 }
 

@@ -132,19 +132,27 @@ public class PriceController {
      * Dùng để cảnh báo khi có món mới chưa được định giá.
      */
     public boolean isBangGiaComplete(String maBG) {
-        dao.MonDAO monDAO = new dao.impl.MonDAOImpl();
-        List<entity.Mon> allMon = monDAO.findAll();
         List<BangGiaChiTiet> details = getDetailsOf(maBG);
 
-        int totalSizes = 0;
+        // [BUG-03 FIX] Dùng Set để lookup O(1): chỉ đưa vào Set khi giá > 0
+        java.util.Set<String> pricedSizes = new java.util.HashSet<>();
+        for (BangGiaChiTiet d : details) {
+            if (d.getGiaBan() > 0) pricedSizes.add(d.getMaSize());
+        }
+
+        // Kiểm tra từng size đang active xem đã có giá chưa
+        dao.MonDAO monDAO = new dao.impl.MonDAOImpl();
+        List<entity.Mon> allMon = monDAO.findAll();
         for (entity.Mon m : allMon) {
-            if (m.isTrangThai()) {
-                List<Size> sizes = sizeDAO.findByMon(m.getMaMon());
-                // Size trong TARGET không có trangThai DB column → mặc định luôn active
-                totalSizes += sizes.size();
+            if (!m.isTrangThai()) continue;
+            List<Size> sizes = sizeDAO.findByMon(m.getMaMon());
+            for (Size s : sizes) {
+                if (s.isTrangThai() && !pricedSizes.contains(s.getMaSize())) {
+                    return false; // Tìm thấy size active chưa có giá hợp lệ
+                }
             }
         }
-        return details.size() >= totalSizes;
+        return true;
     }
 
     /**

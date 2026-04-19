@@ -127,16 +127,17 @@ INSERT INTO BangGiaChiTiet (maBGCT, giaBan, maSize, maBangGia) VALUES
 ('BGCT037', 42000, 'SZ034', 'BG001');
 GO
 
--- 9. NguyenLieu
-INSERT INTO NguyenLieu (maNL, tenNL, donViTinh, donGiaNhap, ngayHetHan, donViDongGoi) VALUES
-('NL001', N'Trà đen',          'g',   150,   NULL,            N'Gói'),
-('NL002', N'Sữa tươi',         'ml',  25,    '2026-04-01',    N'Hộp'),
-('NL003', N'Sữa đặc',          'g',   50,    '2026-06-01',    N'Hộp'),
-('NL004', N'Đường',            'g',   20,    NULL,            N'Bịch'),
-('NL005', N'Trân châu đen',    'g',   200,   '2026-03-30',    N'Gói'),
-('NL006', N'Bột matcha',       'g',   800,   '2026-12-31',    N'Hộp'),
-('NL007', N'Cà phê rang xay',  'g',   300,   NULL,            N'Bịch'),
-('NL008', N'Đá viên',          'g',   5,     NULL,            N'Bịch');
+-- 9. NguyenLieu (khoiLuongDongGoi = KL co ban cua 1 don vi dong goi)
+-- VD: 1 Goi tra = 500g => khoiLuongDongGoi = 500
+INSERT INTO NguyenLieu (maNL, tenNL, donViTinh, donGiaNhap, ngayHetHan, donViDongGoi, khoiLuongDongGoi) VALUES
+('NL001', N'Trà đen',          'g',   150,   NULL,            N'Gói',  500),
+('NL002', N'Sữa tươi',         'ml',  25,    '2026-04-01',    N'Hộp',  1000),
+('NL003', N'Sữa đặc',          'g',   50,    '2026-06-01',    N'Hộp',  380),
+('NL004', N'Đường',            'g',   20,    NULL,            N'Bịch', 1000),
+('NL005', N'Trân châu đen',    'g',   200,   '2026-03-30',    N'Gói',  500),
+('NL006', N'Bột matcha',       'g',   800,   '2026-12-31',    N'Hộp',  100),
+('NL007', N'Cà phê rang xay',  'g',   300,   NULL,            N'Bịch', 500),
+('NL008', N'Đá viên',          'g',   5,     NULL,            N'Bịch', 2000);
 GO
 
 -- 10. DinhMucNguyenLieu
@@ -171,16 +172,17 @@ INSERT INTO Kho (maKho, tenKho, diaChi, maNV) VALUES
 ('KHO001', N'Kho nguyên liệu chính', N'Tầng trệt, khu bếp', 'NV001');
 GO
 
--- 14. TonKho
+-- 14. TonKho (so luong theo DON VI DONG GOI)
+-- VD: 4 Goi tra den (moi goi 500g = tong 2000g)
 INSERT INTO TonKho (maTonKho, soLuongTon, mucToiThieu, ngayCapNhat, maKho, maNL) VALUES
-('TK001',  2000,  500,  GETDATE(), 'KHO001', 'NL001'),  
-('TK002',  10000, 2000, GETDATE(), 'KHO001', 'NL002'),  
-('TK003',  3000,  500,  GETDATE(), 'KHO001', 'NL003'),  
-('TK004',  5000,  1000, GETDATE(), 'KHO001', 'NL004'),  
-('TK005',  2000,  300,  GETDATE(), 'KHO001', 'NL005'),  
-('TK006',  500,   100,  GETDATE(), 'KHO001', 'NL006'),  
-('TK007',  3000,  500,  GETDATE(), 'KHO001', 'NL007'),  
-('TK008',  50000, 5000, GETDATE(), 'KHO001', 'NL008');  
+('TK001',  4,   1,  GETDATE(), 'KHO001', 'NL001'),  -- 4 Gói trà đen (500g/gói)
+('TK002',  10,  2,  GETDATE(), 'KHO001', 'NL002'),  -- 10 Hộp sữa tươi (1000ml/hộp)
+('TK003',  8,   2,  GETDATE(), 'KHO001', 'NL003'),  -- 8 Hộp sữa đặc (380g/hộp)
+('TK004',  5,   1,  GETDATE(), 'KHO001', 'NL004'),  -- 5 Bịch đường (1000g/bịch)
+('TK005',  4,   1,  GETDATE(), 'KHO001', 'NL005'),  -- 4 Gói trân châu (500g/gói)
+('TK006',  5,   1,  GETDATE(), 'KHO001', 'NL006'),  -- 5 Hộp matcha (100g/hộp)
+('TK007',  6,   1,  GETDATE(), 'KHO001', 'NL007'),  -- 6 Bịch cà phê (500g/bịch)
+('TK008',  25,  3,  GETDATE(), 'KHO001', 'NL008');  -- 25 Bịch đá (2000g/bịch)
 GO
 
 PRINT '================================================';

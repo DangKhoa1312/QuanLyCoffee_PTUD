@@ -145,7 +145,7 @@ public class WarehouseManagementPanel extends JPanel {
         p.add(topBar, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Tính",
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Đóng Gói",
                          "Tồn Kho", "Mức Tối Thiểu", "Ngày Cập Nhật", "Trạng Thái"};
         tonKhoModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -211,19 +211,19 @@ public class WarehouseManagementPanel extends JPanel {
 
         // Nut Nguyen Lieu
         JButton btnNguyenLieu = createSmallBtn("  Nguyên Liệu", FontAwesome.LEAF, new Color(52, 152, 219));
-        btnNguyenLieu.setPreferredSize(new Dimension(160, 35));
+        btnNguyenLieu.setPreferredSize(new Dimension(180, 40));
         btnNguyenLieu.addActionListener(e -> openNguyenLieuListDialog());
 
         // Nut Nha Cung Cap
         JButton btnNhaCungCap = createSmallBtn("  Nhà Cung Cấp", FontAwesome.TRUCK, new Color(155, 89, 182));
-        btnNhaCungCap.setPreferredSize(new Dimension(170, 35));
+        btnNhaCungCap.setPreferredSize(new Dimension(190, 40));
         btnNhaCungCap.addActionListener(e -> openNhaCungCapListDialog());
 
         JButton btnRefresh = createSmallBtn("Làm mới", FontAwesome.REFRESH, new Color(220, 220, 220));
         btnRefresh.addActionListener(e -> loadPhieuNhapData());
 
         JButton btnNhapHang = createSmallBtn("  Tạo Phiếu Nhập", FontAwesome.DOWNLOAD, new Color(46, 204, 113));
-        btnNhapHang.setPreferredSize(new Dimension(180, 35));
+        btnNhapHang.setPreferredSize(new Dimension(200, 40));
         btnNhapHang.addActionListener(e -> handleTaoPhieuNhap());
 
         rightPN.add(btnNguyenLieu);
@@ -273,23 +273,18 @@ public class WarehouseManagementPanel extends JPanel {
         bar.setBackground(Color.WHITE);
         bar.setBorder(new LineBorder(new Color(230, 230, 230)));
 
-        // Left: Search
+        // Left: empty spacer
         JPanel leftPX = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
         leftPX.setOpaque(false);
-        leftPX.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY)));
-        txtSearchPX = new JTextField(18);
-        txtSearchPX.setPreferredSize(new Dimension(0, 35));
-        txtSearchPX.setFont(new Font("Roboto", Font.PLAIN, 14));
-        txtSearchPX.setToolTipText("Tìm kiếm phiếu xuất...");
-        txtSearchPX.addKeyListener(new KeyAdapter() {
-            @Override public void keyReleased(KeyEvent e) { loadPhieuXuatData(); }
-        });
-        leftPX.add(txtSearchPX);
         bar.add(leftPX, BorderLayout.WEST);
 
         // Right: Buttons
-        JPanel rightPX = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 8));
+        JPanel rightPX = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
         rightPX.setOpaque(false);
+
+        JButton btnLichSu = createSmallBtn("  Lịch sử phiếu xuất", FontAwesome.HISTORY, new Color(52, 152, 219));
+        btnLichSu.setPreferredSize(new Dimension(210, 35));
+        btnLichSu.addActionListener(e -> openLichSuPhieuXuat());
 
         JButton btnRefresh = createSmallBtn("Làm mới", FontAwesome.REFRESH, new Color(220, 220, 220));
         btnRefresh.addActionListener(e -> loadPhieuXuatData());
@@ -298,32 +293,28 @@ public class WarehouseManagementPanel extends JPanel {
         btnXuatKho.setPreferredSize(new Dimension(180, 35));
         btnXuatKho.addActionListener(e -> handleTaoPhieuXuat());
 
+        rightPX.add(btnLichSu);
         rightPX.add(btnRefresh);
         rightPX.add(btnXuatKho);
         bar.add(rightPX, BorderLayout.EAST);
 
         p.add(bar, BorderLayout.NORTH);
 
-        String[] cols = {"Mã Phiếu", "Ngày Xuất", "Lý Do", "Nhân Viên", "Số NL"};
+        // Bảng nguyên liệu xuất kho (bắt đầu rỗng, cộng dữ liệu khi tạo phiếu xuất)
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Tính", "Số Lượng Xuất"};
         pxModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         pxTable = buildStyledTable(pxModel);
         pxTable.setDefaultRenderer(Object.class, new ZebraRenderer());
-        pxTable.getColumnModel().getColumn(1).setPreferredWidth(155);
-        pxTable.getColumnModel().getColumn(2).setPreferredWidth(200);
-
-        pxTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) viewPhieuXuatDetail();
-            }
-        });
+        pxTable.getColumnModel().getColumn(0).setPreferredWidth(130);
+        pxTable.getColumnModel().getColumn(1).setPreferredWidth(250);
 
         JScrollPane scroll = new JScrollPane(pxTable);
         scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
         p.add(scroll, BorderLayout.CENTER);
 
-        JLabel hint = new JLabel("  Nhấp đúp vào phiếu để xem chi tiết xuất kho");
+        JLabel hint = new JLabel("  Khi tạo phiếu xuất, nguyên liệu xuất sẽ được cộng vào bảng này");
         hint.setFont(new Font("Roboto", Font.ITALIC, 12));
         hint.setForeground(Color.GRAY);
         hint.setBorder(new EmptyBorder(5, 5, 0, 0));
@@ -350,7 +341,7 @@ public class WarehouseManagementPanel extends JPanel {
         for (TonKho tk : list) {
             NguyenLieu nl = controller.getNguyenLieuById(tk.getMaNL());
             String tenNL  = nl != null ? nl.getTenNL() : tk.getMaNL();
-            String dvt    = nl != null ? nl.getDonViTinh() : "";
+            String dvdg   = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
 
             // Tìm kiếm theo tên hoặc mã nguyên liệu
             if (!searchKw.isEmpty()) {
@@ -384,9 +375,12 @@ public class WarehouseManagementPanel extends JPanel {
                 statusDisplay = "\u2713 Bình thường";
             }
 
+            // TonKho da luu theo don vi dong goi, hien thi truc tiep
             tonKhoModel.addRow(new Object[]{
-                tk.getMaNL(), tenNL, dvt,
-                tk.getSoLuongTon(), tk.getMucToiThieu(), ngayCN, statusDisplay
+                tk.getMaNL(), tenNL, dvdg,
+                String.format("%.1f", tk.getSoLuongTon()),
+                String.format("%.1f", tk.getMucToiThieu()),
+                ngayCN, statusDisplay
             });
         }
     }
@@ -421,29 +415,31 @@ public class WarehouseManagementPanel extends JPanel {
 
     private void loadPhieuXuatData() {
         pxModel.setRowCount(0);
-        String searchKw = txtSearchPX != null ? txtSearchPX.getText().toLowerCase().trim() : "";
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        // 1. Load tat ca nguyen lieu voi so luong xuat = 0
+        for (NguyenLieu nl : controller.getAllNguyenLieu()) {
+            pxModel.addRow(new Object[]{
+                nl.getMaNL(),
+                nl.getTenNL(),
+                nl.getDonViTinh() != null ? nl.getDonViTinh() : "",
+                0.0  // luu Double truc tiep, khong format String
+            });
+        }
+        // 2. Cong tong so luong xuat tu tat ca phieu xuat trong DB
+        //    So luong xuat = soLuong * khoiLuongDongGoi
         for (PhieuXuat px : controller.getAllPhieuXuat()) {
             List<ChiTietPhieuXuat> chiTiet = controller.getChiTietByPhieuXuat(px.getMaPX());
-            String maPX = px.getMaPX();
-            String lyDo = px.getLyDoXuat() != null ? px.getLyDoXuat() : "";
-            String maNV = px.getMaNV();
-
-            if (!searchKw.isEmpty()) {
-                if (!maPX.toLowerCase().contains(searchKw)
-                    && !lyDo.toLowerCase().contains(searchKw)
-                    && !maNV.toLowerCase().contains(searchKw)) {
-                    continue;
+            for (ChiTietPhieuXuat ct : chiTiet) {
+                NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
+                double klDG = nl != null && nl.getKhoiLuongDongGoi() > 0 ? nl.getKhoiLuongDongGoi() : 1;
+                double soLuongHienThi = ct.getSoLuong() * klDG;
+                for (int i = 0; i < pxModel.getRowCount(); i++) {
+                    if (ct.getMaNL().equals(pxModel.getValueAt(i, 0))) {
+                        double existing = ((Number) pxModel.getValueAt(i, 3)).doubleValue();
+                        pxModel.setValueAt(existing + soLuongHienThi, i, 3);
+                        break;
+                    }
                 }
             }
-
-            pxModel.addRow(new Object[]{
-                maPX,
-                px.getNgayXuat() != null ? px.getNgayXuat().format(fmt) : "",
-                lyDo,
-                maNV,
-                chiTiet.size() + " nguyên liệu"
-            });
         }
     }
 
@@ -454,7 +450,7 @@ public class WarehouseManagementPanel extends JPanel {
     private void viewTonKhoDetailDialog(int row) {
         String maNL     = (String) tonKhoModel.getValueAt(row, 0);
         String tenNL    = (String) tonKhoModel.getValueAt(row, 1);
-        String dvt      = (String) tonKhoModel.getValueAt(row, 2);
+        String dvdg     = (String) tonKhoModel.getValueAt(row, 2);
         Object tonObj   = tonKhoModel.getValueAt(row, 3);
         Object mucTTObj = tonKhoModel.getValueAt(row, 4);
         String ngayCN   = (String) tonKhoModel.getValueAt(row, 5);
@@ -466,7 +462,7 @@ public class WarehouseManagementPanel extends JPanel {
         // Lấy thêm thông tin từ NguyenLieu
         NguyenLieu nl = controller.getNguyenLieuById(maNL);
         String donGia = nl != null ? CurrencyUtils.formatNoUnit(nl.getDonGiaNhap()) + " đ" : "";
-        String dongGoi = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "--";
+        String klDongGoi = nl != null && nl.getKhoiLuongDongGoi() > 0 ? String.valueOf((long) nl.getKhoiLuongDongGoi()) : "--";
         String ngayHH = "";
         if (nl != null && nl.getNgayHetHan() != null) {
             ngayHH = nl.getNgayHetHan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -506,22 +502,22 @@ public class WarehouseManagementPanel extends JPanel {
         infoPanel.add(createStyledLabel("Tên Nguyên Liệu:", true));
         infoPanel.add(createStyledLabel(tenNL, false));
 
-        infoPanel.add(createStyledLabel("Đơn Vị Tính:", true));
-        infoPanel.add(createStyledLabel(dvt, false));
-
         infoPanel.add(createStyledLabel("Đơn Vị Đóng Gói:", true));
-        infoPanel.add(createStyledLabel(dongGoi, false));
+        infoPanel.add(createStyledLabel(dvdg, false));
+
+        infoPanel.add(createStyledLabel("KL Đóng Gói:", true));
+        infoPanel.add(createStyledLabel(klDongGoi, false));
 
         infoPanel.add(createStyledLabel("Đơn Giá Nhập:", true));
         infoPanel.add(createStyledLabel(donGia, false));
 
-        infoPanel.add(createStyledLabel("Số Lượng Tồn:", true));
+        infoPanel.add(createStyledLabel("Số Lượng Tồn (" + (dvdg.isEmpty() ? "đvdg" : dvdg) + "):", true));
         JLabel lblTon = createStyledLabel(tonKho, false);
         lblTon.setFont(new Font("Roboto", Font.BOLD, 14));
         lblTon.setForeground(trangThai.contains("Sắp hết") || trangThai.contains("Hết hàng") ? WARN_COLOR : OK_COLOR);
         infoPanel.add(lblTon);
 
-        infoPanel.add(createStyledLabel("Mức Tối Thiểu:", true));
+        infoPanel.add(createStyledLabel("Mức Tối Thiểu (" + (dvdg.isEmpty() ? "đvdg" : dvdg) + "):", true));
         infoPanel.add(createStyledLabel(mucTT, false));
 
         infoPanel.add(createStyledLabel("Ngày Hết Hạn:", true));
@@ -563,7 +559,7 @@ public class WarehouseManagementPanel extends JPanel {
     private void openNguyenLieuListDialog() {
         JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
                 "Quản Lý Nguyên Liệu", true);
-        dlg.setSize(950, 650);
+        dlg.setSize(1100, 700);
         dlg.setLocationRelativeTo(this);
         dlg.setLayout(new BorderLayout(0, 10));
         dlg.getContentPane().setBackground(new Color(245, 247, 250));
@@ -585,8 +581,8 @@ public class WarehouseManagementPanel extends JPanel {
         bar.add(left, BorderLayout.WEST);
 
         JButton btnAdd = createSmallBtn("  Thêm", FontAwesome.PLUS, new Color(46, 204, 113));
-        btnAdd.setPreferredSize(new Dimension(180, 40));
-        btnAdd.setFont(new Font("Roboto", Font.BOLD, 14));
+        btnAdd.setPreferredSize(new Dimension(200, 45));
+        btnAdd.setFont(new Font("Roboto", Font.BOLD, 15));
         bar.add(btnAdd, BorderLayout.EAST);
 
         JPanel topWrapper = new JPanel(new BorderLayout());
@@ -596,14 +592,14 @@ public class WarehouseManagementPanel extends JPanel {
         dlg.add(topWrapper, BorderLayout.NORTH);
 
         // Table
-        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Đóng Gói", "Đơn Vị Tính", "Đơn Giá Nhập", "Object"};
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Đóng Gói", "KL Đóng Gói", "Đơn Vị Tính", "Đơn Giá Nhập", "Object"};
         DefaultTableModel nlModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         JTable nlTable = buildStyledTable(nlModel);
         nlTable.setDefaultRenderer(Object.class, new ZebraRenderer());
         nlTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-        nlTable.removeColumn(nlTable.getColumnModel().getColumn(5));
+        nlTable.removeColumn(nlTable.getColumnModel().getColumn(6));
 
         // Load data
         Runnable loadNL = () -> {
@@ -615,6 +611,7 @@ public class WarehouseManagementPanel extends JPanel {
                 nlModel.addRow(new Object[]{
                     nl.getMaNL(), nl.getTenNL(),
                     nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "",
+                    nl.getKhoiLuongDongGoi() > 0 ? String.valueOf((long) nl.getKhoiLuongDongGoi()) : "",
                     nl.getDonViTinh(),
                     CurrencyUtils.formatNoUnit(nl.getDonGiaNhap()) + " đ",
                     nl
@@ -653,7 +650,7 @@ public class WarehouseManagementPanel extends JPanel {
                 if (e.getClickCount() == 2) {
                     int row = nlTable.getSelectedRow();
                     if (row >= 0) {
-                        NguyenLieu nl = (NguyenLieu) nlModel.getValueAt(row, 5);
+                        NguyenLieu nl = (NguyenLieu) nlModel.getValueAt(row, 6);
                         ui.dialog.NguyenLieuDialog nlDlg =
                             new ui.dialog.NguyenLieuDialog((Frame) SwingUtilities.getWindowAncestor(dlg), nl, true);
                         nlDlg.setVisible(true);
@@ -946,18 +943,13 @@ public class WarehouseManagementPanel extends JPanel {
         ui.dialog.PhieuXuatDialog dlg = new ui.dialog.PhieuXuatDialog((Frame) SwingUtilities.getWindowAncestor(this));
         dlg.setVisible(true);
         if (dlg.isConfirmed()) {
+            // Reload bang phieu xuat tu DB (da luu phieu xuat moi)
             loadPhieuXuatData();
             loadTonKhoData();
         }
     }
 
-    private void viewPhieuXuatDetail() {
-        int row = pxTable.getSelectedRow();
-        if (row < 0) return;
-        String maPX = (String) pxModel.getValueAt(row, 0);
-        String ngayXuat = (String) pxModel.getValueAt(row, 1);
-        String lyDo = (String) pxModel.getValueAt(row, 2);
-        String maNV = (String) pxModel.getValueAt(row, 3);
+    private void viewPhieuXuatDetail(String maPX, String ngayXuat, String lyDo, String maNV) {
         List<ChiTietPhieuXuat> chiTiet = controller.getChiTietByPhieuXuat(maPX);
 
         JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Chi Tiết Phiếu Xuất: " + maPX, true);
@@ -985,16 +977,16 @@ public class WarehouseManagementPanel extends JPanel {
         dlg.add(topWrapper, BorderLayout.NORTH);
 
         // Bang chi tiet
-        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Tính", "Số Lượng Xuất"};
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Đóng Gói", "Số Lượng Xuất"};
         DefaultTableModel detailModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         for (ChiTietPhieuXuat ct : chiTiet) {
             NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
             String tenNL = nl != null ? nl.getTenNL() : ct.getMaNL();
-            String dvt = nl != null ? nl.getDonViTinh() : "";
+            String dvdg = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
             detailModel.addRow(new Object[]{
-                ct.getMaNL(), tenNL, dvt,
+                ct.getMaNL(), tenNL, dvdg,
                 String.format("%.2f", ct.getSoLuong())
             });
         }
@@ -1013,6 +1005,121 @@ public class WarehouseManagementPanel extends JPanel {
         // Nut dong
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         btnPanel.setOpaque(false);
+        JButton btnClose = new JButton("Đóng");
+        btnClose.setPreferredSize(new Dimension(100, 35));
+        btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
+        btnClose.setBackground(PRIMARY_COLOR);
+        btnClose.setForeground(Color.WHITE);
+        btnClose.addActionListener(e -> dlg.dispose());
+        btnPanel.add(btnClose);
+        dlg.add(btnPanel, BorderLayout.SOUTH);
+
+        dlg.setVisible(true);
+    }
+
+    // ===============================================================
+    // LỊCH SỪ PHIẾU XUẤT (dialog)
+    // ===============================================================
+    private void openLichSuPhieuXuat() {
+        JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Lịch Sử Phiếu Xuất Kho", true);
+        dlg.setSize(900, 600);
+        dlg.setLocationRelativeTo(this);
+        dlg.setLayout(new BorderLayout(0, 10));
+        dlg.getContentPane().setBackground(new Color(245, 247, 250));
+
+        // Header
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(PRIMARY_COLOR);
+        header.setPreferredSize(new Dimension(0, 50));
+        header.setBorder(new EmptyBorder(0, 20, 0, 20));
+        JLabel lblTitle = new JLabel("  LỊCH SỪ PHIẾU XUẤT KHO");
+        lblTitle.setIcon(IconFontSwing.buildIcon(FontAwesome.HISTORY, 22, Color.WHITE));
+        lblTitle.setFont(new Font("Roboto", Font.BOLD, 16));
+        lblTitle.setForeground(Color.WHITE);
+        header.add(lblTitle, BorderLayout.WEST);
+        dlg.add(header, BorderLayout.NORTH);
+
+        // Center: search + table
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 5));
+        centerPanel.setOpaque(false);
+        centerPanel.setBorder(new EmptyBorder(5, 15, 5, 15));
+
+        JPanel searchBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        searchBar.setOpaque(false);
+        searchBar.add(new JLabel(IconFontSwing.buildIcon(FontAwesome.SEARCH, 16, Color.GRAY)));
+        JTextField txtSearch = new JTextField(22);
+        txtSearch.setPreferredSize(new Dimension(0, 35));
+        txtSearch.setFont(new Font("Roboto", Font.PLAIN, 14));
+        searchBar.add(txtSearch);
+        centerPanel.add(searchBar, BorderLayout.NORTH);
+
+        String[] cols = {"Mã Phiếu", "Ngày Xuất", "Lý Do", "Nhân Viên", "Số NL"};
+        DefaultTableModel historyModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable historyTable = buildStyledTable(historyModel);
+        historyTable.setDefaultRenderer(Object.class, new ZebraRenderer());
+        historyTable.getColumnModel().getColumn(1).setPreferredWidth(155);
+        historyTable.getColumnModel().getColumn(2).setPreferredWidth(200);
+
+        Runnable loadHistory = () -> {
+            historyModel.setRowCount(0);
+            String searchKw = txtSearch.getText().toLowerCase().trim();
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            for (PhieuXuat px : controller.getAllPhieuXuat()) {
+                List<ChiTietPhieuXuat> chiTiet = controller.getChiTietByPhieuXuat(px.getMaPX());
+                String maPX = px.getMaPX();
+                String lyDo = px.getLyDoXuat() != null ? px.getLyDoXuat() : "";
+                String maNV = px.getMaNV();
+                if (!searchKw.isEmpty()) {
+                    if (!maPX.toLowerCase().contains(searchKw)
+                        && !lyDo.toLowerCase().contains(searchKw)
+                        && !maNV.toLowerCase().contains(searchKw)) {
+                        continue;
+                    }
+                }
+                historyModel.addRow(new Object[]{
+                    maPX,
+                    px.getNgayXuat() != null ? px.getNgayXuat().format(fmt) : "",
+                    lyDo, maNV,
+                    chiTiet.size() + " nguyên liệu"
+                });
+            }
+        };
+        loadHistory.run();
+
+        txtSearch.addKeyListener(new KeyAdapter() {
+            @Override public void keyReleased(KeyEvent e) { loadHistory.run(); }
+        });
+
+        historyTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = historyTable.getSelectedRow();
+                    if (row >= 0) {
+                        String maPX = (String) historyModel.getValueAt(row, 0);
+                        String ngayXuat = (String) historyModel.getValueAt(row, 1);
+                        String lyDo = (String) historyModel.getValueAt(row, 2);
+                        String maNV = (String) historyModel.getValueAt(row, 3);
+                        viewPhieuXuatDetail(maPX, ngayXuat, lyDo, maNV);
+                    }
+                }
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(historyTable);
+        scroll.setBorder(new LineBorder(new Color(230, 230, 230)));
+        centerPanel.add(scroll, BorderLayout.CENTER);
+        dlg.add(centerPanel, BorderLayout.CENTER);
+
+        // Bottom
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        btnPanel.setOpaque(false);
+        JLabel hint = new JLabel("Nhấp đúp vào phiếu để xem chi tiết  ");
+        hint.setFont(new Font("Roboto", Font.ITALIC, 12));
+        hint.setForeground(Color.GRAY);
+        btnPanel.add(hint);
         JButton btnClose = new JButton("Đóng");
         btnClose.setPreferredSize(new Dimension(100, 35));
         btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
@@ -1084,6 +1191,25 @@ public class WarehouseManagementPanel extends JPanel {
                 } else {
                     c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(252, 253, 255));
                     c.setForeground(col == 6 ? OK_COLOR : Color.BLACK);
+                }
+            }
+            return c;
+        }
+    }
+
+    class PxTonKhoRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
+            Component c = super.getTableCellRendererComponent(t, v, sel, foc, row, col);
+            Object statusVal = pxModel.getValueAt(row, 5);
+            boolean warn = statusVal != null && (statusVal.toString().contains("S\u1eafp h\u1ebft") || statusVal.toString().contains("H\u1ebft h\u00e0ng"));
+            if (!sel) {
+                if (warn) {
+                    c.setBackground(new Color(254, 243, 242));
+                    c.setForeground(col == 5 ? WARN_COLOR : Color.BLACK);
+                } else {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(252, 253, 255));
+                    c.setForeground(col == 5 ? OK_COLOR : Color.BLACK);
                 }
             }
             return c;

@@ -18,18 +18,20 @@ public class SizeDAOImpl implements SizeDAO {
             rs.getString("maSize"),
             rs.getString("tenSize"),
             rs.getString("maMon"),
-            rs.getBoolean("trangThai")
+            rs.getBoolean("trangThai"),
+            rs.getDouble("tileSize")  // Đọc tỉ lệ từ DB
         );
     }
 
     @Override
     public boolean insert(Size size) {
-        String sql = "INSERT INTO Size(maSize, tenSize, maMon, trangThai) VALUES(?,?,?,?)";
+        String sql = "INSERT INTO Size(maSize, tenSize, maMon, trangThai, tileSize) VALUES(?,?,?,?,?)";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, size.getMaSize());
             ps.setString(2, size.getTenSize());
             ps.setString(3, size.getMaMon());
             ps.setBoolean(4, size.isTrangThai());
+            ps.setDouble(5, size.getTileSize());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("SizeDAOImpl.insert: " + e.getMessage());
@@ -39,12 +41,13 @@ public class SizeDAOImpl implements SizeDAO {
 
     @Override
     public boolean update(Size size) {
-        String sql = "UPDATE Size SET tenSize=?, maMon=?, trangThai=? WHERE maSize=?";
+        String sql = "UPDATE Size SET tenSize=?, maMon=?, trangThai=?, tileSize=? WHERE maSize=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, size.getTenSize());
             ps.setString(2, size.getMaMon());
             ps.setBoolean(3, size.isTrangThai());
-            ps.setString(4, size.getMaSize());
+            ps.setDouble(4, size.getTileSize());
+            ps.setString(5, size.getMaSize());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("SizeDAOImpl.update: " + e.getMessage());

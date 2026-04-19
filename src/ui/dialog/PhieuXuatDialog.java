@@ -50,8 +50,6 @@ public class PhieuXuatDialog extends JDialog {
         loadComboData();
     }
 
-    public boolean isConfirmed() { return confirmed; }
-
     private void initUI() {
         JPanel mainPanel = new JPanel(new BorderLayout(0, 12));
         mainPanel.setBackground(new Color(245, 247, 250));
@@ -129,7 +127,7 @@ public class PhieuXuatDialog extends JDialog {
         centerPanel.add(pnlAddRow, BorderLayout.NORTH);
 
         // Bảng chi tiết
-        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Tính", "Tồn Kho", "Số Lượng Xuất", "Xóa"};
+        String[] cols = {"Mã Nguyên Liệu", "Tên Nguyên Liệu", "Đơn Vị Đóng Gói", "Tồn Kho", "Số Lượng Xuất", "Xóa"};
         modelItems = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -202,8 +200,8 @@ public class PhieuXuatDialog extends JDialog {
         int idx = cbNguyenLieu.getSelectedIndex();
         if (idx >= 0 && idx < listNL.size()) {
             NguyenLieu nl = listNL.get(idx);
-            String dvt = nl.getDonViTinh();
-            lblDonViTinh.setText(dvt != null ? dvt : "");
+            String dvdg = nl.getDonViDongGoi();
+            lblDonViTinh.setText(dvdg != null ? dvdg : "");
 
             // Hiển thị tồn kho
             double tonKho = 0;
@@ -286,7 +284,7 @@ public class PhieuXuatDialog extends JDialog {
         for (ChiTietPhieuXuat ct : chiTietList) {
             NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
             String tenNL = nl != null ? nl.getTenNL() : ct.getMaNL();
-            String dvt = nl != null ? nl.getDonViTinh() : "";
+            String dvdg = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
 
             double tonKho = 0;
             List<TonKho> allTK = controller.getAllTonKho();
@@ -298,7 +296,7 @@ public class PhieuXuatDialog extends JDialog {
             }
 
             modelItems.addRow(new Object[]{
-                ct.getMaNL(), tenNL, dvt,
+                ct.getMaNL(), tenNL, dvdg,
                 String.format("%.1f", tonKho),
                 String.format("%.1f", ct.getSoLuong()),
                 "\u274C Xóa"
@@ -359,4 +357,7 @@ public class PhieuXuatDialog extends JDialog {
         lbl.setForeground(new Color(44, 62, 80));
         return lbl;
     }
+
+    public boolean isConfirmed() { return confirmed; }
+    public List<ChiTietPhieuXuat> getChiTietList() { return chiTietList; }
 }

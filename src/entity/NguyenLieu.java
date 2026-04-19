@@ -9,17 +9,20 @@ public class NguyenLieu {
     private double    donGiaNhap;
     private LocalDate ngayHetHan;     // nullable
     private String    donViDongGoi;   // "Hộp", "Bịch", "Chai", ...
+    private double    khoiLuongDongGoi; // KL mỗi đơn vị đóng gói (vd: 1 Hộp = 500g → 500)
 
     public NguyenLieu() {}
 
     public NguyenLieu(String maNL, String tenNL, String donViTinh,
-                      double donGiaNhap, LocalDate ngayHetHan, String donViDongGoi) {
-        this.maNL         = maNL;
-        this.tenNL        = tenNL;
-        this.donViTinh    = donViTinh;
-        this.donGiaNhap   = donGiaNhap;
-        this.ngayHetHan   = ngayHetHan;
-        this.donViDongGoi = donViDongGoi;
+                      double donGiaNhap, LocalDate ngayHetHan, String donViDongGoi,
+                      double khoiLuongDongGoi) {
+        this.maNL              = maNL;
+        this.tenNL             = tenNL;
+        this.donViTinh         = donViTinh;
+        this.donGiaNhap        = donGiaNhap;
+        this.ngayHetHan        = ngayHetHan;
+        this.donViDongGoi      = donViDongGoi;
+        this.khoiLuongDongGoi  = khoiLuongDongGoi;
     }
 
     public String getMaNL()          { return maNL; }
@@ -39,6 +42,9 @@ public class NguyenLieu {
 
     public String getDonViDongGoi()          { return donViDongGoi; }
     public void   setDonViDongGoi(String v)  { this.donViDongGoi = v; }
+
+    public double getKhoiLuongDongGoi()          { return khoiLuongDongGoi; }
+    public void   setKhoiLuongDongGoi(double v)  { this.khoiLuongDongGoi = v; }
 
     // Giữ lại getLoaiNL/setLoaiNL để tương thích ngược (trả về null)
     public String getLoaiNL()          { return null; }

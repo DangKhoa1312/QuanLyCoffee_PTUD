@@ -14,6 +14,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import javax.imageio.ImageIO;
 
 import jiconfont.icons.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -45,6 +46,7 @@ public class OrderPanel extends JPanel {
     private JTable cartTable;
     private DefaultTableModel cartModel;
     private JLabel lblTotalCart;
+    private JTextField txtSearchMon;
 
     private Runnable onBackAction;
     private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
@@ -148,12 +150,13 @@ public class OrderPanel extends JPanel {
         btn.putClientProperty("JButton.buttonArc", 15);
         btn.putClientProperty("JButton.margin", new java.awt.Insets(12, 20, 12, 20));
         btn.putClientProperty("JButton.borderWidth", 0);
-        btn.putClientProperty("JButton.selectedBackground", new Color(113, 76, 52)); // #714c34
+        btn.putClientProperty("JButton.selectedBackground", new Color(113, 76, 52));
         btn.putClientProperty("JButton.selectedForeground", Color.WHITE);
-        btn.putClientProperty("JButton.hoverBackground", new Color(232, 236, 239)); // #e8ecef
+        btn.putClientProperty("JButton.hoverBackground", new Color(232, 236, 239));
         btn.putClientProperty("JButton.focusWidth", 0);
+        btn.putClientProperty("category", cat); // Lưu category để filterMenu() tra cứu
         btn.setBackground(null);
-        btn.setForeground(new Color(74, 54, 40)); // #4a3628
+        btn.setForeground(new Color(74, 54, 40));
             
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -161,6 +164,8 @@ public class OrderPanel extends JPanel {
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         btn.addActionListener(e -> {
+            // Reset thanh tìm kiếm khi đổi danh mục
+            if (txtSearchMon != null) txtSearchMon.setText("");
             loadMenuToGrid(cat);
         });
 
@@ -175,7 +180,29 @@ public class OrderPanel extends JPanel {
     private JPanel createMenuGridPanel() {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
-        
+
+        // ── Thanh tìm kiếm món ──
+        JPanel searchBar = new JPanel(new BorderLayout(8, 0));
+        searchBar.setOpaque(false);
+        searchBar.setBorder(new EmptyBorder(5, 10, 5, 10));
+
+        JLabel lblSearch = new JLabel();
+        lblSearch.setIcon(jiconfont.swing.IconFontSwing.buildIcon(
+                jiconfont.icons.FontAwesome.SEARCH, 14, new Color(150, 150, 150)));
+        searchBar.add(lblSearch, BorderLayout.WEST);
+
+        txtSearchMon = new JTextField();
+        txtSearchMon.setFont(new Font("Roboto", Font.PLAIN, 14));
+        txtSearchMon.putClientProperty("JTextField.placeholderText", "Tìm tên món...");
+        txtSearchMon.putClientProperty("JComponent.arc", 8);
+        txtSearchMon.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterMenu(); }
+        });
+        searchBar.add(txtSearchMon, BorderLayout.CENTER);
+        p.add(searchBar, BorderLayout.NORTH);
+
         menuGrid = new JPanel(new utils.WrapLayout(FlowLayout.LEFT, 15, 15));
         menuGrid.setOpaque(false);
         menuGrid.setBorder(new EmptyBorder(0, 10, 20, 10));
@@ -192,44 +219,142 @@ public class OrderPanel extends JPanel {
     
     private void loadMenuToGrid(LoaiMon cat) {
         menuGrid.removeAll();
-        // Nếu cat == null, controller sẽ lấy tất cả do param trong SQL pattern 
-        List<Mon> dsMon = menuController.getMon(cat); 
-
+        List<Mon> dsMon = menuController.getMon(cat);
+        String keyword = (txtSearchMon != null) ? txtSearchMon.getText().trim().toLowerCase() : "";
         for (Mon m : dsMon) {
-            menuGrid.add(createItemCard(m));
+            if (keyword.isEmpty() || m.getTenMon().toLowerCase().contains(keyword)) {
+                menuGrid.add(createItemCard(m));
+            }
         }
-
         menuGrid.revalidate();
         menuGrid.repaint();
     }
+
+    /** Lọc món theo từ khóa trong thanh tìm kiếm (giữ danh mục đang chọn) */
+    private void filterMenu() {
+        // Lấy loại món đang chọn từ category sidebar
+        LoaiMon selectedCat = null;
+        if (bgCategories != null) {
+            java.util.Enumeration<AbstractButton> elements = bgCategories.getElements();
+            while (elements.hasMoreElements()) {
+                AbstractButton btn = elements.nextElement();
+                if (btn.isSelected()) {
+                    Object cat = btn.getClientProperty("category");
+                    if (cat instanceof LoaiMon) selectedCat = (LoaiMon) cat;
+                    break;
+                }
+            }
+        }
+        loadMenuToGrid(selectedCat);
+    }
     
+    /**
+     * Giải quyết đường dẫn file ảnh bằng cách thử nhiều base path.
+     * DB lưu path dạng "images/mon/xxx.jpg" (relative).
+     * App có thể được chạy từ thư mục QuanLyCoffee hoặc thư mục cha.
+     */
+    private java.io.File resolveImageFile(String storedPath) {
+        if (storedPath == null || storedPath.isBlank()) return null;
+
+        // 1. Thử trực tiếp (absolute path hoặc đúng CWD)
+        java.io.File f = new java.io.File(storedPath);
+        if (f.exists()) return f;
+
+        // 2. Thử từ CWD hiện tại
+        f = new java.io.File(System.getProperty("user.dir"), storedPath);
+        if (f.exists()) return f;
+
+        // 3. Thử từ thư mục cha của CWD (trường hợp CWD = .../Project/QuanLyCoffee)
+        java.io.File parentDir = new java.io.File(System.getProperty("user.dir")).getParentFile();
+        if (parentDir != null) {
+            f = new java.io.File(parentDir, storedPath);
+            if (f.exists()) return f;
+        }
+
+        // 4. Tên file thôi — tìm trong images/mon/ relative CWD
+        String fileName = new java.io.File(storedPath).getName();
+        f = new java.io.File(System.getProperty("user.dir"), "images/mon/" + fileName);
+        if (f.exists()) return f;
+
+        return null; // Không tìm thấy
+    }
+
     private JPanel createItemCard(Mon m) {
-        boolean isHet = menuController.isHetHang(m.getMaMon());
-        // Bug 1: Kiểm tra trạng thái món — ngưng bán cũng không cho order
         boolean isNgungBan = !m.isTrangThai();
+        int soLuongConBan = menuController.getSoLuongConBanDuoc(m.getMaMon());
+        boolean isHetNL = (soLuongConBan <= 0);
+        boolean isSapHetNL = (soLuongConBan > 0 && soLuongConBan <= controller.InventoryController.NGUONG_CANH_BAO);
+        boolean isHet = menuController.isHetHang(m.getMaMon()) || isHetNL;
         boolean isDisabled = isHet || isNgungBan;
 
         JPanel card = new JPanel(new BorderLayout());
         card.setPreferredSize(new Dimension(165, 230));
         card.setBackground(Color.WHITE);
         card.putClientProperty("JComponent.arc", 20);
-        card.setBorder(BorderFactory.createLineBorder(new Color(232, 232, 232), 1)); // #e8e8e8 
+        card.setBorder(BorderFactory.createLineBorder(
+                isSapHetNL ? new Color(255, 180, 150) : new Color(232, 232, 232), 1));
         
-        // Image Area
+        // Image Area — sử dụng LayeredPane để overlay badge cảnh báo
+        JPanel pnlTop = new JPanel(new BorderLayout());
+        pnlTop.setOpaque(false);
+
         JLabel lblImage = new JLabel();
         lblImage.setPreferredSize(new Dimension(165, 130));
         lblImage.setOpaque(true);
         lblImage.setBackground(isDisabled ? new Color(240, 240, 240) : new Color(248, 249, 250));
         lblImage.setHorizontalAlignment(SwingConstants.CENTER);
         
-        jiconfont.IconCode iconCode = isDisabled ? FontAwesome.BAN : FontAwesome.COFFEE; 
-        Color iconColor = isDisabled ? new Color(200, 150, 150) : new Color(139, 90, 43);
-        lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(iconCode, 50, iconColor));
+        // Load ảnh từ hinhAnh nếu có, ngược lại dùng icon FontAwesome
+        if (isDisabled) {
+            lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.BAN, 50, new Color(200, 150, 150)));
+        } else if (m.getHinhAnh() != null && !m.getHinhAnh().isBlank()) {
+            java.io.File imgFile = resolveImageFile(m.getHinhAnh());
+            if (imgFile != null && imgFile.exists()) {
+                try {
+                    java.awt.image.BufferedImage raw = javax.imageio.ImageIO.read(imgFile);
+                    if (raw != null) {
+                        java.awt.Image scaled = raw.getScaledInstance(165, 130, java.awt.Image.SCALE_SMOOTH);
+                        lblImage.setIcon(new ImageIcon(scaled));
+                    } else {
+                        lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+                    }
+                } catch (Exception imgEx) {
+                    lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+                }
+            } else {
+                lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+            }
+        } else {
+            lblImage.setIcon(jiconfont.swing.IconFontSwing.buildIcon(FontAwesome.COFFEE, 50, new Color(139, 90, 43)));
+        }
         lblImage.putClientProperty("JComponent.arc", 20);
 
-        JPanel pnlTop = new JPanel(new BorderLayout());
-        pnlTop.setOpaque(false);
         pnlTop.add(lblImage, BorderLayout.CENTER);
+
+        // Badge cảnh báo ⚠ nguyên liệu sắp hết (overlay góc phải trên)
+        if (isSapHetNL && !isDisabled) {
+            JLabel lblWarningBadge = new JLabel("⚠") {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(220, 38, 38)); // red-600
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+            lblWarningBadge.setFont(new Font("Roboto", Font.BOLD, 14));
+            lblWarningBadge.setForeground(Color.WHITE);
+            lblWarningBadge.setHorizontalAlignment(SwingConstants.CENTER);
+            lblWarningBadge.setPreferredSize(new Dimension(28, 24));
+            lblWarningBadge.setToolTipText("Nguyên liệu sắp hết! Còn " + soLuongConBan + " phần");
+
+            JPanel pnlBadge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
+            pnlBadge.setOpaque(false);
+            pnlBadge.add(lblWarningBadge);
+            pnlTop.add(pnlBadge, BorderLayout.NORTH);
+        }
 
         // Info Area
         JPanel pnlInfo = new JPanel(new BorderLayout());
@@ -245,12 +370,18 @@ public class OrderPanel extends JPanel {
         // Xác định sub-text hiển thị
         String subText;
         if (isNgungBan) subText = "(Ngưng bán)";
+        else if (isHetNL) subText = "(Hết nguyên liệu)";
         else if (isHet) subText = "(Hết hàng)";
+        else if (isSapHetNL) subText = "⚠ Còn " + soLuongConBan + " phần";
         else subText = "Tuỳ chọn size...";
 
         JLabel lblPrice = new JLabel(subText, SwingConstants.CENTER);
         lblPrice.setFont(new Font("Roboto", Font.BOLD, 12));
-        lblPrice.setForeground(isDisabled ? new Color(200, 50, 50) : new Color(39, 174, 96));
+        if (isSapHetNL && !isDisabled) {
+            lblPrice.setForeground(new Color(220, 38, 38)); // Đỏ cảnh báo
+        } else {
+            lblPrice.setForeground(isDisabled ? new Color(200, 50, 50) : new Color(39, 174, 96));
+        }
 
         JPanel pnlText = new JPanel();
         pnlText.setLayout(new BoxLayout(pnlText, BoxLayout.Y_AXIS));
@@ -280,13 +411,13 @@ public class OrderPanel extends JPanel {
 
         if (!isDisabled) {
             Color hoverBg = new Color(250, 252, 255);
-            Color hoverBorder = new Color(52, 152, 219);
-            Color defaultBorder = new Color(230, 230, 230);
+            Color hoverBorder = isSapHetNL ? new Color(220, 38, 38) : new Color(52, 152, 219);
+            Color defaultBorder = isSapHetNL ? new Color(255, 180, 150) : new Color(230, 230, 230);
             
             java.awt.event.MouseAdapter clickHandler = new java.awt.event.MouseAdapter() {
                 @Override
                 public void mouseEntered(java.awt.event.MouseEvent e) {
-                    card.setBorder(BorderFactory.createLineBorder(hoverBorder, 1));
+                    card.setBorder(BorderFactory.createLineBorder(hoverBorder, 2));
                     pnlInfo.setBackground(hoverBg);
                 }
                 @Override
@@ -296,13 +427,46 @@ public class OrderPanel extends JPanel {
                 }
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent e) {
+                    // Nếu sắp hết NL → cảnh báo trước khi cho gọi món
+                    if (isSapHetNL) {
+                        java.util.List<String> warnings = menuController.getCanhBaoNguyenLieu(m.getMaMon());
+                        StringBuilder msg = new StringBuilder();
+                        msg.append("<html><b style='color:#DC2626;font-size:13px;'>⚠ CẢNH BÁO: Nguyên liệu sắp hết!</b><br><br>");
+                        msg.append("Món <b>").append(m.getTenMon()).append("</b> chỉ còn bán được <b>")
+                           .append(soLuongConBan).append(" phần</b> nữa.<br><br>");
+                        msg.append("<b>Chi tiết:</b><br>");
+                        for (String w : warnings) {
+                            msg.append("  • ").append(w).append("<br>");
+                        }
+                        msg.append("<br>Bạn vẫn muốn gọi món này?</html>");
+                        
+                        int xn = JOptionPane.showConfirmDialog(
+                            SwingUtilities.getWindowAncestor(OrderPanel.this),
+                            msg.toString(), "Cảnh báo nguyên liệu",
+                            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                        if (xn != JOptionPane.YES_OPTION) return;
+                    }
                     showOptionDialog(m);
                 }
             };
             
             card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             card.addMouseListener(clickHandler);
-            btnAdd.addActionListener(e -> showOptionDialog(m));
+            btnAdd.addActionListener(e -> {
+                // Trigger cùng logic cảnh báo khi ấn nút "Thêm"
+                if (isSapHetNL) {
+                    java.util.List<String> warnings = menuController.getCanhBaoNguyenLieu(m.getMaMon());
+                    StringBuilder msg = new StringBuilder();
+                    msg.append("<html><b style='color:#DC2626;'>⚠ Nguyên liệu sắp hết!</b><br>");
+                    msg.append("Còn <b>").append(soLuongConBan).append("</b> phần. Tiếp tục?</html>");
+                    int xn = JOptionPane.showConfirmDialog(
+                        SwingUtilities.getWindowAncestor(OrderPanel.this),
+                        msg.toString(), "Cảnh báo",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    if (xn != JOptionPane.YES_OPTION) return;
+                }
+                showOptionDialog(m);
+            });
         }
 
         return card;
@@ -473,7 +637,7 @@ public class OrderPanel extends JPanel {
         pnlUtils.add(btnClear);
         pnlUtils.add(btnHuyDon);
 
-        JPanel pnlBotGroup = new JPanel(new BorderLayout());
+        JPanel pnlBotGroup = new JPanel(new BorderLayout(0, 8));
         pnlBotGroup.setOpaque(false);
         pnlBotGroup.add(pnlBtns, BorderLayout.CENTER);
         pnlBotGroup.add(pnlUtils, BorderLayout.SOUTH);
@@ -605,7 +769,35 @@ public class OrderPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Giỏ hàng đang trống!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
+        // Đếm số món mới chưa gọi
+        long soMonMoi = cartData.stream().filter(item -> !item.isDaPhucVu()).count();
+        if (soMonMoi == 0) {
+            JOptionPane.showMessageDialog(this, "Không có món mới nào cần gọi!\nTất cả các món đã được báo bếp trước đó.",
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Hiện xác nhận trước khi gọi món
+        StringBuilder confirmMsg = new StringBuilder();
+        confirmMsg.append("<html><b>Xác nhận gọi ").append(soMonMoi).append(" món mới:</b><br><br>");
+        for (CartItem item : cartData) {
+            if (!item.isDaPhucVu()) {
+                String sizeStr = item.getSize().getTenSize().equalsIgnoreCase("Thường") ? "" : " (" + item.getSize().getTenSize() + ")";
+                confirmMsg.append("  • ").append(item.getMon().getTenMon()).append(sizeStr)
+                          .append(" x").append(item.getSoLuong()).append("<br>");
+            }
+        }
+        confirmMsg.append("<br>Bạn có chắc chắn muốn gọi món không?<br>");
+        confirmMsg.append("<i style='color:gray;'>Ấn 'No' để quay lại sửa đơn.</i></html>");
+
+        int xacNhan = JOptionPane.showConfirmDialog(this,
+                confirmMsg.toString(), "Xác nhận gọi món",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (xacNhan != JOptionPane.YES_OPTION) {
+            return; // Quay lại tiếp tục order / sửa
+        }
+
         List<CartItem> newItems = new ArrayList<>();
         for (CartItem item : cartData) {
             if (!item.isDaPhucVu()) {
@@ -637,8 +829,9 @@ public class OrderPanel extends JPanel {
         
         if (performSaveOrder()) {
             renderCartTable(); // Cập nhật lại UI để chuyển chữ (Mới) -> (Đã báo bếp) và thể hiện sự được gộp
-            JOptionPane.showMessageDialog(this, "Lưu đơn hàng thành công!");
-            if (onBackAction != null) onBackAction.run();
+            JOptionPane.showMessageDialog(this, "Đã gọi món thành công!",
+                    "Gọi Món", JOptionPane.INFORMATION_MESSAGE);
+            // KHÔNG tự động back: nhân viên cần tiếp tục thao tác trên bàn này
         }
     }
 
@@ -726,26 +919,33 @@ public class OrderPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chỉ có thể đổi/gộp bàn cho đơn hàng đã [Gửi Bếp]!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if ("MANG_VE".equals(currentBan.getMaBan())) {
-            JOptionPane.showMessageDialog(this, "Không cho phép chuyển/gộp đối với đơn Mang về!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
+
         Window win = SwingUtilities.getWindowAncestor(this);
         if (!(win instanceof JFrame)) return;
 
         if (actionType == 1) { // Chuyển bàn
             ui.dialog.TransferTableDialog dlg = new ui.dialog.TransferTableDialog((JFrame) win, currentBan, currentDonHang, 1);
             dlg.setVisible(true);
-            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+            if (dlg.isSuccess()) {
+                // Sau khi chuyển: refresh lại trạng thái rồi quay về sơ đồ bàn
+                if (onBackAction != null) onBackAction.run();
+            }
         } else if (actionType == 2) { // Ghép bàn
             ui.dialog.TransferTableDialog dlg = new ui.dialog.TransferTableDialog((JFrame) win, currentBan, currentDonHang, 2);
             dlg.setVisible(true);
-            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+            if (dlg.isSuccess()) {
+                // Sau khi gộp: bàn nguồn bị xóa -> quay về sơ đồ
+                if (onBackAction != null) onBackAction.run();
+            }
         } else if (actionType == 3) { // Tách món
             ui.dialog.TransferItemsDialog dlg = new ui.dialog.TransferItemsDialog((JFrame) win, currentBan, currentDonHang, cartData);
             dlg.setVisible(true);
-            if (dlg.isSuccess() && onBackAction != null) onBackAction.run();
+            if (dlg.isSuccess()) {
+                // Sau khi tách: reload giỏ hàng của bàn nguồn
+                cartData = orderController.loadCart(currentDonHang.getMaDonHang());
+                renderCartTable();
+                JOptionPane.showMessageDialog(this, "Tách món thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            }
         }
     }
 }

@@ -89,14 +89,31 @@ public class ShiftController {
 
     public void dongCa(double tienThucTe) {
         CaLamViec ca = SessionManager.getCurrentCa();
-        if (ca == null || !TrangThaiCa.DANG_LAM.equals(ca.getTrangThai())) {
+        if (ca == null) {
             throw new AppException("Không có ca nào đang mở để đóng.");
         }
+        if (!TrangThaiCa.DANG_LAM.equals(ca.getTrangThai())) {
+            // Ca đã bị đóng từ trước (SessionManager không đồng bộ) → vẫn cho qua
+            System.err.println("ShiftController.dongCa: ca " + ca.getMaCa() + " đang ở trạng thái " + ca.getTrangThai());
+        }
 
+        // Cập nhật tiền thực đếm (không block nếu thất bại)
         caDAO.updateTongDoanhThu(ca.getMaCa(), tienThucTe);
+
+        // Đóng ca chính thức
         boolean ok = caDAO.dongCa(ca.getMaCa());
         if (!ok) {
-            throw new AppException("Lỗi hệ thống khi đóng ca!");
+            // Thử kiểm tra xem ca có tồn tại trong DB không
+            CaLamViec caFromDb = caDAO.findById(ca.getMaCa());
+            if (caFromDb == null) {
+                throw new AppException("Không tìm thấy ca " + ca.getMaCa() + " trong database!\nCó thể ca chưa được lưu vào DB.");
+            }
+            if (TrangThaiCa.DA_DONG.equals(caFromDb.getTrangThai())) {
+                // Ca đã đóng rồi (double-click?) → bỏ qua lỗi
+                System.out.println("Ca " + ca.getMaCa() + " đã ở trạng thái DA_DONG.");
+            } else {
+                throw new AppException("Lỗi hệ thống khi đóng ca! Trạng thái DB: " + caFromDb.getTrangThai());
+            }
         }
 
         SessionManager.setCurrentCa(null);

@@ -111,6 +111,16 @@ public class MenuController {
         return !inventory.checkTonKhoMoiMon(maMon);
     }
 
+    /** Tính số phần còn bán được cho 1 món (dựa trên tồn kho / định mức) */
+    public int getSoLuongConBanDuoc(String maMon) {
+        return inventory.getSoLuongConBanDuoc(maMon);
+    }
+
+    /** Lấy danh sách tên nguyên liệu đang sắp hết cho 1 món */
+    public java.util.List<String> getCanhBaoNguyenLieu(String maMon) {
+        return inventory.getCanhBaoNguyenLieu(maMon);
+    }
+
     // --- ADMIN METHODS ---
 
     public String generateNextMaMon() { return utils.IDGenerator.newMaMon(); }

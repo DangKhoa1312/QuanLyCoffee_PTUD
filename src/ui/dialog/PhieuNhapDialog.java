@@ -34,7 +34,7 @@ public class PhieuNhapDialog extends JDialog {
     private JComboBox<String> cbNCC;
     private JComboBox<String> cbNguyenLieu;
     private JTextField txtSoLuong, txtDonGia;
-    private JLabel lblDonViTinh;
+    private JLabel lblDonViTinh, lblKLDongGoi;
     private JDateChooser dateChooserHetHan;
     private JTable tableItems;
     private DefaultTableModel modelItems;
@@ -53,7 +53,7 @@ public class PhieuNhapDialog extends JDialog {
 
     public PhieuNhapDialog(Frame owner) {
         super(owner, "Tạo Phiếu Nhập Kho", true);
-        setSize(900, 700);
+        setSize(1150, 780);
         setLocationRelativeTo(owner);
         setResizable(false);
 
@@ -124,6 +124,13 @@ public class PhieuNhapDialog extends JDialog {
         lblDonViTinh.setPreferredSize(new Dimension(80, 32));
         row1.add(lblDonViTinh);
 
+        row1.add(createLabel("  KL Đóng Gói:"));
+        lblKLDongGoi = new JLabel("");
+        lblKLDongGoi.setFont(new Font("Roboto", Font.BOLD, 13));
+        lblKLDongGoi.setForeground(new Color(39, 174, 96));
+        lblKLDongGoi.setPreferredSize(new Dimension(80, 32));
+        row1.add(lblKLDongGoi);
+
         row1.add(createLabel("  Đơn giá:"));
         txtDonGia = new JTextField(8);
         txtDonGia.setPreferredSize(new Dimension(0, 32));
@@ -145,11 +152,11 @@ public class PhieuNhapDialog extends JDialog {
         row2.add(dateChooserHetHan);
 
         JButton btnAddLine = new JButton("Thêm dòng");
-        btnAddLine.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS, 13, Color.WHITE));
+        btnAddLine.setIcon(IconFontSwing.buildIcon(FontAwesome.PLUS, 15, Color.WHITE));
         btnAddLine.setBackground(SUCCESS);
         btnAddLine.setForeground(Color.WHITE);
-        btnAddLine.setFont(new Font("Roboto", Font.BOLD, 12));
-        btnAddLine.setPreferredSize(new Dimension(130, 32));
+        btnAddLine.setFont(new Font("Roboto", Font.BOLD, 14));
+        btnAddLine.setPreferredSize(new Dimension(180, 42));
         btnAddLine.setFocusable(false);
         btnAddLine.addActionListener(e -> addItemRow());
         row2.add(btnAddLine);
@@ -164,8 +171,8 @@ public class PhieuNhapDialog extends JDialog {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tableItems = new JTable(modelItems);
-        tableItems.setRowHeight(38);
-        tableItems.setFont(new Font("Roboto", Font.PLAIN, 13));
+        tableItems.setRowHeight(45);
+        tableItems.setFont(new Font("Roboto", Font.PLAIN, 14));
         tableItems.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 13));
         tableItems.getTableHeader().setBackground(new Color(236, 240, 241));
 
@@ -249,8 +256,10 @@ public class PhieuNhapDialog extends JDialog {
         int idx = cbNguyenLieu.getSelectedIndex();
         if (idx >= 0 && idx < listNL.size()) {
             txtDonGia.setText(String.valueOf((long) listNL.get(idx).getDonGiaNhap()));
-            String dvt = listNL.get(idx).getDonViTinh();
-            lblDonViTinh.setText(dvt != null ? dvt : "");
+            String dvdg = listNL.get(idx).getDonViDongGoi();
+            lblDonViTinh.setText(dvdg != null ? dvdg : "");
+            double klDG = listNL.get(idx).getKhoiLuongDongGoi();
+            lblKLDongGoi.setText(klDG > 0 ? String.valueOf((long) klDG) : "");
         } else {
             lblDonViTinh.setText("");
         }

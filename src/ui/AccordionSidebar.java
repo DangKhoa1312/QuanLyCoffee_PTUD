@@ -12,7 +12,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +34,6 @@ public class AccordionSidebar extends JPanel {
     private String activePage = "";
     private final List<SidebarItem> allItems = new ArrayList<>();
 
-    private JLabel lblCaInfo;
     private BadgePanel pnlBadgeDatBan;
     private Timer badgeTimer;
 
@@ -59,18 +57,7 @@ public class AccordionSidebar extends JPanel {
         }
     }
 
-    public void refreshCaInfo() {
-        if (lblCaInfo == null) return;
-        if (SessionManager.isCaDangMo()) {
-            String maCa = SessionManager.getCurrentCa().getMaCa();
-            String gio  = SessionManager.getCurrentCa().getGioBatDau().format(DateTimeFormatter.ofPattern("HH:mm"));
-            lblCaInfo.setText("Ca " + maCa + "   ·   " + gio);
-            lblCaInfo.setForeground(new Color(16, 185, 129)); 
-        } else {
-            lblCaInfo.setText("Chưa vào ca");
-            lblCaInfo.setForeground(C_MUTED);
-        }
-    }
+
 
     public void refreshBadges() {
         try {
@@ -110,11 +97,6 @@ public class AccordionSidebar extends JPanel {
         gVH.addItem(itmDatBan);
         gVH.addItem(makeItem("Hoá Đơn", FontAwesome.FILE_TEXT_O, "HOA_DON"));
         pnlMenu.add(gVH);
-
-        pnlMenu.add(createDivider());
-        AccordionGroup gCa = new AccordionGroup("Ca Làm Việc", true);
-        if (isQL) gCa.addItem(makeItem("Lịch Sử Ca", FontAwesome.HISTORY, "LICH_SU_CA"));
-        pnlMenu.add(gCa);
 
         if (isQL) {
             pnlMenu.add(createDivider());
@@ -195,14 +177,8 @@ public class AccordionSidebar extends JPanel {
         lblName.setFont(new Font("Roboto", Font.BOLD, 14));
         lblName.setForeground(C_TEXT);
         
-        lblCaInfo = new JLabel();
-        lblCaInfo.setFont(new Font("Roboto", Font.PLAIN, 12));
-        refreshCaInfo();
-
         text.add(Box.createVerticalStrut(2)); 
         text.add(lblName);
-        text.add(Box.createVerticalStrut(3));
-        text.add(lblCaInfo);
 
         p.add(ava, BorderLayout.WEST);
         p.add(text, BorderLayout.CENTER);

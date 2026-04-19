@@ -168,6 +168,10 @@ public class OrderManager {
         DonHang dh = orders.get(maDonHang);
         if (dh != null) {
             dh.setMaBan(maBanMoi);
+            // Nếu đơn trước đó là MANG_VE và giờ được chuyển sang bàn thật thì đổi loại đơn
+            if (enums.LoaiDon.MANG_VE.equals(dh.getLoaiDon()) && maBanMoi != null && !"MANG_VE".equals(maBanMoi)) {
+                dh.setLoaiDon(enums.LoaiDon.TAI_BAN);
+            }
             saveStateToDisk();
         }
     }
