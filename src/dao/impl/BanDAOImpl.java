@@ -17,12 +17,11 @@ public class BanDAOImpl implements BanDAO {
 
     private Ban mapRow(ResultSet rs) throws SQLException {
         return new Ban(
-            rs.getString("maBan"),
-            rs.getString("soBan"),
-            rs.getString("maKhuVuc"),
-            rs.getInt("sucChua"),
-            TrangThaiBan.valueOf(rs.getString("trangThai"))
-        );
+                rs.getString("maBan"),
+                rs.getString("soBan"),
+                rs.getString("maKhuVuc"),
+                rs.getInt("sucChua"),
+                TrangThaiBan.valueOf(rs.getString("trangThai")));
     }
 
     @Override
@@ -75,7 +74,8 @@ public class BanDAOImpl implements BanDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maBan);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return mapRow(rs);
+            if (rs.next())
+                return mapRow(rs);
         } catch (SQLException e) {
             System.err.println("BanDAO.findById: " + e.getMessage());
         }
@@ -87,8 +87,9 @@ public class BanDAOImpl implements BanDAO {
         List<Ban> list = new ArrayList<>();
         String sql = "SELECT * FROM Ban ORDER BY maKhuVuc, soBan";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("BanDAO.findAll: " + e.getMessage());
         }
@@ -102,7 +103,8 @@ public class BanDAOImpl implements BanDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("BanDAO.findByKhuVuc: " + e.getMessage());
         }
@@ -116,7 +118,8 @@ public class BanDAOImpl implements BanDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, trangThai.name());
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("BanDAO.findByTrangThai: " + e.getMessage());
         }
@@ -142,7 +145,8 @@ public class BanDAOImpl implements BanDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getInt(1);
+            if (rs.next())
+                return rs.getInt(1);
         } catch (SQLException e) {
             System.err.println("BanDAO.countByKhuVuc: " + e.getMessage());
         }
@@ -155,7 +159,8 @@ public class BanDAOImpl implements BanDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getInt(1);
+            if (rs.next())
+                return rs.getInt(1);
         } catch (SQLException e) {
             System.err.println("BanDAO.countTrongByKhuVuc: " + e.getMessage());
         }

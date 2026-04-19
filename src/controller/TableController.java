@@ -21,11 +21,13 @@ public class TableController {
     private final BanDAO banDAO;
     private final KhuVucDAO khuVucDAO;
     private final OrderManager orderManager;
+    private final ReservationController reservationController;
 
     public TableController() {
         this.banDAO = new BanDAOImpl();
         this.khuVucDAO = new KhuVucDAOImpl();
         this.orderManager = OrderManager.getInstance();
+        this.reservationController = new ReservationController();
     }
 
     // ═══════════════ KHU VỰC ═══════════════
@@ -155,7 +157,7 @@ public class TableController {
         orderManager.chuyenBan(maDonHang, maBanDich);
 
         // Cập nhật trạng thái bàn trong DB
-        banDAO.updateTrangThai(maBanNguon, TrangThaiBan.TRONG);
+        reservationController.resetTrangThaiBan(maBanNguon);
         banDAO.updateTrangThai(maBanDich, TrangThaiBan.CO_KHACH);
     }
 
@@ -167,7 +169,7 @@ public class TableController {
         orderManager.gopDon(maDonNguon, maDonDich);
 
         // Cập nhật trạng thái bàn nguồn trong DB
-        banDAO.updateTrangThai(maBanNguon, TrangThaiBan.TRONG);
+        reservationController.resetTrangThaiBan(maBanNguon);
     }
 
     /**
@@ -192,7 +194,7 @@ public class TableController {
             DonHang dhNguon = orderManager.getOrder(maDonNguon);
             if (dhNguon != null) dhNguon.setTrangThai(enums.TrangThaiDonHang.DA_HUY);
             orderManager.removeOrder(maDonNguon);
-            banDAO.updateTrangThai(maBanNguon, TrangThaiBan.TRONG);
+            reservationController.resetTrangThaiBan(maBanNguon);
         }
     }
 }

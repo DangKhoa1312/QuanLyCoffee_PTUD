@@ -18,10 +18,12 @@ import java.util.function.Consumer;
 /**
  * ReservationManagementPanel — Quản lý đặt bàn.
  *
- * Layout:
- * NORTH: breadcrumb + title + nút [Xem đã ẩn]
- * NORTH-SUB: toolbar [+ Thêm] [Sửa] [Xoá] [↻ Làm mới]
- * CENTER: JTable danh sách
+ * Chức năng mới:
+ * - Lọc trạng thái qua ComboBox
+ * - Xoá mềm (ẩn) cho DA_THANH_TOAN, HET_HAN, DA_HUY
+ * - Xoá vĩnh viễn khi ở chế độ "Xem đã ẩn"
+ * - Bỏ thông báo Làm mới và Đã xác nhận
+ * - Màu nút đồng bộ với các trang khác
  */
 public class ReservationManagementPanel extends JPanel {
 
@@ -35,12 +37,14 @@ public class ReservationManagementPanel extends JPanel {
     // ── Toolbar buttons ───────────────────────────────────────────────────────
     private JButton btnThem, btnSua, btnXoa, btnLamMoi, btnXemAn;
     private JTextField txtSearch;
+    private JComboBox<String> cbFilterStatus;
 
     // ── Timer auto-check expired ──────────────────────────────────────────────
     private final Timer autoExpireTimer;
 
     // ── Chế độ xem ────────────────────────────────────────────────────────────
     private boolean dangXemDaAn = false;
+
     /**
      * Callback từ MainFrame — gọi khi Xác nhận thành công để chuyển sang trang Bàn
      */
@@ -104,13 +108,8 @@ public class ReservationManagementPanel extends JPanel {
         lblTitle.setForeground(new Color(44, 62, 80));
         pnlTitle.add(lblTitle, BorderLayout.WEST);
 
-        btnXemAn = new JButton("  Xem đã ẩn", IconFontSwing.buildIcon(FontAwesome.EYE, 13, INFO));
-        btnXemAn.setFont(new Font("Roboto", Font.PLAIN, 13));
-        btnXemAn.setForeground(INFO);
-        btnXemAn.setContentAreaFilled(false);
-        btnXemAn.setBorder(new LineBorder(INFO, 1));
-        btnXemAn.setPreferredSize(new Dimension(140, 34));
-        btnXemAn.setFocusable(false);
+        btnXemAn = makeFilledBtn("  Xem đã ẩn", FontAwesome.EYE, INFO);
+        btnXemAn.setPreferredSize(new Dimension(160, 34));
         btnXemAn.addActionListener(e -> toggleXemAn());
         pnlTitle.add(btnXemAn, BorderLayout.EAST);
 
@@ -131,28 +130,41 @@ public class ReservationManagementPanel extends JPanel {
                 new LineBorder(new Color(225, 225, 225), 1),
                 new EmptyBorder(2, 5, 2, 5)));
 
-        btnThem = makeBtn("  Thêm", FontAwesome.PLUS, SUCCESS);
-        btnSua = makeBtn("  Sửa", FontAwesome.PENCIL, INFO);
-        btnXoa = makeBtn("  Xoá", FontAwesome.TRASH, DANGER);
-        btnLamMoi = makeBtn("  Làm mới", FontAwesome.REFRESH, PRIMARY);
+        btnThem = makeFilledBtn("  Thêm", FontAwesome.PLUS, SUCCESS);
+        btnSua = makeFilledBtn("  Sửa", FontAwesome.PENCIL, INFO);
+        btnXoa = makeFilledBtn("  Xoá", FontAwesome.TRASH, DANGER);
+        btnLamMoi = makeFilledBtn("  Làm mới", FontAwesome.REFRESH, PRIMARY);
 
-        txtSearch = new JTextField(20);
-        txtSearch.putClientProperty("JTextField.placeholderText", " 🔍 Tìm tên hoặc SĐT...");
+        // ComboBox lọc trạng thái
+        String[] statuses = {
+                "Tất cả",
+                "Chờ xác nhận",
+                "Đã xác nhận",
+                "Đã thanh toán",
+                "Hết hạn",
+                "Đã huỷ"
+        };
+        cbFilterStatus = new JComboBox<>(statuses);
+        cbFilterStatus.setFont(new Font("Roboto", Font.PLAIN, 13));
+        cbFilterStatus.setPreferredSize(new Dimension(160, 32));
+        cbFilterStatus.addActionListener(e -> applyFilter());
+
+        txtSearch = new JTextField(16);
+        txtSearch.putClientProperty("JTextField.placeholderText", " 🔍 Tên hoặc SĐT...");
         txtSearch.putClientProperty("JTextField.showClearButton", true);
-        txtSearch.setPreferredSize(new Dimension(200, 32));
+        txtSearch.setPreferredSize(new Dimension(180, 32));
         txtSearch.setFont(new Font("Roboto", Font.PLAIN, 13));
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { doSearch(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { doSearch(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { doSearch(); }
-            private void doSearch() {
-                if (rowSorter == null) return;
-                String text = txtSearch.getText().trim();
-                if (text.isEmpty()) {
-                    rowSorter.setRowFilter(null);
-                } else {
-                    rowSorter.setRowFilter(RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(text), 1, 2));
-                }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
             }
         });
 
@@ -167,7 +179,10 @@ public class ReservationManagementPanel extends JPanel {
         toolbar.add(btnXoa);
         toolbar.add(mkSep());
         toolbar.add(btnLamMoi);
-        toolbar.add(Box.createHorizontalStrut(40));
+        toolbar.add(mkSep());
+        toolbar.add(new JLabel("Lọc:"));
+        toolbar.add(cbFilterStatus);
+        toolbar.add(Box.createHorizontalStrut(20));
         toolbar.add(txtSearch);
 
         return toolbar;
@@ -176,7 +191,7 @@ public class ReservationManagementPanel extends JPanel {
     // ══ TABLE ════════════════════════════════════════════════════════════════
     private JScrollPane buildTableArea() {
         String[] cols = {
-                "Mã ĐB", "Tên Khách", "SĐT", "Số Người",
+                "Mã Đặt Bàn", "Tên Khách", "SĐT", "Số Người",
                 "Số Bàn", "Giờ Đến", "Giờ Đặt", "Trạng Thái", "_OBJ"
         };
         tableModel = new DefaultTableModel(cols, 0) {
@@ -238,7 +253,7 @@ public class ReservationManagementPanel extends JPanel {
         loadData();
     }
 
-    /** MainFrame đăng ký để chuyển trang Bàn khi nhân viên Xác nhận đặt bàn */
+    /** MainFrame đăng ký để chuyển trang Bàn Hàng khi nhân viên Xác nhận đặt bàn */
     public void setNavigationCallback(Consumer<String> cb) {
         this.navigationCallback = cb;
     }
@@ -258,6 +273,47 @@ public class ReservationManagementPanel extends JPanel {
                     db.getTrangThai(),
                     db // object ẩn
             });
+        }
+        applyFilter();
+    }
+
+    /** Áp dụng bộ lọc kết hợp trạng thái + tìm kiếm text */
+    private void applyFilter() {
+        if (rowSorter == null)
+            return;
+
+        String searchText = txtSearch != null ? txtSearch.getText().trim() : "";
+        String selectedStatus = cbFilterStatus != null ? (String) cbFilterStatus.getSelectedItem() : "Tất cả";
+
+        RowFilter<DefaultTableModel, Integer> textFilter = null;
+        RowFilter<DefaultTableModel, Integer> statusFilter = null;
+
+        if (!searchText.isEmpty()) {
+            textFilter = RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(searchText), 1, 2);
+        }
+
+        if (selectedStatus != null && !selectedStatus.equals("Tất cả")) {
+            final String statusFinal = selectedStatus;
+            statusFilter = new RowFilter<DefaultTableModel, Integer>() {
+                @Override
+                public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                    Object val = entry.getValue(7);
+                    if (val instanceof TrangThaiDatBan) {
+                        return ((TrangThaiDatBan) val).displayName().equals(statusFinal);
+                    }
+                    return false;
+                }
+            };
+        }
+
+        if (textFilter != null && statusFilter != null) {
+            rowSorter.setRowFilter(RowFilter.andFilter(java.util.Arrays.asList(textFilter, statusFilter)));
+        } else if (textFilter != null) {
+            rowSorter.setRowFilter(textFilter);
+        } else if (statusFilter != null) {
+            rowSorter.setRowFilter(statusFilter);
+        } else {
+            rowSorter.setRowFilter(null);
         }
     }
 
@@ -312,7 +368,7 @@ public class ReservationManagementPanel extends JPanel {
                 }
             }
             loadData();
-            // Sau Xác nhận → chuyển sang trang Bàn Hàng
+            // Sau Xác nhận → chuyển sang trang Bàn Hàng (KHÔNG hiện thông báo)
             if (dlg.isNavigationRequested() && navigationCallback != null) {
                 navigationCallback.accept(db.getMaBan());
             }
@@ -326,14 +382,33 @@ public class ReservationManagementPanel extends JPanel {
                     "Chưa chọn", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (db.getTrangThai() != TrangThaiDatBan.HET_HAN &&
-                db.getTrangThai() != TrangThaiDatBan.DA_HUY &&
-                db.getTrangThai() != TrangThaiDatBan.DA_DEN) {
+
+        if (dangXemDaAn) {
+            // Chế độ xem đã ẩn → xoá vĩnh viễn
+            int xn = JOptionPane.showConfirmDialog(this,
+                    "<html>⚠ Xoá vĩnh viễn đặt bàn mã <b>" + db.getMaDatBan() + "</b>?<br>" +
+                            "Dữ liệu sẽ bị xoá hoàn toàn, <b>không thể khôi phục</b>!</html>",
+                    "Xoá vĩnh viễn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (xn == JOptionPane.YES_OPTION) {
+                if (controller.xoaVinhVien(db.getMaDatBan())) {
+                    loadData();
+                    JOptionPane.showMessageDialog(this, "Đã xoá vĩnh viễn đặt bàn " + db.getMaDatBan() + ".",
+                            "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Không thể xoá vĩnh viễn. Vui lòng thử lại.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+            return;
+        }
+
+        // Chế độ hiển thị bình thường → ẩn (soft-delete)
+        // Chỉ cho phép ẩn DA_THANH_TOAN, HET_HAN, DA_HUY
+        TrangThaiDatBan tt = db.getTrangThai();
+        if (tt == TrangThaiDatBan.CHO_XAC_NHAN || tt == TrangThaiDatBan.DA_XAC_NHAN) {
             JOptionPane.showMessageDialog(this,
-                    "<html>⚠ Chỉ có thể ẩn đặt bàn có trạng thái <b>Hết hạn</b>, <b>Đã huỷ</b> hoặc <b>Đã đến</b>.<br>"
-                            +
-                            "Mã đặt bàn <b>" + db.getMaDatBan() + "</b> đang ở trạng thái: <b>"
-                            + db.getTrangThai().displayName() + "</b></html>",
+                    "<html>⚠ Không thể ẩn đặt bàn có trạng thái <b>" + tt.displayName() + "</b>.<br>" +
+                            "Chỉ có thể ẩn đặt bàn có trạng thái <b>Đã thanh toán</b>, <b>Hết hạn</b> hoặc <b>Đã huỷ</b>.</html>",
                     "Không thể xoá", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -344,10 +419,11 @@ public class ReservationManagementPanel extends JPanel {
         if (xn == JOptionPane.YES_OPTION) {
             if (controller.an(db.getMaDatBan())) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Đã ẩn đặt bàn " + db.getMaDatBan() + ".", "Thông báo",
-                        JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Đã ẩn đặt bàn " + db.getMaDatBan() + ".",
+                        "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, "Không thể ẩn đặt bàn mã " + db.getMaDatBan() + ". Hãy thử lưu lại File Controller hoặc kiểm tra kết nối CSDL.", "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Không thể ẩn đặt bàn mã " + db.getMaDatBan() + ".",
+                        "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -355,42 +431,43 @@ public class ReservationManagementPanel extends JPanel {
     private void handleLamMoi() {
         controller.autoCheckExpired();
         loadData();
-        JOptionPane.showMessageDialog(this, "Đã làm mới danh sách.", "Làm mới", JOptionPane.INFORMATION_MESSAGE);
+        // Không hiện thông báo
     }
 
     private void toggleXemAn() {
         dangXemDaAn = !dangXemDaAn;
         if (dangXemDaAn) {
-            btnXemAn.setText("  Quay lại danh sách");
-            btnXemAn.setIcon(IconFontSwing.buildIcon(FontAwesome.ARROW_LEFT, 13, PRIMARY));
-            btnXemAn.setForeground(PRIMARY);
-            btnXemAn.setBorder(new LineBorder(PRIMARY, 1));
+            btnXemAn.setText("  Quay lại");
+            btnXemAn.setIcon(IconFontSwing.buildIcon(FontAwesome.ARROW_LEFT, 13, Color.WHITE));
+            // Xoá nút khi xem đã ẩn (chỉ cho xoá vĩnh viễn)
             btnThem.setEnabled(false);
             btnSua.setEnabled(false);
-            btnXoa.setEnabled(false);
+            btnXoa.setText("  Xoá vĩnh viễn");
+            btnXoa.setEnabled(true);
         } else {
             btnXemAn.setText("  Xem đã ẩn");
-            btnXemAn.setIcon(IconFontSwing.buildIcon(FontAwesome.EYE, 13, INFO));
-            btnXemAn.setForeground(INFO);
-            btnXemAn.setBorder(new LineBorder(INFO, 1));
+            btnXemAn.setIcon(IconFontSwing.buildIcon(FontAwesome.EYE, 13, Color.WHITE));
             btnThem.setEnabled(true);
             btnSua.setEnabled(true);
+            btnXoa.setText("  Xoá");
             btnXoa.setEnabled(true);
         }
         loadData();
     }
 
     // ══ HELPERS ══════════════════════════════════════════════════════════════
-    private JButton makeBtn(String text, FontAwesome icon, Color color) {
-        JButton btn = new JButton(text, IconFontSwing.buildIcon(icon, 13, color));
+
+    /** Nút filled (có màu nền) — đồng bộ với style các trang khác */
+    private JButton makeFilledBtn(String text, FontAwesome icon, Color color) {
+        JButton btn = new JButton(text, IconFontSwing.buildIcon(icon, 13, Color.WHITE));
         btn.setFont(new Font("Roboto", Font.BOLD, 13));
-        btn.setForeground(color);
-        btn.setContentAreaFilled(false);
-        btn.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(220, 220, 220), 1),
-                new EmptyBorder(6, 14, 6, 14)));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(color);
+        btn.setOpaque(true);
+        btn.setBorderPainted(false);
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
         return btn;
     }
 
@@ -438,8 +515,8 @@ public class ReservationManagementPanel extends JPanel {
                         display = "Đã xác nhận";
                         fg = INFO;
                         break;
-                    case DA_DEN:
-                        display = "Đã đến";
+                    case DA_THANH_TOAN:
+                        display = "Đã thanh toán";
                         fg = SUCCESS;
                         break;
                     case HET_HAN:

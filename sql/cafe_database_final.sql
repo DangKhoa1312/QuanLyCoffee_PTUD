@@ -386,7 +386,7 @@ CREATE TABLE DatBan (
     CONSTRAINT PK_DatBan        PRIMARY KEY (maDatBan),
     CONSTRAINT FK_DB_Ban        FOREIGN KEY (maBan) REFERENCES Ban(maBan),
     CONSTRAINT FK_DB_HoaDon     FOREIGN KEY (maHD)  REFERENCES HoaDon(maHD),
-    CONSTRAINT CHK_DB_TrangThai CHECK (trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN','DA_DEN','HET_HAN','DA_HUY')),
+    CONSTRAINT CHK_DB_TrangThai CHECK (trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN','DA_THANH_TOAN','HET_HAN','DA_HUY')),
     CONSTRAINT CHK_DB_SoNguoi  CHECK (soLuongNguoi > 0),
     CONSTRAINT CHK_DB_ThoiGian CHECK (thoiGianDen > thoiGianDat)
 );

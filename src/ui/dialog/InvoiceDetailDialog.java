@@ -59,10 +59,10 @@ public class InvoiceDetailDialog extends JDialog {
                     : "";
 
         pnlHeader.add(createDetailRow("Mã hóa đơn:", hoaDon.getMaHD()));
-        pnlHeader.add(createDetailRow("Bàn:", hoaDon.getMaBan() != null ? hoaDon.getMaBan() : "Mang về"));
-        pnlHeader.add(createDetailRow("Loại đơn:", hoaDon.getLoaiDon() != null ? hoaDon.getLoaiDon().name() : "N/A"));
+        pnlHeader.add(createDetailRow("Bàn:", hoaDon.getSoBan() != null ? hoaDon.getSoBan() : (hoaDon.getMaBan() != null ? hoaDon.getMaBan() : "Mang về")));
+        pnlHeader.add(createDetailRow("Loại đơn:", hoaDon.getLoaiDon() != null ? hoaDon.getLoaiDon().getLabel() : "N/A"));
         pnlHeader.add(createDetailRow("Thời gian:", time));
-        pnlHeader.add(createDetailRow("Thu ngân:", hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "N/A"));
+        pnlHeader.add(createDetailRow("Thu ngân:", hoaDon.getTenNV() != null ? hoaDon.getTenNV() : (hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "N/A")));
         
         main.add(pnlHeader, BorderLayout.NORTH);
 
@@ -158,7 +158,7 @@ public class InvoiceDetailDialog extends JDialog {
         pnlTotal.setOpaque(false);
         pnlTotal.setBorder(new EmptyBorder(10, 0, 0, 0));
         
-        JLabel lblHinhThuc = new JLabel("Hình thức TT: " + (hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().name() : "N/A"));
+        JLabel lblHinhThuc = new JLabel("Hình thức TT: " + (hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().getLabel() : "N/A"));
         lblHinhThuc.setFont(new Font("Roboto", Font.PLAIN, 14));
         lblHinhThuc.setHorizontalAlignment(SwingConstants.RIGHT);
         

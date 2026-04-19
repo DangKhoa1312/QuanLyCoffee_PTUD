@@ -273,16 +273,7 @@ public class PaymentDialog extends JDialog {
 
             HoaDon hd = paymentController.thanhToan(donHang, cart, tongPhaiTra, ht);
             isPaid = true;
-
-            // Tích hợp đặt bàn: nếu bàn này có đặt bàn hiệu lực thì gán maHD và đổi DA_DEN
-            if (donHang.getMaBan() != null && !donHang.getMaBan().equals("MANG_VE")) {
-                DatBan db = reservationController.findDatBanHienTaiCuaBan(donHang.getMaBan());
-                if (db != null &&
-                    (db.getTrangThai() == TrangThaiDatBan.DA_XAC_NHAN ||
-                     db.getTrangThai() == TrangThaiDatBan.DA_DEN)) {
-                    reservationController.daDen(db.getMaDatBan(), hd.getMaHD());
-                }
-            }
+            // PaymentController đã xử lý tích hợp đặt bàn và trạng thái bàn tự động.
 
             JOptionPane.showMessageDialog(this, "Đã thanh toán thành công mã " + hd.getMaHD() + "!", "Thành Công", JOptionPane.INFORMATION_MESSAGE);
             dispose();
