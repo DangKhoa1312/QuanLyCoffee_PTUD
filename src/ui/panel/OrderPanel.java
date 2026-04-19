@@ -480,9 +480,40 @@ public class OrderPanel extends JPanel {
 
             CartItem result = dlg.getResult();
             if (result != null) {
+                // Thử tạo một danh sách giỏ hàng mô phỏng để kiểm tra nguyên liệu
+                List<CartItem> simulatedCart = new ArrayList<>();
+                for (CartItem item : cartData) {
+                    CartItem clonedItem = new CartItem(item.getMon(), item.getSize(), item.getSoLuong(), item.getDonGiaSize(), item.getGhiChu());
+                    for (dto.CartItem.CartTopping ct : item.getToppings()) {
+                        clonedItem.addTopping(ct.topping, ct.soLuong);
+                    }
+                    simulatedCart.add(clonedItem);
+                }
+                
+                boolean mergedSim = false;
+                for (CartItem item : simulatedCart) {
+                    if (item.isIdentical(result)) {
+                        item.setSoLuong(item.getSoLuong() + result.getSoLuong());
+                        mergedSim = true;
+                        break;
+                    }
+                }
+                if (!mergedSim) {
+                    simulatedCart.add(result);
+                }
+
+                // Kiểm tra xem với giỏ hàng này thì có đủ nguyên liệu không
+                String missingInfo = new controller.InventoryController().checkDuNguyenLieuChoCart(simulatedCart);
+                if (missingInfo != null) {
+                    JOptionPane.showMessageDialog(this,
+                            "Không đủ nguyên liệu để thêm món này vào giỏ:\n" + missingInfo,
+                            "Thiếu nguyên liệu", JOptionPane.ERROR_MESSAGE);
+                    return; // Chặn thêm vào giỏ
+                }
+
+                // Nếu OK thì thêm thật
                 boolean merged = false;
                 for (CartItem item : cartData) {
-                    // Nếu trùng món, trùng size, trùng topping, trùng cả trạng thái "đã báo bếp" và ghi chú thì gộp chung
                     if (item.isIdentical(result)) {
                         item.setSoLuong(item.getSoLuong() + result.getSoLuong());
                         merged = true;

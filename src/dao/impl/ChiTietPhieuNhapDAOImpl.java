@@ -27,8 +27,13 @@ public class ChiTietPhieuNhapDAOImpl implements ChiTietPhieuNhapDAO {
 
     @Override
     public boolean insert(ChiTietPhieuNhap ctpn) {
+        return insert(getConn(), ctpn);
+    }
+
+    @Override
+    public boolean insert(Connection conn, ChiTietPhieuNhap ctpn) {
         String sql = "INSERT INTO ChiTietPhieuNhap(maCTPN, soLuong, donGia, thanhTien, maPN, maNL) VALUES(?,?,?,?,?,?)";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, ctpn.getMaCTPN());
             ps.setDouble(2, ctpn.getSoLuong());
             ps.setDouble(3, ctpn.getDonGia());

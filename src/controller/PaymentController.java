@@ -60,6 +60,12 @@ public class PaymentController {
             throw new AppException("Đơn hàng không hợp lệ!");
         }
 
+        // 0. Kiểm tra kho trước khi thanh toán (Chặn giao dịch nếu thiếu)
+        String missingInfo = inventory.checkDuNguyenLieuChoCart(cart);
+        if (missingInfo != null) {
+            throw new AppException("Không đủ nguyên liệu để thanh toán đơn hàng này:\n" + missingInfo);
+        }
+
         // 1. Tạo HoaDon (chứa trực tiếp maBan, maCa, loaiDon, ghiChu)
         String maHD = IDGenerator.newMaHoaDon();
         HoaDon hd = new HoaDon(

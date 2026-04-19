@@ -26,8 +26,13 @@ public class PhieuXuatDAOImpl implements PhieuXuatDAO {
 
     @Override
     public boolean insert(PhieuXuat px) {
+        return insert(getConn(), px);
+    }
+
+    @Override
+    public boolean insert(Connection conn, PhieuXuat px) {
         String sql = "INSERT INTO PhieuXuat(maPX, ngayXuat, lyDoXuat, maNV, maKho) VALUES(?,?,?,?,?)";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, px.getMaPX());
             ps.setTimestamp(2, px.getNgayXuat() != null ? Timestamp.valueOf(px.getNgayXuat()) : null);
             ps.setString(3, px.getLyDoXuat());

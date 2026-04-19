@@ -30,21 +30,7 @@ public class InventoryController {
      * @return boolean
      */
     public boolean checkTonKhoMoiMon(String maMon) {
-        List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
-        if (dinhmucs.isEmpty()) return true; // KHÔNG set định mức -> Luôn bán được (vd: Nước suối chai)
-        
-        List<TonKho> allKho = tonKhoDAO.findAll();
-        for (DinhMucNguyenLieu dm : dinhmucs) {
-            // Check in list tonkho if this NL has enough SoLuongTon
-            for (TonKho tk : allKho) {
-                if (tk.getMaNL().equals(dm.getMaNL())) {
-                    if (tk.getSoLuongTon() < dm.getSoLuong()) {
-                        return false; // Ko đủ nguyên liệu cho 1 đơn vị
-                    }
-                }
-            }
-        }
-        return true;
+        return getSoLuongConBanDuoc(maMon) > 0;
     }
 
     /**
@@ -60,20 +46,8 @@ public class InventoryController {
             // [FIX] Lấy tỉ lệ từ thuộc tính tileSize của Size — không hardcode theo tên
             double heSoSize = (item.getSize() != null) ? item.getSize().getTileSize() : 1.0;
 
-            List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
-            for (DinhMucNguyenLieu dm : dinhmucs) {
-                double totalDeduct = dm.getSoLuong() * qty * heSoSize;
-                
-                // Trừ kho (delta = âm)
-                // Tìm dòng Tồn kho của NL này (có thể có nhiều kho, lấy kho đầu tiên)
-                List<TonKho> allKho = tonKhoDAO.findAll();
-                for (TonKho tk : allKho) {
-                    if (tk.getMaNL().equals(dm.getMaNL())) {
-                        tonKhoDAO.updateSoLuong(tk.getMaTonKho(), -totalDeduct);
-                        break; // Chỉ trừ ở 1 kho
-                    }
-                }
-            }
+        // Đã xóa vòng lặp trừ TonKhoDAO trực tiếp. 
+        // Trách nhiệm trừ tồn kho sẽ được giao cho việc tạo Phiếu Xuất.
         }
 
         // Tạo phiếu xuất tự động khi thanh toán
@@ -82,6 +56,59 @@ public class InventoryController {
             khoController.processXuatKhoFromPayment(cartItems, maNV);
         } catch (Exception e) {
             System.err.println("InventoryController: Loi tao phieu xuat tu dong: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Kiểm tra xem CẢ GIỎ HÀNG có đủ nguyên liệu để thanh toán không?
+     * @param cartItems Danh sách CartItem
+     * @return String: null nếu đủ, chuỗi chứa danh sách tên nguyên liệu thiếu nếu không đủ
+     */
+    public String checkDuNguyenLieuChoCart(List<CartItem> cartItems) {
+        // Map để cộng dồn số lượng nguyên liệu cần thiết cho toàn bộ giỏ hàng
+        java.util.Map<String, Double> requiredNlMap = new java.util.HashMap<>();
+
+        for (CartItem item : cartItems) {
+            String maMon = item.getMon().getMaMon();
+            int qty = item.getSoLuong();
+            double heSoSize = (item.getSize() != null) ? item.getSize().getTileSize() : 1.0;
+
+            List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
+            for (DinhMucNguyenLieu dm : dinhmucs) {
+                double totalDeduct = dm.getSoLuong() * qty * heSoSize;
+                requiredNlMap.put(dm.getMaNL(), requiredNlMap.getOrDefault(dm.getMaNL(), 0.0) + totalDeduct);
+            }
+        }
+
+        if (requiredNlMap.isEmpty()) return null; // Không cần nguyên liệu -> Luôn đủ
+
+        // Lấy danh sách tồn kho hiện tại (đã là Base Units)
+        List<TonKho> allKho = tonKhoDAO.findAll();
+        java.util.Map<String, Double> actualTonKhoMap = new java.util.HashMap<>();
+        for (TonKho tk : allKho) {
+            actualTonKhoMap.put(tk.getMaNL(), actualTonKhoMap.getOrDefault(tk.getMaNL(), 0.0) + tk.getSoLuongTon());
+        }
+
+        // So sánh
+        List<String> missingNl = new java.util.ArrayList<>();
+        dao.NguyenLieuDAO nlDAO = new dao.impl.NguyenLieuDAOImpl();
+        
+        for (java.util.Map.Entry<String, Double> entry : requiredNlMap.entrySet()) {
+            String maNL = entry.getKey();
+            double reqQty = entry.getValue();
+            double actualQty = actualTonKhoMap.getOrDefault(maNL, 0.0);
+
+            if (actualQty < reqQty) {
+                entity.NguyenLieu nl = nlDAO.findById(maNL);
+                String tenNL = (nl != null) ? nl.getTenNL() : maNL;
+                missingNl.add(tenNL + " (Cần: " + String.format("%.1f", reqQty) + ", Còn: " + String.format("%.1f", actualQty) + ")");
+            }
+        }
+
+        if (missingNl.isEmpty()) {
+            return null; // Đủ
+        } else {
+            return String.join("\n", missingNl);
         }
     }
 
@@ -103,15 +130,15 @@ public class InventoryController {
         for (DinhMucNguyenLieu dm : dinhmucs) {
             if (dm.getSoLuong() <= 0) continue;
 
-            // Tìm tồn kho tương ứng
-            double tongTon = 0;
+            // Tìm tồn kho tương ứng (đã là Base Units)
+            double tongTonBase = 0;
             for (TonKho tk : allKho) {
                 if (tk.getMaNL().equals(dm.getMaNL())) {
-                    tongTon += tk.getSoLuongTon();
+                    tongTonBase += tk.getSoLuongTon();
                 }
             }
 
-            int servings = (int) Math.floor(tongTon / dm.getSoLuong());
+            int servings = (int) Math.floor(tongTonBase / dm.getSoLuong());
             if (servings < minServings) {
                 minServings = servings;
             }
@@ -131,14 +158,14 @@ public class InventoryController {
         for (DinhMucNguyenLieu dm : dinhmucs) {
             if (dm.getSoLuong() <= 0) continue;
 
-            double tongTon = 0;
+            double tongTonBase = 0;
             for (TonKho tk : allKho) {
                 if (tk.getMaNL().equals(dm.getMaNL())) {
-                    tongTon += tk.getSoLuongTon();
+                    tongTonBase += tk.getSoLuongTon();
                 }
             }
 
-            int servings = (int) Math.floor(tongTon / dm.getSoLuong());
+            int servings = (int) Math.floor(tongTonBase / dm.getSoLuong());
             if (servings <= NGUONG_CANH_BAO) {
                 // Lấy tên nguyên liệu
                 entity.NguyenLieu nl = new dao.impl.NguyenLieuDAOImpl().findById(dm.getMaNL());

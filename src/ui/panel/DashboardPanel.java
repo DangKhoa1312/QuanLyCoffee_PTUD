@@ -365,8 +365,23 @@ public class DashboardPanel extends JPanel {
                 } catch (Exception ignored) {}
 
                 try {
-                    alertList = new KhoController().getAllTonKho().stream()
-                            .filter(TonKho::isSapHet).limit(6).collect(Collectors.toList());
+                    KhoController khoController = new KhoController();
+                    List<TonKho> allTK = khoController.getAllTonKho();
+                    LocalDate now = LocalDate.now();
+                    LocalDate soon = now.plusDays(7);
+                    
+                    alertList = allTK.stream()
+                            .filter(tk -> {
+                                boolean sapHet = tk.isSapHet();
+                                entity.NguyenLieu nl = khoController.getNguyenLieuById(tk.getMaNL());
+                                boolean hetHan = false;
+                                if (nl != null && nl.getNgayHetHan() != null) {
+                                    hetHan = nl.getNgayHetHan().isBefore(soon);
+                                }
+                                return sapHet || hetHan;
+                            })
+                            .limit(10)
+                            .collect(Collectors.toList());
                 } catch (Exception ignored) {}
                 return null;
             }
@@ -378,7 +393,7 @@ public class DashboardPanel extends JPanel {
                 if (alertList.isEmpty()) {
                     lblAlerts.setText("An toàn ✓"); lblAlerts.setForeground(P_GREEN_FG);
                 } else {
-                    lblAlerts.setText(alertList.size() + " mục"); lblAlerts.setForeground(P_RED_FG);
+                    lblAlerts.setText(alertList.size() + " cảnh báo"); lblAlerts.setForeground(P_RED_FG);
                 }
 
                 recentModel.setRowCount(0);
@@ -387,7 +402,25 @@ public class DashboardPanel extends JPanel {
                 if (recentHD.isEmpty()) recentModel.addRow(new Object[]{"Chưa có", "dữ liệu", "hôm nay", ""});
 
                 alertModel.setRowCount(0);
-                for (TonKho tk : alertList) alertModel.addRow(new Object[]{tk.getMaNL(), tk.getSoLuongTon(), tk.getMucToiThieu()});
+                KhoController khoController = new KhoController();
+                LocalDate now = LocalDate.now();
+                LocalDate soon = now.plusDays(7);
+
+                for (TonKho tk : alertList) {
+                    entity.NguyenLieu nl = khoController.getNguyenLieuById(tk.getMaNL());
+                    String name = (nl != null) ? nl.getTenNL() : tk.getMaNL();
+                    String reason = "";
+                    
+                    if (tk.getSoLuongTon() <= 0) reason = " [Hết hàng]";
+                    else if (tk.isSapHet()) reason = " [Sắp hết]";
+                    
+                    if (nl != null && nl.getNgayHetHan() != null) {
+                        if (nl.getNgayHetHan().isBefore(now)) reason += " [Hết hạn]";
+                        else if (nl.getNgayHetHan().isBefore(soon)) reason += " [Sắp hết hạn]";
+                    }
+                    
+                    alertModel.addRow(new Object[]{name + reason, tk.getSoLuongTon(), tk.getMucToiThieu()});
+                }
                 if (alertList.isEmpty()) alertModel.addRow(new Object[]{"Mọi thứ ổn ✓", "", ""});
             }
         }.execute();

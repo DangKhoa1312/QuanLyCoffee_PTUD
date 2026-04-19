@@ -25,8 +25,13 @@ public class ChiTietPhieuXuatDAOImpl implements ChiTietPhieuXuatDAO {
 
     @Override
     public boolean insert(ChiTietPhieuXuat ct) {
+        return insert(getConn(), ct);
+    }
+
+    @Override
+    public boolean insert(Connection conn, ChiTietPhieuXuat ct) {
         String sql = "INSERT INTO ChiTietPhieuXuat(maCTPX, soLuong, maPX, maNL) VALUES(?,?,?,?)";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, ct.getMaCTPX());
             ps.setDouble(2, ct.getSoLuong());
             ps.setString(3, ct.getMaPX());

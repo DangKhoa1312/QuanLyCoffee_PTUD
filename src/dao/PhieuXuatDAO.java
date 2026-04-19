@@ -4,4 +4,5 @@ import dao.base.BaseDAO;
 import entity.PhieuXuat;
 
 public interface PhieuXuatDAO extends BaseDAO<PhieuXuat, String> {
+    boolean insert(java.sql.Connection conn, PhieuXuat px);
 }

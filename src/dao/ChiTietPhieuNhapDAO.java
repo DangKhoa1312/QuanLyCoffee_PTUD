@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface ChiTietPhieuNhapDAO extends BaseDAO<ChiTietPhieuNhap, String> {
     List<ChiTietPhieuNhap> findByPhieuNhap(String maPN);
+    boolean insert(java.sql.Connection conn, ChiTietPhieuNhap ctpn);
 }

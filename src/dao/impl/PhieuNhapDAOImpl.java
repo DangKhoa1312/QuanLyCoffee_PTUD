@@ -27,8 +27,13 @@ public class PhieuNhapDAOImpl implements PhieuNhapDAO {
 
     @Override
     public boolean insert(PhieuNhap pn) {
+        return insert(getConn(), pn);
+    }
+
+    @Override
+    public boolean insert(Connection conn, PhieuNhap pn) {
         String sql = "INSERT INTO PhieuNhap(maPN, ngayNhap, tongTien, maNV, maNCC, maKho) VALUES(?,?,?,?,?,?)";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, pn.getMaPN());
             ps.setTimestamp(2, pn.getNgayNhap() != null ? Timestamp.valueOf(pn.getNgayNhap()) : null);
             ps.setDouble(3, pn.getTongTien());

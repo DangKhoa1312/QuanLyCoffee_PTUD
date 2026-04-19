@@ -45,7 +45,7 @@ public class KhoController {
         return nguyenLieuDAO.delete(maNL);
     }
 
-    public String generateNextMaNL() {
+    public synchronized String generateNextMaNL() {
         List<NguyenLieu> list = nguyenLieuDAO.findAll();
         int max = 0;
         for (NguyenLieu nl : list) {
@@ -79,7 +79,7 @@ public class KhoController {
         return nhaCungCapDAO.delete(maNCC);
     }
 
-    public String generateNextMaNCC() {
+    public synchronized String generateNextMaNCC() {
         List<NhaCungCap> list = nhaCungCapDAO.findAll();
         int max = 0;
         for (NhaCungCap ncc : list) {
@@ -107,6 +107,44 @@ public class KhoController {
         return tonKhoDAO.findAll();
     }
 
+    /**
+     * CHẠY 1 LẦN DUY NHẤT: Chuyển đổi toàn bộ dữ liệu Tồn kho hiện tại từ Đơn vị đóng gói sang Đơn vị cơ bản (Gram/ml).
+     * @return true nếu thành công
+     */
+    public boolean runMigrationToBaseUnits() {
+        java.sql.Connection conn = connectDB.DatabaseConnection.getInstance().getConnection();
+        if (conn == null) return false;
+        try {
+            conn.setAutoCommit(false);
+            List<TonKho> allTK = tonKhoDAO.findAll();
+            for (TonKho tk : allTK) {
+                NguyenLieu nl = getNguyenLieuById(tk.getMaNL());
+                if (nl != null && nl.getKhoiLuongDongGoi() > 0) {
+                    // Update SoLuongTon
+                    double newTon = tk.getSoLuongTon() * nl.getKhoiLuongDongGoi();
+                    double newMuc = tk.getMucToiThieu() * nl.getKhoiLuongDongGoi();
+                    
+                    // Ghi đè vào DB
+                    String sql = "UPDATE TonKho SET SoLuongTon = ?, MucToiThieu = ? WHERE MaTonKho = ?";
+                    try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        stmt.setDouble(1, newTon);
+                        stmt.setDouble(2, newMuc);
+                        stmt.setString(3, tk.getMaTonKho());
+                        stmt.executeUpdate();
+                    }
+                }
+            }
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            try { if (conn != null) conn.rollback(); } catch (Exception ex) {}
+            return false;
+        } finally {
+            try { if (conn != null) conn.setAutoCommit(true); } catch (Exception ex) {}
+        }
+    }
+
     public List<TonKho> getTonKhoSapHet(String maKho) {
         return tonKhoDAO.findSapHet(maKho);
     }
@@ -129,7 +167,7 @@ public class KhoController {
         return chiTietPNDAO.findByPhieuNhap(maPN);
     }
 
-    public String generateNextMaPN() {
+    public synchronized String generateNextMaPN() {
         List<PhieuNhap> list = phieuNhapDAO.findAll();
         int max = 0;
         for (PhieuNhap pn : list) {
@@ -141,7 +179,7 @@ public class KhoController {
         return String.format("PN%03d", max + 1);
     }
 
-    public String generateNextMaCTPN() {
+    public synchronized String generateNextMaCTPN() {
         List<ChiTietPhieuNhap> list = chiTietPNDAO.findAll();
         int max = 0;
         for (ChiTietPhieuNhap ct : list) {
@@ -153,7 +191,7 @@ public class KhoController {
         return String.format("CTPN%03d", max + 1);
     }
 
-    public String generateNextMaTonKho() {
+    public synchronized String generateNextMaTonKho() {
         List<TonKho> list = tonKhoDAO.findAll();
         int max = 0;
         for (TonKho tk : list) {
@@ -166,46 +204,72 @@ public class KhoController {
     }
 
     public boolean processNhapKho(PhieuNhap phieuNhap, List<ChiTietPhieuNhap> chiTietList) {
-        if (!phieuNhapDAO.insert(phieuNhap)) return false;
+        java.sql.Connection conn = connectDB.DatabaseConnection.getInstance().getConnection();
+        if (conn == null) return false;
+        try {
+            conn.setAutoCommit(false); // Bắt đầu transaction
 
-        // Lấy max CTPN hiện tại 1 lần, rồi tăng dần cho mỗi item
-        int maxCTPN = 0;
-        List<ChiTietPhieuNhap> allCTPN = chiTietPNDAO.findAll();
-        for (ChiTietPhieuNhap existing : allCTPN) {
-            try {
-                int num = Integer.parseInt(existing.getMaCTPN().replace("CTPN", ""));
-                if (num > maxCTPN) maxCTPN = num;
-            } catch (NumberFormatException ignored) {}
-        }
+            if (!phieuNhapDAO.insert(conn, phieuNhap)) {
+                conn.rollback();
+                return false;
+            }
 
-        for (int i = 0; i < chiTietList.size(); i++) {
-            ChiTietPhieuNhap ct = chiTietList.get(i);
-            ct.setMaPN(phieuNhap.getMaPN());
-            ct.setMaCTPN(String.format("CTPN%03d", maxCTPN + i + 1));
-            ct.tinhThanhTien();
-            if (!chiTietPNDAO.insert(ct)) return false;
+            int maxCTPN = 0;
+            List<ChiTietPhieuNhap> allCTPN = chiTietPNDAO.findAll();
+            for (ChiTietPhieuNhap existing : allCTPN) {
+                try {
+                    int num = Integer.parseInt(existing.getMaCTPN().replace("CTPN", ""));
+                    if (num > maxCTPN) maxCTPN = num;
+                } catch (NumberFormatException ignored) {}
+            }
 
-            boolean found = false;
             List<TonKho> allTK = tonKhoDAO.findAll();
-            for (TonKho tk : allTK) {
-                if (tk.getMaKho().equals(phieuNhap.getMaKho()) && tk.getMaNL().equals(ct.getMaNL())) {
-                    tonKhoDAO.updateSoLuong(tk.getMaTonKho(), ct.getSoLuong());
-                    found = true;
-                    break;
+            for (int i = 0; i < chiTietList.size(); i++) {
+                ChiTietPhieuNhap ct = chiTietList.get(i);
+                ct.setMaPN(phieuNhap.getMaPN());
+                ct.setMaCTPN(String.format("CTPN%03d", maxCTPN + i + 1));
+                ct.tinhThanhTien();
+                
+                if (!chiTietPNDAO.insert(conn, ct)) {
+                    conn.rollback();
+                    return false;
+                }
+
+                // Lấy khối lượng đóng gói để quy đổi ra Base Units
+                NguyenLieu nl = getNguyenLieuById(ct.getMaNL());
+                double kldg = (nl != null && nl.getKhoiLuongDongGoi() > 0) ? nl.getKhoiLuongDongGoi() : 1.0;
+                double slBaseUnits = ct.getSoLuong() * kldg;
+
+                boolean found = false;
+                for (TonKho tk : allTK) {
+                    if (tk.getMaKho().equals(phieuNhap.getMaKho()) && tk.getMaNL().equals(ct.getMaNL())) {
+                        tonKhoDAO.updateSoLuong(conn, tk.getMaTonKho(), slBaseUnits);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    TonKho newTK = new TonKho();
+                    newTK.setMaTonKho(generateNextMaTonKho());
+                    newTK.setSoLuongTon(slBaseUnits);
+                    newTK.setMucToiThieu(0);
+                    newTK.setNgayCapNhat(LocalDateTime.now());
+                    newTK.setMaKho(phieuNhap.getMaKho());
+                    newTK.setMaNL(ct.getMaNL());
+                    tonKhoDAO.insert(conn, newTK);
+                    allTK.add(newTK);
                 }
             }
-            if (!found) {
-                TonKho newTK = new TonKho();
-                newTK.setMaTonKho(generateNextMaTonKho());
-                newTK.setSoLuongTon(ct.getSoLuong());
-                newTK.setMucToiThieu(0);
-                newTK.setNgayCapNhat(LocalDateTime.now());
-                newTK.setMaKho(phieuNhap.getMaKho());
-                newTK.setMaNL(ct.getMaNL());
-                tonKhoDAO.insert(newTK);
-            }
+
+            conn.commit(); // Thành công tất cả
+            return true;
+        } catch (Exception e) {
+            try { if (conn != null) conn.rollback(); } catch (Exception ex) {}
+            return false;
+        } finally {
+            try { if (conn != null) conn.setAutoCommit(true); } catch (Exception ex) {}
+            // connectDB.DatabaseConnection.getInstance().closeConnection(); -> không đóng vì là singleton
         }
-        return true;
     }
 
     /** Xuất kho: trừ số lượng tồn kho */
@@ -228,7 +292,7 @@ public class KhoController {
         return chiTietPXDAO.findByPhieuXuat(maPX);
     }
 
-    public String generateNextMaPX() {
+    public synchronized String generateNextMaPX() {
         List<PhieuXuat> list = phieuXuatDAO.findAll();
         int max = 0;
         for (PhieuXuat px : list) {
@@ -240,7 +304,7 @@ public class KhoController {
         return String.format("PX%03d", max + 1);
     }
 
-    public String generateNextMaCTPX() {
+    public synchronized String generateNextMaCTPX() {
         List<ChiTietPhieuXuat> list = chiTietPXDAO.findAll();
         int max = 0;
         for (ChiTietPhieuXuat ct : list) {
@@ -256,33 +320,60 @@ public class KhoController {
      * Xử lý xuất kho thủ công: tạo phiếu xuất + trừ tồn kho.
      */
     public boolean processXuatKho(PhieuXuat phieuXuat, List<ChiTietPhieuXuat> chiTietList) {
-        if (!phieuXuatDAO.insert(phieuXuat)) return false;
+        java.sql.Connection conn = connectDB.DatabaseConnection.getInstance().getConnection();
+        if (conn == null) return false;
+        try {
+            conn.setAutoCommit(false); // Bắt đầu transaction
 
-        int maxCTPX = 0;
-        List<ChiTietPhieuXuat> allCTPX = chiTietPXDAO.findAll();
-        for (ChiTietPhieuXuat existing : allCTPX) {
-            try {
-                int num = Integer.parseInt(existing.getMaCTPX().replace("CTPX", ""));
-                if (num > maxCTPX) maxCTPX = num;
-            } catch (NumberFormatException ignored) {}
-        }
+            if (!phieuXuatDAO.insert(conn, phieuXuat)) {
+                conn.rollback();
+                return false;
+            }
 
-        for (int i = 0; i < chiTietList.size(); i++) {
-            ChiTietPhieuXuat ct = chiTietList.get(i);
-            ct.setMaPX(phieuXuat.getMaPX());
-            ct.setMaCTPX(String.format("CTPX%03d", maxCTPX + i + 1));
-            if (!chiTietPXDAO.insert(ct)) return false;
+            int maxCTPX = 0;
+            List<ChiTietPhieuXuat> allCTPX = chiTietPXDAO.findAll();
+            for (ChiTietPhieuXuat existing : allCTPX) {
+                try {
+                    int num = Integer.parseInt(existing.getMaCTPX().replace("CTPX", ""));
+                    if (num > maxCTPX) maxCTPX = num;
+                } catch (NumberFormatException ignored) {}
+            }
 
-            // Trừ tồn kho
             List<TonKho> allTK = tonKhoDAO.findAll();
-            for (TonKho tk : allTK) {
-                if (tk.getMaKho().equals(phieuXuat.getMaKho()) && tk.getMaNL().equals(ct.getMaNL())) {
-                    tonKhoDAO.updateSoLuong(tk.getMaTonKho(), -ct.getSoLuong());
-                    break;
+            for (int i = 0; i < chiTietList.size(); i++) {
+                ChiTietPhieuXuat ct = chiTietList.get(i);
+                ct.setMaPX(phieuXuat.getMaPX());
+                ct.setMaCTPX(String.format("CTPX%03d", maxCTPX + i + 1));
+                
+                if (!chiTietPXDAO.insert(conn, ct)) {
+                    conn.rollback();
+                    return false;
+                }
+
+                // Trừ tồn kho
+                for (TonKho tk : allTK) {
+                    if (tk.getMaKho().equals(phieuXuat.getMaKho()) && tk.getMaNL().equals(ct.getMaNL())) {
+                        
+                        // THÊM: Kiểm tra đủ không
+                        if (tk.getSoLuongTon() < ct.getSoLuong()) {
+                            conn.rollback(); // Không đủ → rollback
+                            return false; 
+                        }
+
+                        tonKhoDAO.updateSoLuong(conn, tk.getMaTonKho(), -ct.getSoLuong());
+                        break;
+                    }
                 }
             }
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            try { if (conn != null) conn.rollback(); } catch (Exception ex) {}
+            return false;
+        } finally {
+            try { if (conn != null) conn.setAutoCommit(true); } catch (Exception ex) {}
+            // connectDB.DatabaseConnection.getInstance().closeConnection(); -> không đóng vì là singleton
         }
-        return true;
     }
 
     /**
@@ -295,45 +386,75 @@ public class KhoController {
         if (listKho.isEmpty()) return false;
         Kho kho = listKho.get(0);
 
-        PhieuXuat px = new PhieuXuat();
-        px.setMaPX(generateNextMaPX());
-        px.setNgayXuat(LocalDateTime.now());
-        px.setLyDoXuat("Thanh to\u00e1n \u0111\u01a1n h\u00e0ng");
-        px.setMaNV(maNV);
-        px.setMaKho(kho.getMaKho());
+        java.sql.Connection conn = connectDB.DatabaseConnection.getInstance().getConnection();
+        if (conn == null) return false;
+        
+        try {
+            conn.setAutoCommit(false); // Bắt đầu transaction
 
-        if (!phieuXuatDAO.insert(px)) return false;
+            PhieuXuat px = new PhieuXuat();
+            px.setMaPX(generateNextMaPX());
+            px.setNgayXuat(LocalDateTime.now());
+            px.setLyDoXuat("Thanh to\u00e1n \u0111\u01a1n h\u00e0ng");
+            px.setMaNV(maNV);
+            px.setMaKho(kho.getMaKho());
 
-        int maxCTPX = 0;
-        List<ChiTietPhieuXuat> allCTPX = chiTietPXDAO.findAll();
-        for (ChiTietPhieuXuat existing : allCTPX) {
-            try {
-                int num = Integer.parseInt(existing.getMaCTPX().replace("CTPX", ""));
-                if (num > maxCTPX) maxCTPX = num;
-            } catch (NumberFormatException ignored) {}
-        }
-
-        int counter = 0;
-        for (CartItem item : cart) {
-            String maMon = item.getMon().getMaMon();
-            int qty = item.getSoLuong();
-
-            // [FIX] Lấy tỉ lệ từ thuoc tính tileSize của Size — không hardcode theo tên
-            double heSoSize = (item.getSize() != null) ? item.getSize().getTileSize() : 1.0;
-
-            List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
-            for (DinhMucNguyenLieu dm : dinhmucs) {
-                double totalDeduct = dm.getSoLuong() * qty * heSoSize;
-
-                counter++;
-                ChiTietPhieuXuat ct = new ChiTietPhieuXuat();
-                ct.setMaCTPX(String.format("CTPX%03d", maxCTPX + counter));
-                ct.setSoLuong(totalDeduct);
-                ct.setMaPX(px.getMaPX());
-                ct.setMaNL(dm.getMaNL());
-                chiTietPXDAO.insert(ct);
+            if (!phieuXuatDAO.insert(conn, px)) {
+                conn.rollback();
+                return false;
             }
+
+            int maxCTPX = 0;
+            List<ChiTietPhieuXuat> allCTPX = chiTietPXDAO.findAll();
+            for (ChiTietPhieuXuat existing : allCTPX) {
+                try {
+                    int num = Integer.parseInt(existing.getMaCTPX().replace("CTPX", ""));
+                    if (num > maxCTPX) maxCTPX = num;
+                } catch (NumberFormatException ignored) {}
+            }
+
+            int counter = 0;
+            List<TonKho> allTK = tonKhoDAO.findAll();
+            for (CartItem item : cart) {
+                String maMon = item.getMon().getMaMon();
+                int qty = item.getSoLuong();
+
+                // [FIX] Lấy tỉ lệ từ thuoc tính tileSize của Size — không hardcode theo tên
+                double heSoSize = (item.getSize() != null) ? item.getSize().getTileSize() : 1.0;
+
+                List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
+                for (DinhMucNguyenLieu dm : dinhmucs) {
+                    double totalDeductBase = dm.getSoLuong() * qty * heSoSize;
+
+                    counter++;
+                    ChiTietPhieuXuat ct = new ChiTietPhieuXuat();
+                    ct.setMaCTPX(String.format("CTPX%03d", maxCTPX + counter));
+                    ct.setSoLuong(totalDeductBase);
+                    ct.setMaPX(px.getMaPX());
+                    ct.setMaNL(dm.getMaNL());
+                    
+                    if (!chiTietPXDAO.insert(conn, ct)) {
+                        conn.rollback();
+                        return false;
+                    }
+                    
+                    // Trừ tồn kho tại đây (Trừ theo Đơn vị cơ bản)
+                    for (TonKho tk : allTK) {
+                        if (tk.getMaKho().equals(px.getMaKho()) && tk.getMaNL().equals(dm.getMaNL())) {
+                            tonKhoDAO.updateSoLuong(conn, tk.getMaTonKho(), -totalDeductBase);
+                            break;
+                        }
+                    }
+                }
+            }
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            try { if (conn != null) conn.rollback(); } catch (Exception ex) {}
+            return false;
+        } finally {
+            try { if (conn != null) conn.setAutoCommit(true); } catch (Exception ex) {}
+            // connectDB.DatabaseConnection.getInstance().closeConnection(); -> không đóng vì là singleton
         }
-        return true;
     }
 }

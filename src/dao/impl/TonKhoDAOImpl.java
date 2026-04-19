@@ -27,8 +27,13 @@ public class TonKhoDAOImpl implements TonKhoDAO {
 
     @Override
     public boolean insert(TonKho tonKho) {
+        return insert(getConn(), tonKho);
+    }
+
+    @Override
+    public boolean insert(Connection conn, TonKho tonKho) {
         String sql = "INSERT INTO TonKho(maTonKho, soLuongTon, mucToiThieu, ngayCapNhat, maKho, maNL) VALUES(?,?,?,?,?,?)";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tonKho.getMaTonKho());
             ps.setDouble(2, tonKho.getSoLuongTon());
             ps.setDouble(3, tonKho.getMucToiThieu());
@@ -113,8 +118,13 @@ public class TonKhoDAOImpl implements TonKhoDAO {
 
     @Override
     public boolean updateSoLuong(String maTonKho, double delta) {
+        return updateSoLuong(getConn(), maTonKho, delta);
+    }
+
+    @Override
+    public boolean updateSoLuong(Connection conn, String maTonKho, double delta) {
         String sql = "UPDATE TonKho SET soLuongTon = soLuongTon + ?, ngayCapNhat=GETDATE() WHERE maTonKho=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, delta);
             ps.setString(2, maTonKho);
             return ps.executeUpdate() > 0;
