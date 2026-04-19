@@ -2,13 +2,14 @@ package controller;
 
 import dao.*;
 import dao.impl.*;
+import dto.CartItem;
 import entity.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Controller quản lý kho: Nguyên liệu, Nhà cung cấp, Phiếu nhập, Tồn kho.
+ * Controller quản lý kho: Nguyên liệu, Nhà cung cấp, Phiếu nhập, Phiếu xuất, Tồn kho.
  */
 public class KhoController {
 
@@ -16,8 +17,11 @@ public class KhoController {
     private final NhaCungCapDAO nhaCungCapDAO = new NhaCungCapDAOImpl();
     private final PhieuNhapDAO phieuNhapDAO   = new PhieuNhapDAOImpl();
     private final ChiTietPhieuNhapDAO chiTietPNDAO = new ChiTietPhieuNhapDAOImpl();
+    private final PhieuXuatDAO phieuXuatDAO   = new PhieuXuatDAOImpl();
+    private final ChiTietPhieuXuatDAO chiTietPXDAO = new ChiTietPhieuXuatDAOImpl();
     private final TonKhoDAO tonKhoDAO         = new TonKhoDAOImpl();
     private final KhoDAO khoDAO               = new KhoDAOImpl();
+    private final DinhMucNguyenLieuDAO dinhMucDAO = new DinhMucNguyenLieuDAOImpl();
 
     // ==================== NGUYÊN LIỆU ====================
 
@@ -212,5 +216,128 @@ public class KhoController {
     /** Nhập kho trả lại: cộng số lượng tồn kho */
     public boolean nhapKhoTraLai(String maTonKho, double soLuong) {
         return tonKhoDAO.updateSoLuong(maTonKho, soLuong);
+    }
+
+    // ==================== PHIẾU XUẤT ====================
+
+    public List<PhieuXuat> getAllPhieuXuat() {
+        return phieuXuatDAO.findAll();
+    }
+
+    public List<ChiTietPhieuXuat> getChiTietByPhieuXuat(String maPX) {
+        return chiTietPXDAO.findByPhieuXuat(maPX);
+    }
+
+    public String generateNextMaPX() {
+        List<PhieuXuat> list = phieuXuatDAO.findAll();
+        int max = 0;
+        for (PhieuXuat px : list) {
+            try {
+                int num = Integer.parseInt(px.getMaPX().replace("PX", ""));
+                if (num > max) max = num;
+            } catch (NumberFormatException ignored) {}
+        }
+        return String.format("PX%03d", max + 1);
+    }
+
+    public String generateNextMaCTPX() {
+        List<ChiTietPhieuXuat> list = chiTietPXDAO.findAll();
+        int max = 0;
+        for (ChiTietPhieuXuat ct : list) {
+            try {
+                int num = Integer.parseInt(ct.getMaCTPX().replace("CTPX", ""));
+                if (num > max) max = num;
+            } catch (NumberFormatException ignored) {}
+        }
+        return String.format("CTPX%03d", max + 1);
+    }
+
+    /**
+     * Xử lý xuất kho thủ công: tạo phiếu xuất + trừ tồn kho.
+     */
+    public boolean processXuatKho(PhieuXuat phieuXuat, List<ChiTietPhieuXuat> chiTietList) {
+        if (!phieuXuatDAO.insert(phieuXuat)) return false;
+
+        int maxCTPX = 0;
+        List<ChiTietPhieuXuat> allCTPX = chiTietPXDAO.findAll();
+        for (ChiTietPhieuXuat existing : allCTPX) {
+            try {
+                int num = Integer.parseInt(existing.getMaCTPX().replace("CTPX", ""));
+                if (num > maxCTPX) maxCTPX = num;
+            } catch (NumberFormatException ignored) {}
+        }
+
+        for (int i = 0; i < chiTietList.size(); i++) {
+            ChiTietPhieuXuat ct = chiTietList.get(i);
+            ct.setMaPX(phieuXuat.getMaPX());
+            ct.setMaCTPX(String.format("CTPX%03d", maxCTPX + i + 1));
+            if (!chiTietPXDAO.insert(ct)) return false;
+
+            // Trừ tồn kho
+            List<TonKho> allTK = tonKhoDAO.findAll();
+            for (TonKho tk : allTK) {
+                if (tk.getMaKho().equals(phieuXuat.getMaKho()) && tk.getMaNL().equals(ct.getMaNL())) {
+                    tonKhoDAO.updateSoLuong(tk.getMaTonKho(), -ct.getSoLuong());
+                    break;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Tự động tạo phiếu xuất khi thanh toán.
+     * Dựa trên công thức (DinhMucNguyenLieu) của các món trong giỏ hàng.
+     */
+    public boolean processXuatKhoFromPayment(List<CartItem> cart, String maNV) {
+        // Lấy kho đầu tiên
+        List<Kho> listKho = khoDAO.findAll();
+        if (listKho.isEmpty()) return false;
+        Kho kho = listKho.get(0);
+
+        PhieuXuat px = new PhieuXuat();
+        px.setMaPX(generateNextMaPX());
+        px.setNgayXuat(LocalDateTime.now());
+        px.setLyDoXuat("Thanh to\u00e1n \u0111\u01a1n h\u00e0ng");
+        px.setMaNV(maNV);
+        px.setMaKho(kho.getMaKho());
+
+        if (!phieuXuatDAO.insert(px)) return false;
+
+        int maxCTPX = 0;
+        List<ChiTietPhieuXuat> allCTPX = chiTietPXDAO.findAll();
+        for (ChiTietPhieuXuat existing : allCTPX) {
+            try {
+                int num = Integer.parseInt(existing.getMaCTPX().replace("CTPX", ""));
+                if (num > maxCTPX) maxCTPX = num;
+            } catch (NumberFormatException ignored) {}
+        }
+
+        int counter = 0;
+        for (CartItem item : cart) {
+            String maMon = item.getMon().getMaMon();
+            int qty = item.getSoLuong();
+
+            double heSoSize = 1.0;
+            if (item.getSize() != null) {
+                String tenSize = item.getSize().getTenSize().toUpperCase();
+                if (tenSize.contains("S")) heSoSize = 0.8;
+                else if (tenSize.contains("L")) heSoSize = 1.25;
+            }
+
+            List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
+            for (DinhMucNguyenLieu dm : dinhmucs) {
+                double totalDeduct = dm.getSoLuong() * qty * heSoSize;
+
+                counter++;
+                ChiTietPhieuXuat ct = new ChiTietPhieuXuat();
+                ct.setMaCTPX(String.format("CTPX%03d", maxCTPX + counter));
+                ct.setSoLuong(totalDeduct);
+                ct.setMaPX(px.getMaPX());
+                ct.setMaNL(dm.getMaNL());
+                chiTietPXDAO.insert(ct);
+            }
+        }
+        return true;
     }
 }

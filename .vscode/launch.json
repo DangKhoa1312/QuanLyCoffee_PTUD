@@ -13,7 +13,7 @@
             "name": "Run LoginForm",
             "request": "launch",
             "mainClass": "ui.LoginForm",
-            "projectName": "QuanLyCaFe_Final",
+            "projectName": "quanlyquancafe-cafe-nhom03",
             "classPaths": [
                 "bin",
                 "lib/*"

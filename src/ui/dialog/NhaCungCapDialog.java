@@ -183,10 +183,34 @@ public class NhaCungCapDialog extends JDialog {
             return;
         }
 
+        // Validate số điện thoại
+        String sdt = txtSDT.getText().trim();
+        if (!sdt.isEmpty()) {
+            if (!sdt.matches("^0\\d{9}$")) {
+                JOptionPane.showMessageDialog(this,
+                    "Số điện thoại không hợp lệ!\nSố điện thoại phải có 10 chữ số và bắt đầu bằng 0.",
+                    "Lỗi", JOptionPane.WARNING_MESSAGE);
+                txtSDT.requestFocus();
+                return;
+            }
+        }
+
+        // Validate email
+        String email = txtEmail.getText().trim();
+        if (!email.isEmpty()) {
+            if (!email.matches("^[\\w.+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
+                JOptionPane.showMessageDialog(this,
+                    "Email không hợp lệ!\nVui lòng nhập đúng định dạng email (vd: example@gmail.com).",
+                    "Lỗi", JOptionPane.WARNING_MESSAGE);
+                txtEmail.requestFocus();
+                return;
+            }
+        }
+
         current.setTenNCC(tenNCC);
         current.setDiaChi(txtDiaChi.getText().trim().isEmpty() ? null : txtDiaChi.getText().trim());
-        current.setSoDienThoai(txtSDT.getText().trim().isEmpty() ? null : txtSDT.getText().trim());
-        current.setEmail(txtEmail.getText().trim().isEmpty() ? null : txtEmail.getText().trim());
+        current.setSoDienThoai(sdt.isEmpty() ? null : sdt);
+        current.setEmail(email.isEmpty() ? null : email);
 
         confirmed = true;
         dispose();
