@@ -27,12 +27,16 @@ public class DatBanDAOImpl implements DatBanDAO {
                 rs.getString("tenKhach"),
                 rs.getString("soDienThoai"),
                 rs.getInt("soLuongNguoi"),
-                TrangThaiDatBan.valueOf(rs.getString("trangThai")),
+                null,
                 rs.getTimestamp("thoiGianDen") != null ? rs.getTimestamp("thoiGianDen").toLocalDateTime() : null,
                 rs.getTimestamp("thoiGianDat") != null ? rs.getTimestamp("thoiGianDat").toLocalDateTime() : null,
                 rs.getString("maBan"),
                 rs.getString("maHD"),
                 hienThi);
+        
+        String tt = rs.getString("trangThai");
+        try { db.setTrangThai(TrangThaiDatBan.valueOf(tt)); }
+        catch (Exception e) { db.setTrangThai(TrangThaiDatBan.CHO_XAC_NHAN); }
         
         // Gán soBan nếu có trong ResultSet (kết quả của JOIN)
         try {
@@ -179,7 +183,7 @@ public class DatBanDAOImpl implements DatBanDAO {
     public List<DatBan> findConHieuLuc() {
         List<DatBan> list = new ArrayList<>();
         String sql = "SELECT db.*, b.soBan FROM DatBan db LEFT JOIN Ban b ON db.maBan = b.maBan " +
-                     "WHERE db.trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN','DA_DEN') AND db.hienThi=1 " +
+                     "WHERE db.trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN','DA_THANH_TOAN') AND db.hienThi=1 " +
                      "ORDER BY db.thoiGianDen ASC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -233,7 +237,7 @@ public class DatBanDAOImpl implements DatBanDAO {
     // ══ updateMaHD: gán hoá đơn sau khi thanh toán ═══════════════════════════
     @Override
     public boolean updateMaHD(String maDatBan, String maHD) {
-        String sql = "UPDATE DatBan SET maHD=?, trangThai='DA_DEN' WHERE maDatBan=?";
+        String sql = "UPDATE DatBan SET maHD=?, trangThai='DA_THANH_TOAN' WHERE maDatBan=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maHD);
             ps.setString(2, maDatBan);
@@ -264,13 +268,14 @@ public class DatBanDAOImpl implements DatBanDAO {
         return false;
     }
 
-    // ══ findBanTrongByKhuVuc: bàn TRONG + không trùng giờ ═══════════════════
+    // ══ findBanTrongByKhuVuc: tất cả bàn không TAM_NGUNG + không trùng giờ ═══
+    // (cho phép đặt nhiều slot trong cùng bàn, kể cả bàn đang CO_KHACH/DA_DAT_TRUOC)
     @Override
     public List<Ban> findBanTrongByKhuVuc(String maKhuVuc, LocalDateTime thoiGianDen, String excludeMaDatBan) {
         List<Ban> list = new ArrayList<>();
-        // Lấy tất cả bàn TRONG trong khu vực
+        // Lấy tất cả bàn không bị tạm ngưng trong khu vực
         String sql = "SELECT b.* FROM Ban b " +
-                     "WHERE b.maKhuVuc=? AND b.trangThai='TRONG' " +
+                     "WHERE b.maKhuVuc=? AND b.trangThai <> 'TAM_NGUNG' " +
                      "ORDER BY b.soBan";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
@@ -283,7 +288,7 @@ public class DatBanDAOImpl implements DatBanDAO {
                     rs.getInt("sucChua"),
                     TrangThaiBan.valueOf(rs.getString("trangThai"))
                 );
-                // Kiểm tra trùng giờ cho từng bàn
+                // Kiểm tra trùng giờ cho từng bàn (cách nhau < 60 phút là trùng)
                 if (thoiGianDen == null || !isTrungGio(ban.getMaBan(), thoiGianDen, excludeMaDatBan)) {
                     list.add(ban);
                 }

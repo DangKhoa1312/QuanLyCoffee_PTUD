@@ -167,8 +167,8 @@ public class DatBanDialog extends JDialog {
         addLabel(form, gbc, "Giờ đến *:", FontAwesome.CLOCK_O);
         JPanel pnlTime = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         pnlTime.setOpaque(false);
-        spnGio = new JSpinner(new SpinnerNumberModel(19, 0, 23, 1));
-        spnPhut = new JSpinner(new SpinnerNumberModel(0, 0, 59, 5));
+        spnGio = new JSpinner(new SpinnerNumberModel(19, 7, 22, 1));
+        spnPhut = new JSpinner(new SpinnerNumberModel(0, 0, 55, 5));
         JSpinner.NumberEditor edGio = new JSpinner.NumberEditor(spnGio, "00");
         JSpinner.NumberEditor edPhut = new JSpinner.NumberEditor(spnPhut, "00");
         spnGio.setEditor(edGio);
@@ -250,6 +250,16 @@ public class DatBanDialog extends JDialog {
         // Load khu vực và bàn
         loadKhuVuc();
         cbKhuVuc.addActionListener(e -> loadBanTrong());
+        // Load bàn ngay khi thay đổi ngày/giờ
+        spnGio.addChangeListener(e -> loadBanTrong());
+        spnPhut.addChangeListener(e -> loadBanTrong());
+        dateChooser.getDateEditor().addPropertyChangeListener("date", e -> loadBanTrong());
+
+        // Khoá card nếu trạng thái không phải CHO_XAC_NHAN
+        if (mode == Mode.EDIT && datBan.getTrangThai() != null
+                && datBan.getTrangThai() != TrangThaiDatBan.CHO_XAC_NHAN) {
+            setCardReadOnly(card);
+        }
 
         return card;
     }
@@ -289,6 +299,11 @@ public class DatBanDialog extends JDialog {
 
         btnSave = new JButton("  Lưu", IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 14, Color.WHITE));
         styleButton(btnSave, SUCCESS);
+        // Khi không phải CHO_XAC_NHAN → ẩn nút Lưu
+        if (mode == Mode.EDIT && datBan.getTrangThai() != null
+                && datBan.getTrangThai() != TrangThaiDatBan.CHO_XAC_NHAN) {
+            btnSave.setVisible(false);
+        }
         btnSave.addActionListener(e -> handleSave());
 
         footer.add(btnCancel);
@@ -478,7 +493,7 @@ public class DatBanDialog extends JDialog {
             case DA_XAC_NHAN:
                 icon = "✅ ";
                 break;
-            case DA_DEN:
+            case DA_THANH_TOAN:
                 icon = "🟢 ";
                 break;
             case HET_HAN:
@@ -540,7 +555,7 @@ public class DatBanDialog extends JDialog {
             // 2. Cập nhật trạng thái ngay trên đối tượng (để ReservationManagementPanel lưu vào DB)
             datBan.setTrangThai(TrangThaiDatBan.DA_XAC_NHAN);
             
-            // 3. Thực hiện xác nhận (chuyển bàn mộc CO_KHACH qua controller)
+            // 3. Thực hiện xác nhận (controller sẽ chặn nếu bàn đang CO_KHACH)
             boolean ok = controller.xacNhan(datBan.getMaDatBan());
             if (ok) {
                 // Đánh dấu để ReservationManagementPanel gọi controller.sua() lưu lại các sửa đổi vào DB
@@ -549,15 +564,27 @@ public class DatBanDialog extends JDialog {
                 navigationRequested = true; // yêu cầu chuyển sang trang bàn
                 dispose();
             } else {
-                JOptionPane.showMessageDialog(this, "Không thể xác nhận. Vui lòng thử lại.", "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
+                // Khôi phục trạng thái nếu bị chặn
+                datBan.setTrangThai(TrangThaiDatBan.CHO_XAC_NHAN);
+                // Kiểm tra lý do thất bại
+                if (controller.isBanDangCoKhach(datBan.getMaBan())) {
+                    JOptionPane.showMessageDialog(this,
+                        "<html>⛔ <b>Không thể xác nhận!</b><br><br>" +
+                        "Bàn đang <b>phục vụ khách vãng lai</b>.<br>" +
+                        "Vui lòng đợi khách vãng lai thanh toán xong,<br>" +
+                        "hoặc chuyển đặt bàn sang bàn khác.</html>",
+                        "Bàn đang có khách", JOptionPane.WARNING_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Không thể xác nhận. Vui lòng thử lại.", "Lỗi",
+                            JOptionPane.ERROR_MESSAGE);
+                }
             }
         }
     }
 
     private void handleHuyDatBan() {
         TrangThaiDatBan tt = datBan.getTrangThai();
-        if (tt == TrangThaiDatBan.DA_XAC_NHAN || tt == TrangThaiDatBan.DA_DEN) {
+        if (tt == TrangThaiDatBan.DA_XAC_NHAN || tt == TrangThaiDatBan.DA_THANH_TOAN) {
             JOptionPane.showMessageDialog(this,
                 "<html>⛔ Không thể huỷ đặt bàn khi đã ở trạng thái <b>" + tt.displayName() + "</b>.<br>" +
                 "Chỉ có thể huỷ khi đang <b>Chờ xác nhận</b>.</html>",
@@ -611,8 +638,15 @@ public class DatBanDialog extends JDialog {
         // Ràng buộc giờ/phút (phòng trường hợp Spinner bị gõ sai giá trị)
         int h = (Integer) spnGio.getValue();
         int m = (Integer) spnPhut.getValue();
-        if (h < 0 || h > 23 || m < 0 || m > 59) {
-            JOptionPane.showMessageDialog(this, "Giờ (0-23) hoặc Phút (0-59) không hợp lệ!", "Cảnh báo",
+        // Validate giờ hành chính (7h–22h)
+        if (h < 7 || h >= 22) {
+            JOptionPane.showMessageDialog(this, "Giờ đặt bàn phải trong khung giờ hành chính (7h00 – 22h00)!", "Cảnh báo",
+                    JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        // Ràng buộc phút (phòng trường hợp Spinner bị gõ sai giá trị)
+        if (m < 0 || m > 55) {
+            JOptionPane.showMessageDialog(this, "Phút (0-55) không hợp lệ!", "Cảnh báo",
                     JOptionPane.WARNING_MESSAGE);
             return false;
         }
@@ -643,6 +677,18 @@ public class DatBanDialog extends JDialog {
         JOptionPane.showMessageDialog(this, msg, "Cảnh báo", JOptionPane.WARNING_MESSAGE);
         if (focus != null)
             focus.requestFocus();
+    }
+
+    /**
+     * Khoá toàn bộ các component trong một panel (dùng khi trạng thái != CHO_XAC_NHAN)
+     */
+    private void setCardReadOnly(java.awt.Container container) {
+        for (java.awt.Component comp : container.getComponents()) {
+            comp.setEnabled(false);
+            if (comp instanceof java.awt.Container) {
+                setCardReadOnly((java.awt.Container) comp);
+            }
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════

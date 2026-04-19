@@ -32,7 +32,7 @@ public interface DatBanDAO extends BaseDAO<DatBan, String> {
     // ── Cập nhật trạng thái ───────────────────────────────────────────────
     boolean updateTrangThai(String maDatBan, TrangThaiDatBan trangThai);
 
-    /** Gán maHD khi khách thanh toán (chuyển trạng thái DA_DEN) */
+    /** Gán maHD khi khách thanh toán (chuyển trạng thái DA_THANH_TOAN) */
     boolean updateMaHD(String maDatBan, String maHD);
 
     // ── Kiểm tra trùng giờ ───────────────────────────────────────────────
@@ -46,8 +46,9 @@ public interface DatBanDAO extends BaseDAO<DatBan, String> {
     boolean isTrungGio(String maBan, LocalDateTime thoiGianDen, String excludeMaDatBan);
 
     /**
-     * Lấy bàn trống trong khu vực không bị trùng giờ.
-     * Bàn hợp lệ = trangThai=TRONG VÀ không có đặt ±60 phút.
+     * Lấy bàn có thể đặt trong khu vực không bị trùng giờ.
+     * Bàn hợp lệ = trangThai <> TAM_NGUNG VÀ không có đặt cách dưới 60 phút.
+     * (Cho phép đặt nhiều slot trong cùng bàn nếu cách nhau >= 60 phút)
      */
     List<Ban> findBanTrongByKhuVuc(String maKhuVuc, LocalDateTime thoiGianDen, String excludeMaDatBan);
 

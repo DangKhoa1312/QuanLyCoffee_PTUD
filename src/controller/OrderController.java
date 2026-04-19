@@ -22,10 +22,12 @@ public class OrderController {
 
     private final BanDAO banDAO;
     private final OrderManager orderManager;
+    private final ReservationController reservationController;
 
     public OrderController() {
         this.banDAO = new BanDAOImpl();
         this.orderManager = OrderManager.getInstance();
+        this.reservationController = new ReservationController();
     }
 
     /**
@@ -86,10 +88,10 @@ public class OrderController {
     public void huyDonHang(String maDonHang) {
         DonHang dh = orderManager.getOrder(maDonHang);
         if (dh != null) {
-            // Bàn về TRỐNG
+            // Kiểm tra trạng thái bàn và đưa về đúng trạng thái
             String maBan = dh.getMaBan();
             if (maBan != null && !maBan.isEmpty() && !"MANG_VE".equals(maBan)) {
-                banDAO.updateTrangThai(maBan, TrangThaiBan.TRONG);
+                reservationController.resetTrangThaiBan(maBan);
             }
 
             // Xóa đơn hàng khỏi RAM

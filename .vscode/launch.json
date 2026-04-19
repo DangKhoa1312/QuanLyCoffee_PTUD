@@ -3,6 +3,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "TestMenuModule",
+            "request": "launch",
+            "mainClass": "TestMenuModule",
+            "projectName": "QuanLyCoffee"
+        },
+        {
+            "type": "java",
+            "name": "LoginForm",
+            "request": "launch",
+            "mainClass": "ui.LoginForm",
+            "projectName": "QuanLyCoffee"
+        },
+        {
+            "type": "java",
             "name": "LoginForm",
             "request": "launch",
             "mainClass": "ui.LoginForm",

@@ -11,6 +11,7 @@ import entity.ChiTietHoaDon;
 import entity.ChiTietHoaDonTopping;
 import entity.HoaDon;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +31,15 @@ public class InvoiceController {
 
     public List<HoaDon> getAllHoaDon() {
         return hoaDonDAO.findAll();
+    }
+
+    /**
+     * Lọc hoá đơn theo các tiêu chí: khoảng ngày, hình thức, mã bàn, mã nhân viên.
+     * Truyền null/rỗng cho tiêu chí không dùng.
+     */
+    public List<HoaDon> getHoaDonByFilter(LocalDate tuNgay, LocalDate denNgay,
+                                           String hinhThuc, String maBan, String maNV) {
+        return hoaDonDAO.findByFilter(tuNgay, denNgay, hinhThuc, maBan, maNV);
     }
 
     /**

@@ -19,7 +19,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     }
 
     private HoaDon mapRow(ResultSet rs) throws SQLException {
-        return new HoaDon(
+        HoaDon hd = new HoaDon(
             rs.getString("maHD"),
             rs.getTimestamp("thoiGianXuat") != null ? rs.getTimestamp("thoiGianXuat").toLocalDateTime() : null,
             rs.getTimestamp("thoiGianThanhToan") != null ? rs.getTimestamp("thoiGianThanhToan").toLocalDateTime() : null,
@@ -32,6 +32,9 @@ public class HoaDonDAOImpl implements HoaDonDAO {
             rs.getString("ghiChu"),
             rs.getString("maNV")
         );
+        try { hd.setSoBan(rs.getString("soBan")); } catch (SQLException ignored) {}
+        try { hd.setTenNV(rs.getString("tenNV")); } catch (SQLException ignored) {}
+        return hd;
     }
 
     @Override
@@ -92,7 +95,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
 
     @Override
     public HoaDon findById(String maHD) {
-        String sql = "SELECT * FROM HoaDon WHERE maHD=?";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE hd.maHD=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maHD);
             ResultSet rs = ps.executeQuery();
@@ -106,7 +109,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     @Override
     public List<HoaDon> findAll() {
         List<HoaDon> list = new ArrayList<>();
-        String sql = "SELECT * FROM HoaDon ORDER BY thoiGianXuat DESC";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV ORDER BY hd.thoiGianXuat DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
@@ -119,7 +122,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     @Override
     public List<HoaDon> findByCa(String maCa) {
         List<HoaDon> list = new ArrayList<>();
-        String sql = "SELECT * FROM HoaDon WHERE maCa=? ORDER BY thoiGianXuat DESC";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE hd.maCa=? ORDER BY hd.thoiGianXuat DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maCa);
             ResultSet rs = ps.executeQuery();
@@ -133,13 +136,39 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     @Override
     public List<HoaDon> findByNgay(LocalDate ngay) {
         List<HoaDon> list = new ArrayList<>();
-        String sql = "SELECT * FROM HoaDon WHERE CAST(thoiGianXuat AS DATE) = ? ORDER BY thoiGianXuat DESC";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE CAST(hd.thoiGianXuat AS DATE) = ? ORDER BY hd.thoiGianXuat DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(ngay));
             ResultSet rs = ps.executeQuery();
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("HoaDonDAOImpl.findByNgay: " + e.getMessage());
+        }
+        return list;
+    }
+
+    @Override
+    public List<HoaDon> findByFilter(LocalDate tuNgay, LocalDate denNgay,
+                                     String hinhThuc, String maBan, String maNV) {
+        List<HoaDon> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE 1=1");
+        if (tuNgay  != null) sql.append(" AND CAST(hd.thoiGianXuat AS DATE) >= ?");
+        if (denNgay != null) sql.append(" AND CAST(hd.thoiGianXuat AS DATE) <= ?");
+        if (hinhThuc != null && !hinhThuc.isEmpty()) sql.append(" AND hd.hinhThucThanhToan = ?");
+        if (maBan    != null && !maBan.isEmpty())    sql.append(" AND b.soBan LIKE ?");
+        if (maNV     != null && !maNV.isEmpty())     sql.append(" AND nv.tenNV LIKE ?");
+        sql.append(" ORDER BY hd.thoiGianXuat DESC");
+        try (PreparedStatement ps = getConn().prepareStatement(sql.toString())) {
+            int idx = 1;
+            if (tuNgay  != null) ps.setDate(idx++, Date.valueOf(tuNgay));
+            if (denNgay != null) ps.setDate(idx++, Date.valueOf(denNgay));
+            if (hinhThuc != null && !hinhThuc.isEmpty()) ps.setString(idx++, hinhThuc);
+            if (maBan    != null && !maBan.isEmpty())    ps.setString(idx++, "%" + maBan + "%");
+            if (maNV     != null && !maNV.isEmpty())     ps.setString(idx++, "%" + maNV + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (SQLException e) {
+            System.err.println("HoaDonDAOImpl.findByFilter: " + e.getMessage());
         }
         return list;
     }

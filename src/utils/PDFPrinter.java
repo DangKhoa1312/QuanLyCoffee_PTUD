@@ -69,7 +69,8 @@ public class PDFPrinter {
 
         addInfoCell(infoTable, "M\u00E3 HD:", hoaDon.getMaHD(), fontSmall);
         addInfoCell(infoTable, "Ng\u00E0y:", time, fontSmall);
-        addInfoCell(infoTable, "Thu ng\u00E2n:", hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "Admin", fontSmall);
+        String thuNgan = hoaDon.getTenNV() != null ? hoaDon.getTenNV() : (hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "Admin");
+        addInfoCell(infoTable, "Thu ng\u00E2n:", thuNgan, fontSmall);
 
         document.add(infoTable);
         document.add(pDashes);
@@ -127,8 +128,8 @@ public class PDFPrinter {
         PdfPTable totalTable = new PdfPTable(2);
         totalTable.setWidthPercentage(100);
 
-        String hinhThuc = hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().name()
-                : "TI\u1EC0N M\u1EB6T";
+        String hinhThuc = hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().getLabel()
+                : "Ti\u1EC1n M\u1EB7t";
         addTotalRow(totalTable, "H\u00ECnh th\u1EE9c TT:", hinhThuc, fontNormal);
         addTotalRow(totalTable, "T\u1ED4NG C\u1ED8NG:", nf.format(hoaDon.getTongTienPhaiTra()) + " \u0111", fontBold);
 

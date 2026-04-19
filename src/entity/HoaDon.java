@@ -18,6 +18,10 @@ public class HoaDon {
     private String            ghiChu;              // ghi chú đơn hàng
     private String            maNV;                // FK NhanVien (thu ngân thực hiện TT)
 
+    // Các trường bổ sung khi JOIN
+    private String            soBan;
+    private String            tenNV;
+
     public HoaDon() {}
 
     public HoaDon(String maHD, LocalDateTime thoiGianXuat,
@@ -74,6 +78,12 @@ public class HoaDon {
     public boolean isDaThanhToan() {
         return TrangThaiHoaDon.DA_THANH_TOAN.equals(trangThai);
     }
+
+    public String getSoBan()         { return soBan; }
+    public void   setSoBan(String v) { this.soBan = v; }
+
+    public String getTenNV()         { return tenNV; }
+    public void   setTenNV(String v) { this.tenNV = v; }
 
     @Override
     public String toString() {
