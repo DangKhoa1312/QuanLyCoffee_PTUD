@@ -5,12 +5,11 @@ import entity.Ban;
 import entity.DonHang;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.List;
 
 /**
- * Giao diện thực hiện Chuyển Bàn hoặc Gộp Bàn.
+ * Thực hiện Chuyển Bàn hoặc Gộp Bàn qua TablePickerDialog sơ đồ.
+ * Không hiển thị UI của chính mình — chỉ dùng làm wrapper logic + kết quả.
  */
 public class TransferTableDialog extends JDialog {
 
@@ -18,123 +17,90 @@ public class TransferTableDialog extends JDialog {
     private final Ban banNguon;
     private final TableController tableController;
     private final int mode; // 1: Chuyển Bàn, 2: Ghép Bàn
+    private final JFrame parentFrame;
     private boolean success = false;
 
-    private JComboBox<BanItem> cbDanhSachBan;
-
     public TransferTableDialog(JFrame parent, Ban banNguon, DonHang donHang, int mode) {
-        super(parent, mode == 1 ? "Tùy Chọn Chuyển Bàn" : "Tùy Chọn Ghép Bàn", true);
+        super(parent, mode == 1 ? "Chuyển Bàn" : "Gộp Bàn", true);
+        this.parentFrame = parent;
         this.banNguon = banNguon;
         this.donHangHienTai = donHang;
         this.mode = mode;
         this.tableController = new TableController();
 
-        setSize(450, 220);
+        // Không build UI — dialog này chỉ lưu trạng thái
+        setUndecorated(true);
+        setSize(1, 1);
+        // Đặt ở giữa màn hình nhưng invisible (1x1 px, không thấy được)
         setLocationRelativeTo(parent);
-        setResizable(false);
-
-        initUI();
-        loadComboData();
     }
 
-    private void initUI() {
-        JPanel main = new JPanel(new BorderLayout(10, 10));
-        main.setBackground(Color.WHITE);
-        main.setBorder(new EmptyBorder(15, 20, 15, 20));
-
-        // ── Tiêu đề ──
-        JLabel lblTitle = new JLabel("Bàn hiện tại: " + banNguon.getSoBan(), SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Roboto", Font.BOLD, 18));
-        main.add(lblTitle, BorderLayout.NORTH);
-
-        // ── Khung giữa: Thao tác ──
-        JPanel pnlCenter = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        pnlCenter.setOpaque(false);
-        pnlCenter.setBorder(new EmptyBorder(10, 0, 10, 0));
-
-        pnlCenter.add(new JLabel("Chọn Bàn Đích:"));
-        
-        cbDanhSachBan = new JComboBox<>();
-        cbDanhSachBan.setPreferredSize(new Dimension(250, 32));
-        cbDanhSachBan.setFont(new Font("Roboto", Font.PLAIN, 14));
-        pnlCenter.add(cbDanhSachBan);
-
-        main.add(pnlCenter, BorderLayout.CENTER);
-
-        // ── Bot Buttons ──
-        JPanel pnlBot = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        pnlBot.setOpaque(false);
-
-        JButton btnHuy = new JButton("Hủy");
-        btnHuy.addActionListener(e -> dispose());
-
-        JButton btnXacNhan = new JButton("Xác Nhận");
-        btnXacNhan.setBackground(new Color(41, 128, 185));
-        btnXacNhan.setForeground(Color.WHITE);
-        btnXacNhan.setFont(new Font("Roboto", Font.BOLD, 13));
-        btnXacNhan.addActionListener(e -> commitAction());
-
-        pnlBot.add(btnHuy);
-        pnlBot.add(btnXacNhan);
-        main.add(pnlBot, BorderLayout.SOUTH);
-
-        setContentPane(main);
-    }
-
-    private void loadComboData() {
-        cbDanhSachBan.removeAllItems();
-        if (mode == 1) { // Chuyển Bàn -> Bàn đích là bàn trống
-            List<Ban> banTrongs = tableController.getBanTrong();
-            for (Ban b : banTrongs) {
-                if (!"MANG_VE".equals(b.getMaBan())) {
-                    cbDanhSachBan.addItem(new BanItem(b, " (Trống)"));
-                }
-            }
-        } else if (mode == 2) { // Ghép bàn -> Bàn đích là bàn có khách
-            List<Ban> banCoKhach = tableController.getBanDangCoKhach();
-            for (Ban b : banCoKhach) {
-                if (!b.getMaBan().equals(banNguon.getMaBan()) && !"MANG_VE".equals(b.getMaBan())) {
-                    cbDanhSachBan.addItem(new BanItem(b, " (Đang khách)"));
-                }
-            }
+    /**
+     * Override setVisible để chạy luồng chọn bàn ngay khi được gọi.
+     * Điều này tránh dialog hiện ra briefly ở vị trí (0,0).
+     */
+    @Override
+    public void setVisible(boolean visible) {
+        if (visible) {
+            // Dùng invokeLater để đảm bảo dialog đã được packed trước khi mở picker
+            SwingUtilities.invokeLater(this::openTablePicker);
+            super.setVisible(true); // Block (modal) cho đến khi dispose() được gọi
+        } else {
+            super.setVisible(false);
         }
     }
 
-    private void commitAction() {
-        BanItem selected = (BanItem) cbDanhSachBan.getSelectedItem();
-        if (selected == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn bàn đích!");
+    private void openTablePicker() {
+        String title = mode == 1 ? "Chọn bàn trống để chuyển tới" : "Chọn bàn có khách để gộp vào";
+        int pickerMode = mode == 1 ? TablePickerDialog.MODE_TRONG : TablePickerDialog.MODE_CO_KHACH;
+
+        TablePickerDialog picker = new TablePickerDialog(parentFrame, title, pickerMode, banNguon.getMaBan());
+        picker.setVisible(true);
+
+        Ban banDich = picker.getSelectedBan();
+        if (banDich == null) {
+            // Người dùng hủy → đóng dialog này luôn
+            dispose();
+            return;
+        }
+
+        // Xác nhận thực hiện
+        String confirmMsg = mode == 1
+            ? "Xác nhận chuyển từ bàn \"" + banNguon.getSoBan() + "\" sang bàn \"" + banDich.getSoBan() + "\"?"
+            : "Xác nhận gộp bàn \"" + banNguon.getSoBan() + "\" vào bàn \"" + banDich.getSoBan() + "\"?";
+
+        int xn = JOptionPane.showConfirmDialog(parentFrame, confirmMsg,
+            mode == 1 ? "Xác nhận Chuyển Bàn" : "Xác nhận Gộp Bàn",
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+        if (xn != JOptionPane.YES_OPTION) {
+            dispose();
             return;
         }
 
         try {
             if (mode == 1) {
-                tableController.chuyenBan(donHangHienTai.getMaDonHang(), banNguon.getMaBan(), selected.ban.getMaBan());
-                JOptionPane.showMessageDialog(this, "Đã CHUYỂN BÀN thành công!");
-            } else if (mode == 2) {
-                DonHang dhDich = tableController.getDonHangDangMo(selected.ban.getMaBan());
+                tableController.chuyenBan(donHangHienTai.getMaDonHang(), banNguon.getMaBan(), banDich.getMaBan());
+                JOptionPane.showMessageDialog(parentFrame, "Đã CHUYỂN BÀN thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                DonHang dhDich = tableController.getDonHangDangMo(banDich.getMaBan());
                 if (dhDich == null) {
-                    JOptionPane.showMessageDialog(this, "Bàn đích không có đơn đang mở!");
+                    JOptionPane.showMessageDialog(parentFrame, "Bàn đích không có đơn đang mở!", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                    dispose();
                     return;
                 }
-                tableController.gopBan(donHangHienTai.getMaDonHang(), dhDich.getMaDonHang(), banNguon.getMaBan(), selected.ban.getMaBan());
-                JOptionPane.showMessageDialog(this, "Đã GỘP BÀN thành công!");
+                tableController.gopBan(donHangHienTai.getMaDonHang(), dhDich.getMaDonHang(), banNguon.getMaBan(), banDich.getMaBan());
+                JOptionPane.showMessageDialog(parentFrame, "Đã GỘP BÀN thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
             }
             success = true;
-            dispose();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi thao tác: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(parentFrame, "Lỗi thao tác: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+
+        dispose(); // Đóng dialog này sau khi xử lý xong
     }
 
     public boolean isSuccess() {
         return success;
-    }
-
-    private static class BanItem {
-        Ban ban;
-        String desc;
-        BanItem(Ban ban, String desc) { this.ban = ban; this.desc = desc; }
-        @Override public String toString() { return "Bàn " + ban.getSoBan() + desc; }
     }
 }

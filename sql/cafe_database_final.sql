@@ -141,12 +141,13 @@ GO
 
 -- 9. NguyenLieu
 CREATE TABLE NguyenLieu (
-    maNL         VARCHAR(20)   NOT NULL,
-    tenNL        NVARCHAR(100) NOT NULL,
-    donViTinh    NVARCHAR(20)  NOT NULL,
-    donGiaNhap   DECIMAL(10,2) NOT NULL DEFAULT 0,
-    ngayHetHan   DATE          NULL,
-    donViDongGoi NVARCHAR(50)  NULL,
+    maNL             VARCHAR(20)   NOT NULL,
+    tenNL            NVARCHAR(100) NOT NULL,
+    donViTinh        NVARCHAR(20)  NOT NULL,
+    donGiaNhap       DECIMAL(10,2) NOT NULL DEFAULT 0,
+    ngayHetHan       DATE          NULL,
+    donViDongGoi     NVARCHAR(50)  NULL,
+    khoiLuongDongGoi FLOAT         NOT NULL DEFAULT 1,
 
     CONSTRAINT PK_NguyenLieu   PRIMARY KEY (maNL),
     CONSTRAINT CHK_NL_DonGia   CHECK (donGiaNhap >= 0)

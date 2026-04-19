@@ -3,6 +3,7 @@
 bin/
 target/
 exports/
+config/
 
 # --- Log files ---
 *.log
@@ -15,11 +16,11 @@ exports/
 *.tar.gz
 *.rar
 
-# --- Eclipse specific files (Cực kỳ quan trọng để tránh xung đột nhóm) ---
+# --- Eclipse specific files (Đã sửa lại thành tương đối, nên đẩy lên Git để người khác có môi trường chạy) ---
 .metadata/
 .settings/
-.project
-.classpath
+#.project
+#.classpath
 .factorypath
 
 # --- OS specific files ---

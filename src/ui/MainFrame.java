@@ -39,6 +39,7 @@ public class MainFrame extends JFrame {
 
     // ── Header ───────────────────────────────────────────────────────────────
     private JLabel lblClock;
+    private JComponent btnDongCa; // Ref đế ẩn/hiện nút đóng ca sau khi đóng xong
     private boolean sidebarVisible = true;
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -119,8 +120,9 @@ public class MainFrame extends JFrame {
         rightPanel.add(lblDiv);
 
         if (SessionManager.isCaDangMo()) {
-            rightPanel.add(createHeaderBtn("Đóng Ca", FontAwesome.LOCK, new Color(220, 38, 38),
-                    new Color(254, 242, 242), () -> handleNav("ACTION_DONG_CA")));
+            btnDongCa = createHeaderBtn("Đóng Ca", FontAwesome.LOCK, new Color(220, 38, 38),
+                    new Color(254, 242, 242), () -> handleNav("ACTION_DONG_CA"));
+            rightPanel.add(btnDongCa);
         }
         rightPanel.add(createHeaderBtn("Đăng Xuất", FontAwesome.SIGN_OUT, new Color(71, 85, 105),
                 new Color(241, 245, 249), () -> handleNav("ACTION_LOGOUT")));
@@ -225,7 +227,6 @@ public class MainFrame extends JFrame {
         contentPanel.add(new ui.panel.admin.WarehouseManagementPanel(), "ADMIN_KHO");
 
         // Placeholders cho các module chưa build
-        contentPanel.add(buildPlaceholder("🕐  Lịch Sử Ca Làm Việc", "Module đang phát triển..."), "LICH_SU_CA");
 
         contentPanel.add(new ui.panel.admin.ToppingManagementPanel(), "ADMIN_TOPPING");
         contentPanel.add(new ui.panel.admin.RecipeManagementPanel(), "ADMIN_CONG_THUC");
@@ -343,24 +344,32 @@ public class MainFrame extends JFrame {
         ui.dialog.ShiftCloseDialog dlg = new ui.dialog.ShiftCloseDialog(this, shiftController);
         dlg.setVisible(true);
         if (dlg.isShiftClosed()) {
-            authController.logout();
-            new LoginForm().setVisible(true);
-            dispose();
+            // Đóng ca xong: không logout, chỉ cập nhật UI
+            // Ẩn nút "Đóng Ca" khỏi header vì ca đã đóng
+            rebuildHeaderButtons();
+            JOptionPane.showMessageDialog(this,
+                "Đã đóng ca thành công!\nBạn vẫn đăng nhập hệ thống. Chọn [Đăng Xuất] khi muốn thoát.",
+                "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private void handleLogout() {
-        if (SessionManager.isCaDangMo()) {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Bạn đang có ca làm việc đang mở!\nĐăng xuất sẽ yêu cầu ĐÓNG CA trước.\nTiếp tục?",
-                    "Xác nhận", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (confirm == JOptionPane.YES_OPTION) {
-                handleDongCa();
-            }
-            return;
-        }
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Bạn có chắc muốn đăng xuất không?",
+                "Xác nhận đăng xuất", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
         authController.logout();
         new LoginForm().setVisible(true);
         dispose();
+    }
+
+    /** Cập nhật vùng nút header sau khi đóng ca */
+    private void rebuildHeaderButtons() {
+        // Tìm lại panel chứa nút Dong Ca và refresh
+        // Đơn giản: repaint + ẩn nút đóng ca nếu đã tìm được ref
+        if (btnDongCa != null) {
+            btnDongCa.setVisible(false);
+        }
     }
 }
