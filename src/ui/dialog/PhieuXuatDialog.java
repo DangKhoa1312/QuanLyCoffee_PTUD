@@ -50,8 +50,6 @@ public class PhieuXuatDialog extends JDialog {
         loadComboData();
     }
 
-    public boolean isConfirmed() { return confirmed; }
-
     private void initUI() {
         JPanel mainPanel = new JPanel(new BorderLayout(0, 12));
         mainPanel.setBackground(new Color(245, 247, 250));

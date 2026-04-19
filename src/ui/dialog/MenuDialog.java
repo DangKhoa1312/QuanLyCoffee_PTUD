@@ -311,15 +311,16 @@ public class MenuDialog extends JDialog {
 
         content.add(toolbar, BorderLayout.NORTH);
 
-        // Bảng Size — 3 cột: Mã Size (readonly), Tên Size (editable), Hoạt động (editable)
-        modelSize = new DefaultTableModel(new Object[] { "Mã Size", "Tên Size", "Hoạt động" }, 0) {
+        // Bảng Size — 4 cột: Mã Size (readonly), Tên Size (editable), Tỉ lệ (editable), Hoạt động (editable)
+        modelSize = new DefaultTableModel(new Object[] { "Mã Size", "Tên Size", "Tỉ lệ", "Hoạt động" }, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
-                return c == 1 || c == 2;
+                return c == 1 || c == 2 || c == 3;
             }
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 2) return Boolean.class;
+                if (columnIndex == 3) return Boolean.class;
+                if (columnIndex == 2) return Double.class;
                 return String.class;
             }
         };
@@ -327,12 +328,12 @@ public class MenuDialog extends JDialog {
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(modelSize);
         tableSize.setRowSorter(sorter);
 
-        // Logic màng lọc RowFilter
+        // Trước khi lọc theo trangThai, filter dùng col index 3 (HoatDong)
         RowFilter<DefaultTableModel, Integer> filter = new RowFilter<>() {
             @Override
             public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
                 if (chkShowHidden.isSelected()) return true;
-                Boolean active = (Boolean) entry.getModel().getValueAt(entry.getIdentifier(), 2);
+                Boolean active = (Boolean) entry.getModel().getValueAt(entry.getIdentifier(), 3);
                 return active != null && active;
             }
         };
@@ -347,8 +348,10 @@ public class MenuDialog extends JDialog {
         tableSize.setShowVerticalLines(false);
         tableSize.getColumnModel().getColumn(0).setPreferredWidth(70);
         tableSize.getColumnModel().getColumn(0).setMaxWidth(90);
-        tableSize.getColumnModel().getColumn(2).setPreferredWidth(85);
-        tableSize.getColumnModel().getColumn(2).setMaxWidth(100);
+        tableSize.getColumnModel().getColumn(2).setPreferredWidth(70); // Tỉ lệ
+        tableSize.getColumnModel().getColumn(2).setMaxWidth(80);
+        tableSize.getColumnModel().getColumn(3).setPreferredWidth(85); // Hoạt động
+        tableSize.getColumnModel().getColumn(3).setMaxWidth(100);
 
         tableSize.addKeyListener(new KeyAdapter() {
             @Override
@@ -437,7 +440,7 @@ public class MenuDialog extends JDialog {
         // Load danh sách size (chỉ edit mode)
         if (isEditMode && dish.getMaMon() != null) {
             for (Size s : controller.getAllSizesOfMon(dish.getMaMon())) {
-                modelSize.addRow(new Object[] { s.getMaSize(), s.getTenSize(), s.isTrangThai() });
+                modelSize.addRow(new Object[] { s.getMaSize(), s.getTenSize(), s.getTileSize(), s.isTrangThai() });
             }
         }
     }
@@ -527,7 +530,7 @@ public class MenuDialog extends JDialog {
         } catch (Exception ignored) {
         }
 
-        modelSize.addRow(new Object[] { newId, "", true });
+        modelSize.addRow(new Object[] { newId, "", 1.0, true });
         int row = modelSize.getRowCount() - 1;
         tableSize.setRowSelectionInterval(row, row);
         tableSize.scrollRectToVisible(tableSize.getCellRect(row, 1, true));
@@ -565,7 +568,7 @@ public class MenuDialog extends JDialog {
 
         if (isFromDb) {
             // Dữ liệu đã có ở Database -> Gỡ dấu tích Hoạt động
-            modelSize.setValueAt(false, rowModel, 2);
+            modelSize.setValueAt(false, rowModel, 3);
         } else {
             // Dữ liệu vừa thêm mới chưa lưu -> Xóa hẳn dòng
             modelSize.removeRow(rowModel);
@@ -633,6 +636,19 @@ public class MenuDialog extends JDialog {
                 tableSize.setRowSelectionInterval(i, i);
                 return;
             }
+            // Validate tỉ lệ
+            Object tileObj = modelSize.getValueAt(i, 2);
+            double tile = 1.0;
+            if (tileObj instanceof Number) tile = ((Number) tileObj).doubleValue();
+            else if (tileObj instanceof String) {
+                try { tile = Double.parseDouble(tileObj.toString().replace(",", ".")); } catch (Exception ignored) {}
+            }
+            if (tile <= 0) {
+                warn("<html>Tỉ lệ của size dòng " + (i + 1) + " phải lớn hơn 0.<br>"
+                        + "<font color='gray'>(Ví dụ: 1.0 = cơ bản, 1.5 = gấp rưỡi)</font></html>", null);
+                tableSize.setRowSelectionInterval(i, i);
+                return;
+            }
             names.add(ts.toLowerCase());
         }
 
@@ -646,12 +662,19 @@ public class MenuDialog extends JDialog {
         // ── Build danh sách Size ──
         List<Size> sizes = new ArrayList<>();
         for (int i = 0; i < modelSize.getRowCount(); i++) {
-            Boolean active = (Boolean) modelSize.getValueAt(i, 2);
+            Boolean active = (Boolean) modelSize.getValueAt(i, 3);
+            Object tileObj = modelSize.getValueAt(i, 2);
+            double tile = 1.0;
+            if (tileObj instanceof Number) tile = ((Number) tileObj).doubleValue();
+            else if (tileObj instanceof String) {
+                try { tile = Double.parseDouble(tileObj.toString().replace(",", ".")); } catch (Exception ignored) {}
+            }
             sizes.add(new Size(
                     (String) modelSize.getValueAt(i, 0),
                     modelSize.getValueAt(i, 1).toString().trim(),
                     dish.getMaMon(),
-                    active != null ? active : true));
+                    active != null ? active : true,
+                    tile));
         }
 
         if (controller.saveMonAndSizes(dish, sizes, isEditMode)) {
@@ -678,10 +701,13 @@ public class MenuDialog extends JDialog {
 
         origSizes = new ArrayList<>();
         for (int i = 0; i < modelSize.getRowCount(); i++) {
-            Boolean curAct = (Boolean) modelSize.getValueAt(i, 2);
+            Boolean curAct = (Boolean) modelSize.getValueAt(i, 3);
+            Object tileObj = modelSize.getValueAt(i, 2);
+            double tile = (tileObj instanceof Number) ? ((Number) tileObj).doubleValue() : 1.0;
             origSizes.add(new Object[] {
                     modelSize.getValueAt(i, 0),
                     modelSize.getValueAt(i, 1).toString().trim(),
+                    tile,
                     curAct != null ? curAct : true
             });
         }
@@ -708,10 +734,14 @@ public class MenuDialog extends JDialog {
             Object[] orig = origSizes.get(i);
             String curMa = (String) modelSize.getValueAt(i, 0);
             String curTen = modelSize.getValueAt(i, 1).toString().trim();
-            Boolean curAct = (Boolean) modelSize.getValueAt(i, 2);
+            Object tileObj = modelSize.getValueAt(i, 2);
+            double curTile = (tileObj instanceof Number) ? ((Number) tileObj).doubleValue() : 1.0;
+            Boolean curAct = (Boolean) modelSize.getValueAt(i, 3);
             if (curAct == null) curAct = true;
-            
-            if (!curMa.equals(orig[0]) || !curTen.equals(orig[1]) || !curAct.equals(orig[2]))
+
+            double origTile = (orig[2] instanceof Number) ? ((Number) orig[2]).doubleValue() : 1.0;
+            if (!curMa.equals(orig[0]) || !curTen.equals(orig[1])
+                    || Math.abs(curTile - origTile) > 0.001 || !curAct.equals(orig[3]))
                 return true;
         }
         return false;

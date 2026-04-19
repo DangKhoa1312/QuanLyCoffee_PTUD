@@ -318,12 +318,8 @@ public class KhoController {
             String maMon = item.getMon().getMaMon();
             int qty = item.getSoLuong();
 
-            double heSoSize = 1.0;
-            if (item.getSize() != null) {
-                String tenSize = item.getSize().getTenSize().toUpperCase();
-                if (tenSize.contains("S")) heSoSize = 0.8;
-                else if (tenSize.contains("L")) heSoSize = 1.25;
-            }
+            // [FIX] Lấy tỉ lệ từ thuoc tính tileSize của Size — không hardcode theo tên
+            double heSoSize = (item.getSize() != null) ? item.getSize().getTileSize() : 1.0;
 
             List<DinhMucNguyenLieu> dinhmucs = dinhMucDAO.findByMon(maMon);
             for (DinhMucNguyenLieu dm : dinhmucs) {
