@@ -142,4 +142,9 @@ public class ShiftController {
     public int getTongSoDon(String maCa) {
         return hoaDonDAO.countByCa(maCa);
     }
+
+    /** Lấy số lượng bàn đang phục vụ của nhân viên hiện tại */
+    public int getSoBanDangPhucVu() {
+        return utils.OrderManager.getInstance().countOpenOrdersByEmployee(SessionManager.getMaNVHienTai());
+    }
 }

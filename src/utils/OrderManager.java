@@ -270,4 +270,15 @@ public class OrderManager {
         carts.clear();
         saveStateToDisk();
     }
+
+    /** Đếm số lượng bàn đang phục vụ của một nhân viên cụ thể */
+    public int countOpenOrdersByEmployee(String maNV) {
+        int count = 0;
+        for (DonHang dh : orders.values()) {
+            if (maNV.equals(dh.getMaNV()) && TrangThaiDonHang.DANG_PHUC_VU.equals(dh.getTrangThai())) {
+                count++;
+            }
+        }
+        return count;
+    }
 }

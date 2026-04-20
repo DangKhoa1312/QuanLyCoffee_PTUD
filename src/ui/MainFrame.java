@@ -121,9 +121,7 @@ public class MainFrame extends JFrame {
         rightPanel.add(lblDiv);
 
         if (SessionManager.isCaDangMo()) {
-            btnDongCa = createHeaderBtn("Đóng Ca", FontAwesome.LOCK, new Color(220, 38, 38),
-                    new Color(254, 242, 242), () -> handleNav("ACTION_DONG_CA"));
-            rightPanel.add(btnDongCa);
+            // Nút đóng ca đã được ẩn theo yêu cầu, tích hợp vào Đăng Xuất
         }
         rightPanel.add(createHeaderBtn("Đăng Xuất", FontAwesome.SIGN_OUT, new Color(71, 85, 105),
                 new Color(241, 245, 249), () -> handleNav("ACTION_LOGOUT")));
@@ -240,7 +238,7 @@ public class MainFrame extends JFrame {
     private void handleNav(String key) {
         switch (key) {
             case "ACTION_DONG_CA":
-                handleDongCa();
+                // Chức năng này đã được tích hợp vào Logout
                 return;
             case "ACTION_LOGOUT":
                 handleLogout();
@@ -345,29 +343,24 @@ public class MainFrame extends JFrame {
     // ══════════════════════════════════════════════════════════════════════════
     // BUSINESS ACTIONS
     // ══════════════════════════════════════════════════════════════════════════
-    private void handleDongCa() {
-        if (!SessionManager.isCaDangMo()) {
-            JOptionPane.showMessageDialog(this, "Hiện không có ca nào đang mở.");
-            return;
-        }
-        ui.dialog.ShiftCloseDialog dlg = new ui.dialog.ShiftCloseDialog(this, shiftController);
-        dlg.setVisible(true);
-        if (dlg.isShiftClosed()) {
-            // Đóng ca xong: không logout, chỉ cập nhật UI
-            // Ẩn nút "Đóng Ca" khỏi header vì ca đã đóng
-            rebuildHeaderButtons();
-            JOptionPane.showMessageDialog(this,
-                    "Đã đóng ca thành công!\nBạn vẫn đăng nhập hệ thống. Chọn [Đăng Xuất] khi muốn thoát.",
-                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
-
     private void handleLogout() {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc muốn đăng xuất không?",
-                "Xác nhận đăng xuất", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-        if (confirm != JOptionPane.YES_OPTION)
-            return;
+        // Nếu có ca đang mở, hiện bảng tổng kết trước khi logout
+        if (SessionManager.isCaDangMo()) {
+            ui.dialog.ShiftCloseDialog dlg = new ui.dialog.ShiftCloseDialog(this, shiftController);
+            dlg.setVisible(true);
+            
+            // Nếu người dùng không nhấn "Xác nhận đăng xuất" (tắt dialog) thì không logout
+            if (!dlg.isShiftClosed()) {
+                return;
+            }
+        } else {
+            // Nếu không có ca (admin), hỏi xác nhận bình thường
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Bạn có chắc muốn đăng xuất không?",
+                    "Xác nhận đăng xuất", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION)
+                return;
+        }
 
         authController.logout();
         new LoginForm().setVisible(true);

@@ -19,18 +19,20 @@ public class DinhMucNguyenLieuDAOImpl implements DinhMucNguyenLieuDAO {
             rs.getString("maDinhMuc"),
             rs.getDouble("soLuong"),
             rs.getString("maMon"),
+            rs.getString("maTopping"),
             rs.getString("maNL")
         );
     }
 
     @Override
     public boolean insert(DinhMucNguyenLieu dm) {
-        String sql = "INSERT INTO DinhMucNguyenLieu(maDinhMuc, soLuong, maMon, maNL) VALUES(?,?,?,?)";
+        String sql = "INSERT INTO DinhMucNguyenLieu(maDinhMuc, soLuong, maMon, maTopping, maNL) VALUES(?,?,?,?,?)";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, dm.getMaDinhMuc());
             ps.setDouble(2, dm.getSoLuong());
             ps.setString(3, dm.getMaMon());
-            ps.setString(4, dm.getMaNL());
+            ps.setString(4, dm.getMaTopping());
+            ps.setString(5, dm.getMaNL());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("DinhMucNguyenLieuDAOImpl.insert: " + e.getMessage());
@@ -40,12 +42,13 @@ public class DinhMucNguyenLieuDAOImpl implements DinhMucNguyenLieuDAO {
 
     @Override
     public boolean update(DinhMucNguyenLieu dm) {
-        String sql = "UPDATE DinhMucNguyenLieu SET soLuong=?, maMon=?, maNL=? WHERE maDinhMuc=?";
+        String sql = "UPDATE DinhMucNguyenLieu SET soLuong=?, maMon=?, maTopping=?, maNL=? WHERE maDinhMuc=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDouble(1, dm.getSoLuong());
             ps.setString(2, dm.getMaMon());
-            ps.setString(3, dm.getMaNL());
-            ps.setString(4, dm.getMaDinhMuc());
+            ps.setString(3, dm.getMaTopping());
+            ps.setString(4, dm.getMaNL());
+            ps.setString(5, dm.getMaDinhMuc());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("DinhMucNguyenLieuDAOImpl.update: " + e.getMessage());
@@ -101,6 +104,20 @@ public class DinhMucNguyenLieuDAOImpl implements DinhMucNguyenLieuDAO {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DinhMucNguyenLieuDAOImpl.findByMon: " + e.getMessage());
+        }
+        return list;
+    }
+
+    @Override
+    public List<DinhMucNguyenLieu> findByTopping(String maTopping) {
+        List<DinhMucNguyenLieu> list = new ArrayList<>();
+        String sql = "SELECT * FROM DinhMucNguyenLieu WHERE maTopping=? ORDER BY maNL";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setString(1, maTopping);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (SQLException e) {
+            System.err.println("DinhMucNguyenLieuDAOImpl.findByTopping: " + e.getMessage());
         }
         return list;
     }

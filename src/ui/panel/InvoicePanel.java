@@ -8,6 +8,7 @@ import com.toedter.calendar.JDateChooser;
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Màn hình Quản Lý Hoá Đơn — nâng cấp bộ lọc nâng cao.
+ * Màn hình Quản Lý Hoá Đơn — bộ lọc nâng cao, responsive mọi tỉ lệ màn hình.
  */
 public class InvoicePanel extends JPanel {
 
@@ -50,58 +51,62 @@ public class InvoicePanel extends JPanel {
     }
 
     private void initUI() {
-        // Header
+        // ── HEADER ──
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(25, 30, 10, 30));
 
-        JLabel lblTitle = new JLabel("📜  Lịch Sử Hóa Đơn");
+        JLabel lblTitle = new JLabel("\uD83D\uDCDC  Lịch Sử Hóa Đơn");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 24));
         lblTitle.setForeground(new Color(44, 62, 80));
         header.add(lblTitle, BorderLayout.WEST);
 
-        JButton btnRefresh = makeFilledBtn("↻ Làm Mới", SUCCESS);
+        JButton btnRefresh = makeFilledBtn("\u21BB Làm Mới", SUCCESS);
         btnRefresh.addActionListener(e -> loadData());
         header.add(btnRefresh, BorderLayout.EAST);
 
         add(header, BorderLayout.NORTH);
 
-        // Filter panel
-        JPanel filterWrapper = new JPanel(new BorderLayout());
-        filterWrapper.setOpaque(false);
-        filterWrapper.setBorder(new EmptyBorder(0, 30, 10, 30));
-        filterWrapper.add(buildFilterPanel(), BorderLayout.CENTER);
-        add(filterWrapper, BorderLayout.CENTER);
+        // ── CENTER = Filter + Table ──
+        JPanel centerPane = new JPanel(new BorderLayout(0, 0));
+        centerPane.setOpaque(false);
+        centerPane.setBorder(new EmptyBorder(0, 30, 25, 30));
 
-        // Table content (placeholder — sẽ được thay khi init xong)
-        JPanel content = new JPanel(new BorderLayout());
-        content.setBackground(Color.WHITE);
-        content.setBorder(new EmptyBorder(0, 30, 30, 30));
+        centerPane.add(buildFilterPanel(), BorderLayout.NORTH);
 
+        // ── TABLE ──
         String[] cols = {
-            "Mã Hóa Đơn",
-            "Bàn",
-            "Loại đơn",
-            "Tổng Tiền",
-            "T.Gian Th.Toán",
-            "Hình Thức",
-            "Trạng thái",
-            "Thu Ngân"
+            "Mã Hóa Đơn", "Bàn", "Loại đơn", "Tổng Tiền",
+            "T.Gian Th.Toán", "Hình Thức", "Trạng thái", "Thu Ngân"
         };
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(35);
+        table.setRowHeight(38);
         table.setFont(new Font("Roboto", Font.PLAIN, 14));
-        table.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 14));
-        table.getTableHeader().setBackground(new Color(240, 240, 240));
-        table.setSelectionBackground(new Color(232, 245, 253));
+        table.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 13));
+        table.getTableHeader().setBackground(new Color(241, 245, 249));
+        table.getTableHeader().setForeground(new Color(71, 85, 105));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 40));
+        table.setSelectionBackground(new Color(224, 242, 254));
+        table.setSelectionForeground(new Color(15, 23, 42));
+        table.setGridColor(new Color(241, 245, 249));
+        table.setShowVerticalLines(false);
+
+        // Căn phải cho cột Tổng Tiền
+        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
+        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+        table.getColumnModel().getColumn(3).setCellRenderer(rightRenderer);
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
-        content.add(scroll, BorderLayout.CENTER);
+        scroll.getViewport().setBackground(Color.WHITE);
 
+        centerPane.add(scroll, BorderLayout.CENTER);
+        add(centerPane, BorderLayout.CENTER);
+
+        // Double-click to view detail
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -118,80 +123,122 @@ public class InvoicePanel extends JPanel {
                 }
             }
         });
-
-        // Dùng BorderLayout để filter + table chồng nhau
-        // Cần đặt lại layout tổng
-        removeAll();
-        setLayout(new BorderLayout());
-        add(header, BorderLayout.NORTH);
-        JPanel centerPane = new JPanel(new BorderLayout());
-        centerPane.setOpaque(false);
-        centerPane.add(buildFilterPanel(), BorderLayout.NORTH);
-        centerPane.add(content, BorderLayout.CENTER);
-        add(centerPane, BorderLayout.CENTER);
     }
 
+    /**
+     * Filter bar dùng GridBagLayout để co giãn đúng mọi kích thước màn hình.
+     * Dòng 1: Từ ngày | Đến ngày | Hình thức
+     * Dòng 2: Bàn | Nhân viên | Nút Tìm | Nút Xóa lọc
+     */
     private JPanel buildFilterPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
-            new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)),
-            new EmptyBorder(4, 20, 4, 20)
+            new LineBorder(new Color(226, 232, 240)),
+            new EmptyBorder(12, 16, 12, 16)
         ));
 
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(4, 6, 4, 6);
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.anchor = GridBagConstraints.WEST;
+
+        Font lblFont = new Font("Roboto", Font.BOLD, 13);
+        Color lblColor = new Color(71, 85, 105);
+
+        // ── ROW 0 ──
+
         // Từ ngày
-        panel.add(new JLabel("Từ:"));
+        g.gridx = 0; g.gridy = 0; g.weightx = 0;
+        JLabel lbTu = new JLabel("Từ ngày:");
+        lbTu.setFont(lblFont); lbTu.setForeground(lblColor);
+        panel.add(lbTu, g);
+
+        g.gridx = 1; g.weightx = 0.2;
         dcTuNgay = new JDateChooser();
         dcTuNgay.setDateFormatString("dd/MM/yyyy");
-        dcTuNgay.setPreferredSize(new Dimension(120, 30));
-        panel.add(dcTuNgay);
+        dcTuNgay.setPreferredSize(new Dimension(130, 32));
+        dcTuNgay.setMinimumSize(new Dimension(100, 32));
+        panel.add(dcTuNgay, g);
 
-        panel.add(new JLabel("Đến:"));
+        // Đến ngày
+        g.gridx = 2; g.weightx = 0;
+        JLabel lbDen = new JLabel("Đến ngày:");
+        lbDen.setFont(lblFont); lbDen.setForeground(lblColor);
+        panel.add(lbDen, g);
+
+        g.gridx = 3; g.weightx = 0.2;
         dcDenNgay = new JDateChooser();
         dcDenNgay.setDateFormatString("dd/MM/yyyy");
-        dcDenNgay.setPreferredSize(new Dimension(120, 30));
-        panel.add(dcDenNgay);
+        dcDenNgay.setPreferredSize(new Dimension(130, 32));
+        dcDenNgay.setMinimumSize(new Dimension(100, 32));
+        panel.add(dcDenNgay, g);
 
-        // Hình thức thanh toán
-        panel.add(new JLabel("Hình thức:"));
+        // Hình thức
+        g.gridx = 4; g.weightx = 0;
+        JLabel lbHT = new JLabel("Hình thức:");
+        lbHT.setFont(lblFont); lbHT.setForeground(lblColor);
+        panel.add(lbHT, g);
+
+        g.gridx = 5; g.weightx = 0.2;
         cbHinhThuc = new JComboBox<>(new String[]{"Tất cả", "TIEN_MAT", "CHUYEN_KHOAN"});
         cbHinhThuc.setFont(new Font("Roboto", Font.PLAIN, 13));
-        cbHinhThuc.setPreferredSize(new Dimension(155, 30));
-        // Hiển thị label đẹp
+        cbHinhThuc.setPreferredSize(new Dimension(150, 32));
+        cbHinhThuc.setMinimumSize(new Dimension(100, 32));
         cbHinhThuc.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
                     int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if ("TIEN_MAT".equals(value))          setText("Tiền mặt");
-                else if ("CHUYEN_KHOAN".equals(value)) setText("Chuyển khoản");
+                if ("TIEN_MAT".equals(value))          setText("💵 Tiền mặt");
+                else if ("CHUYEN_KHOAN".equals(value)) setText("💳 Chuyển khoản");
+                else                                    setText("Tất cả");
                 return this;
             }
         });
-        panel.add(cbHinhThuc);
+        panel.add(cbHinhThuc, g);
+
+        // Spacer để đẩy phải
+        g.gridx = 6; g.weightx = 1.0;
+        panel.add(Box.createHorizontalGlue(), g);
+
+        // ── ROW 1 ──
 
         // Bàn
-        panel.add(new JLabel("Bàn:"));
-        txtBan = new JTextField(8);
+        g.gridx = 0; g.gridy = 1; g.weightx = 0;
+        JLabel lbBan = new JLabel("Bàn:");
+        lbBan.setFont(lblFont); lbBan.setForeground(lblColor);
+        panel.add(lbBan, g);
+
+        g.gridx = 1; g.weightx = 0.2;
+        txtBan = new JTextField();
         txtBan.setFont(new Font("Roboto", Font.PLAIN, 13));
-        txtBan.setPreferredSize(new Dimension(90, 30));
+        txtBan.setPreferredSize(new Dimension(130, 32));
+        txtBan.setMinimumSize(new Dimension(80, 32));
         txtBan.putClientProperty("JTextField.placeholderText", "Số bàn...");
-        panel.add(txtBan);
+        panel.add(txtBan, g);
 
         // Nhân viên
-        panel.add(new JLabel("Nhân viên:"));
-        txtNhanVien = new JTextField(8);
+        g.gridx = 2; g.weightx = 0;
+        JLabel lbNV = new JLabel("Thu ngân:");
+        lbNV.setFont(lblFont); lbNV.setForeground(lblColor);
+        panel.add(lbNV, g);
+
+        g.gridx = 3; g.weightx = 0.2;
+        txtNhanVien = new JTextField();
         txtNhanVien.setFont(new Font("Roboto", Font.PLAIN, 13));
-        txtNhanVien.setPreferredSize(new Dimension(90, 30));
+        txtNhanVien.setPreferredSize(new Dimension(130, 32));
+        txtNhanVien.setMinimumSize(new Dimension(80, 32));
         txtNhanVien.putClientProperty("JTextField.placeholderText", "Tên NV...");
-        panel.add(txtNhanVien);
+        panel.add(txtNhanVien, g);
 
-        // Nút Tìm
-        JButton btnSearch = makeFilledBtn("🔍 Tìm", INFO);
+        // Buttons
+        g.gridx = 4; g.weightx = 0;
+        JButton btnSearch = makeFilledBtn("\uD83D\uDD0D Tìm", INFO);
         btnSearch.addActionListener(e -> applyFilter());
-        panel.add(btnSearch);
+        panel.add(btnSearch, g);
 
-        // Nút Xoá bộ lọc
+        g.gridx = 5; g.weightx = 0;
         JButton btnClear = makeFilledBtn("✕ Xoá lọc", DANGER);
         btnClear.addActionListener(e -> {
             dcTuNgay.setDate(null);
@@ -201,7 +248,11 @@ public class InvoicePanel extends JPanel {
             txtNhanVien.setText("");
             loadData();
         });
-        panel.add(btnClear);
+        panel.add(btnClear, g);
+
+        // Spacer
+        g.gridx = 6; g.weightx = 1.0;
+        panel.add(Box.createHorizontalGlue(), g);
 
         return panel;
     }
@@ -259,7 +310,7 @@ public class InvoicePanel extends JPanel {
         btn.setBorderPainted(false);
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(6, 12, 6, 12));
+        btn.setBorder(new EmptyBorder(8, 16, 8, 16));
         return btn;
     }
 }

@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface DinhMucNguyenLieuDAO extends BaseDAO<DinhMucNguyenLieu, String> {
     List<DinhMucNguyenLieu> findByMon(String maMon);
+    List<DinhMucNguyenLieu> findByTopping(String maTopping);
 }

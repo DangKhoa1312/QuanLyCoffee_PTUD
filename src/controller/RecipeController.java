@@ -8,7 +8,10 @@ import dao.impl.MonDAOImpl;
 import dao.impl.NguyenLieuDAOImpl;
 import entity.DinhMucNguyenLieu;
 import entity.Mon;
+import entity.Topping;
 import entity.NguyenLieu;
+import dao.ToppingDAO;
+import dao.impl.ToppingDAOImpl;
 
 import java.util.List;
 
@@ -18,6 +21,7 @@ import java.util.List;
 public class RecipeController {
 
     private final MonDAO monDAO = new MonDAOImpl();
+    private final ToppingDAO toppingDAO = new ToppingDAOImpl();
     private final NguyenLieuDAO nlDAO = new NguyenLieuDAOImpl();
     private final DinhMucNguyenLieuDAO dmDAO = new DinhMucNguyenLieuDAOImpl();
 
@@ -39,6 +43,20 @@ public class RecipeController {
         return dmDAO.findByMon(maMon);
     }
 
+    public List<Topping> getAllTopping(String searchQuery) {
+        List<Topping> all = toppingDAO.findAll();
+        if (searchQuery == null || searchQuery.trim().isEmpty()) {
+            return all;
+        }
+        String q = searchQuery.trim().toLowerCase();
+        all.removeIf(t -> !t.getTenTopping().toLowerCase().contains(q));
+        return all;
+    }
+
+    public List<DinhMucNguyenLieu> getDinhMucByTopping(String maTopping) {
+        return dmDAO.findByTopping(maTopping);
+    }
+
     public NguyenLieu getNguyenLieuById(String maNL) {
         return nlDAO.findById(maNL);
     }
@@ -54,15 +72,31 @@ public class RecipeController {
         DinhMucNguyenLieu dm = new DinhMucNguyenLieu();
         dm.setMaDinhMuc(generateNextMaDinhMuc());
         dm.setMaMon(maMon);
+        dm.setMaTopping(null);
         dm.setMaNL(maNL);
         dm.setSoLuong(soLuong);
         return dmDAO.insert(dm);
     }
 
-    public boolean updateDinhMuc(String maDinhMuc, String maMon, String maNL, double soLuong) {
+    public boolean addDinhMucTopping(String maTopping, String maNL, double soLuong) {
+        List<DinhMucNguyenLieu> existing = dmDAO.findByTopping(maTopping);
+        for (DinhMucNguyenLieu exist : existing) {
+            if (exist.getMaNL().equals(maNL)) return false; 
+        }
+        DinhMucNguyenLieu dm = new DinhMucNguyenLieu();
+        dm.setMaDinhMuc(generateNextMaDinhMuc());
+        dm.setMaMon(null);
+        dm.setMaTopping(maTopping);
+        dm.setMaNL(maNL);
+        dm.setSoLuong(soLuong);
+        return dmDAO.insert(dm);
+    }
+
+    public boolean updateDinhMuc(String maDinhMuc, String maMon, String maTopping, String maNL, double soLuong) {
         DinhMucNguyenLieu param = new DinhMucNguyenLieu();
         param.setMaDinhMuc(maDinhMuc);
         param.setMaMon(maMon);
+        param.setMaTopping(maTopping);
         param.setMaNL(maNL);
         param.setSoLuong(soLuong);
         return dmDAO.update(param);

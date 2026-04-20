@@ -3,6 +3,7 @@ package ui.panel.admin;
 import controller.RecipeController;
 import entity.DinhMucNguyenLieu;
 import entity.Mon;
+import entity.Topping;
 import entity.NguyenLieu;
 import jiconfont.icons.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -26,6 +27,7 @@ public class RecipeManagementPanel extends JPanel {
     private final Color BG_COLOR      = new Color(245, 247, 250);
 
     // Master - Left
+    private JLabel lblMasterTitle;
     private JTextField txtSearchMon;
     private JTable tblMon;
     private DefaultTableModel modMon;
@@ -41,7 +43,9 @@ public class RecipeManagementPanel extends JPanel {
     private JLabel lblDonViTinh;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
 
+    private JComboBox<String> cbMasterType;
     private Mon selectedMon = null;
+    private Topping selectedTopping = null;
     private DinhMucNguyenLieu selectedDinhMuc = null;
 
     // Wrapper for Combo Box
@@ -107,20 +111,41 @@ public class RecipeManagementPanel extends JPanel {
 
         JPanel top = new JPanel(new BorderLayout());
         top.setOpaque(false);
-        JLabel lblTop = new JLabel("Danh Sách Món");
-        lblTop.setFont(new Font("Roboto", Font.BOLD, 16));
-        lblTop.setForeground(PRIMARY_COLOR);
+        lblMasterTitle = new JLabel("Danh Sách Sản Phẩm");
+        lblMasterTitle.setFont(new Font("Roboto", Font.BOLD, 16));
+        lblMasterTitle.setForeground(PRIMARY_COLOR);
         
+        cbMasterType = new JComboBox<>(new String[]{"Sản phẩm (Món)", "Topping"});
+        cbMasterType.setPreferredSize(new Dimension(0, 36));
+        cbMasterType.addActionListener(e -> {
+            selectedMon = null;
+            selectedTopping = null;
+            boolean isTop = cbMasterType.getSelectedIndex() == 1;
+            lblMasterTitle.setText(isTop ? "Danh Sách Topping" : "Danh Sách Sản Phẩm");
+            lblCurrentMon.setText("Vui lòng chọn 1 mục từ danh sách bên trái");
+            // Update column headers
+            modMon.setColumnIdentifiers(new String[]{isTop ? "Mã Topping" : "Mã Món", isTop ? "Tên Topping" : "Tên Món", "Obj"});
+            tblMon.removeColumn(tblMon.getColumnModel().getColumn(2));
+            tblMon.getColumnModel().getColumn(0).setMaxWidth(100);
+            loadMasterData();
+            loadDetailData();
+        });
+
         txtSearchMon = new JTextField();
         txtSearchMon.setPreferredSize(new Dimension(0, 36));
-        txtSearchMon.putClientProperty("JTextField.placeholderText", "Tìm món theo tên...");
+        txtSearchMon.putClientProperty("JTextField.placeholderText", "Tìm kiếm...");
         txtSearchMon.addKeyListener(new KeyAdapter() {
             @Override public void keyReleased(KeyEvent e) { loadMasterData(); }
         });
         
-        top.add(lblTop, BorderLayout.NORTH);
+        JPanel topSearch = new JPanel(new GridLayout(2, 1, 0, 5));
+        topSearch.setOpaque(false);
+        topSearch.add(cbMasterType);
+        topSearch.add(txtSearchMon);
+
+        top.add(lblMasterTitle, BorderLayout.NORTH);
         top.add(Box.createVerticalStrut(10), BorderLayout.CENTER);
-        top.add(txtSearchMon, BorderLayout.SOUTH);
+        top.add(topSearch, BorderLayout.SOUTH);
         p.add(top, BorderLayout.NORTH);
 
         modMon = new DefaultTableModel(new String[]{"Mã Món", "Tên Món", "Obj"}, 0) {
@@ -129,7 +154,7 @@ public class RecipeManagementPanel extends JPanel {
         tblMon = buildStyledTable(modMon);
         tblMon.setRowHeight(40);
         tblMon.removeColumn(tblMon.getColumnModel().getColumn(2)); // hide Obj
-        tblMon.getColumnModel().getColumn(0).setMaxWidth(80);
+        tblMon.getColumnModel().getColumn(0).setMaxWidth(100);
 
         tblMon.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
@@ -137,7 +162,9 @@ public class RecipeManagementPanel extends JPanel {
                 JLabel l = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
                 l.setBorder(new EmptyBorder(0, 10, 0, 10));
                 if (col == 1) {
-                    l.setIcon(IconFontSwing.buildIcon(FontAwesome.COFFEE, 16, isSelected ? Color.WHITE : new Color(148, 163, 184)));
+                    boolean isTop = cbMasterType.getSelectedIndex() == 1;
+                    FontAwesome icon = isTop ? FontAwesome.PLUS_CIRCLE : FontAwesome.COFFEE;
+                    l.setIcon(IconFontSwing.buildIcon(icon, 16, isSelected ? Color.WHITE : new Color(148, 163, 184)));
                     l.setIconTextGap(10);
                 } else l.setIcon(null);
                 return l;
@@ -148,8 +175,16 @@ public class RecipeManagementPanel extends JPanel {
             @Override public void mouseClicked(MouseEvent e) {
                 int r = tblMon.getSelectedRow();
                 if (r >= 0) {
-                    selectedMon = (Mon) modMon.getValueAt(r, 2); // hidden col 2
-                    lblCurrentMon.setText("Cấu hình công thức cho: " + selectedMon.getTenMon());
+                    Object obj = modMon.getValueAt(r, 2);
+                    if (obj instanceof Mon) {
+                        selectedMon = (Mon) obj;
+                        selectedTopping = null;
+                        lblCurrentMon.setText("Cấu hình công thức cho: " + selectedMon.getTenMon());
+                    } else if (obj instanceof Topping) {
+                        selectedTopping = (Topping) obj;
+                        selectedMon = null;
+                        lblCurrentMon.setText("Cấu hình công thức cho Topping: " + selectedTopping.getTenTopping());
+                    }
                     clearForm();
                     loadDetailData();
                 }
@@ -169,7 +204,7 @@ public class RecipeManagementPanel extends JPanel {
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(0, 15, 0, 0));
 
-        lblCurrentMon = new JLabel("Vui lòng chọn 1 Món từ danh sách bên trái");
+        lblCurrentMon = new JLabel("Vui lòng chọn 1 mục từ danh sách bên trái");
         lblCurrentMon.setFont(new Font("Roboto", Font.BOLD, 18));
         lblCurrentMon.setForeground(new Color(16, 185, 129)); // emerald-500
         p.add(lblCurrentMon, BorderLayout.NORTH);
@@ -288,9 +323,18 @@ public class RecipeManagementPanel extends JPanel {
     private void loadMasterData() {
         modMon.setRowCount(0);
         String txt = txtSearchMon.getText();
-        List<Mon> list = controller.getAllMon(txt);
-        for (Mon m : list) {
-            modMon.addRow(new Object[]{m.getMaMon(), m.getTenMon(), m});
+        boolean isTopping = cbMasterType.getSelectedIndex() == 1;
+
+        if (isTopping) {
+            List<Topping> list = controller.getAllTopping(txt);
+            for (Topping t : list) {
+                modMon.addRow(new Object[]{t.getMaTopping(), t.getTenTopping(), t});
+            }
+        } else {
+            List<Mon> list = controller.getAllMon(txt);
+            for (Mon m : list) {
+                modMon.addRow(new Object[]{m.getMaMon(), m.getTenMon(), m});
+            }
         }
     }
 
@@ -302,8 +346,14 @@ public class RecipeManagementPanel extends JPanel {
 
     private void loadDetailData() {
         modDinhMuc.setRowCount(0);
-        if (selectedMon == null) return;
-        List<DinhMucNguyenLieu> list = controller.getDinhMucByMon(selectedMon.getMaMon());
+        List<DinhMucNguyenLieu> list = null;
+        if (selectedMon != null) {
+            list = controller.getDinhMucByMon(selectedMon.getMaMon());
+        } else if (selectedTopping != null) {
+            list = controller.getDinhMucByTopping(selectedTopping.getMaTopping());
+        }
+        
+        if (list == null) return;
         for (DinhMucNguyenLieu dm : list) {
             NguyenLieu nl = controller.getNguyenLieuById(dm.getMaNL());
             if (nl != null) {
@@ -344,8 +394,8 @@ public class RecipeManagementPanel extends JPanel {
     // ── ACTIONS ───────────────────────────────────────────────────────
 
     private void actionAdd() {
-        if (selectedMon == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 Món trước!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+        if (selectedMon == null && selectedTopping == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 Món hoặc Topping trước!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
         NLItem item = (NLItem) cbNguyenLieu.getSelectedItem();
@@ -360,7 +410,13 @@ public class RecipeManagementPanel extends JPanel {
             return;
         }
 
-        boolean success = controller.addDinhMuc(selectedMon.getMaMon(), item.nl.getMaNL(), sl);
+        boolean success = false;
+        if (selectedMon != null) {
+            success = controller.addDinhMuc(selectedMon.getMaMon(), item.nl.getMaNL(), sl);
+        } else {
+            success = controller.addDinhMucTopping(selectedTopping.getMaTopping(), item.nl.getMaNL(), sl);
+        }
+
         if (success) {
             loadDetailData();
             clearForm();
@@ -381,7 +437,10 @@ public class RecipeManagementPanel extends JPanel {
         }
 
         NLItem item = (NLItem) cbNguyenLieu.getSelectedItem();
-        boolean ok = controller.updateDinhMuc(selectedDinhMuc.getMaDinhMuc(), selectedMon.getMaMon(), item.nl.getMaNL(), sl);
+        String maMon = (selectedMon != null) ? selectedMon.getMaMon() : null;
+        String maTop = (selectedTopping != null) ? selectedTopping.getMaTopping() : null;
+
+        boolean ok = controller.updateDinhMuc(selectedDinhMuc.getMaDinhMuc(), maMon, maTop, item.nl.getMaNL(), sl);
         if (ok) {
             loadDetailData();
             clearForm();
