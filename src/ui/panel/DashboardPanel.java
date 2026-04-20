@@ -1,13 +1,20 @@
 package ui.panel;
 
 import controller.KhoController;
+import controller.ShiftController;
+import dao.BanDAO;
 import dao.HoaDonDAO;
+import dao.impl.BanDAOImpl;
 import dao.impl.HoaDonDAOImpl;
+import entity.Ban;
 import entity.HoaDon;
 import entity.TonKho;
+import enums.TrangThaiBan;
+import enums.TrangThaiHoaDon;
 import jiconfont.icons.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import utils.CurrencyUtils;
+import utils.OrderManager;
 import utils.SessionManager;
 
 import javax.swing.*;
@@ -28,28 +35,35 @@ import java.util.stream.Collectors;
  */
 public class DashboardPanel extends JPanel {
 
-    public interface NavCallback { void navigate(String key); }
+    public interface NavCallback {
+        void navigate(String key);
+    }
+
     private NavCallback navCallback;
 
-    private static final Color BG            = new Color(248, 250, 252); // slate-50
-    private static final Color CARD_BG       = new Color(255, 255, 255);
-    private static final Color TEXT_MAIN     = new Color(15, 23, 42);    // slate-900
-    private static final Color TEXT_SUB      = new Color(100, 116, 139); // slate-500
-    
-    // Soft pastel branding colors
-    private static final Color P_GREEN_BG    = new Color(220, 252, 231); // green-100
-    private static final Color P_GREEN_FG    = new Color(22, 163, 74);   // green-600
-    
-    private static final Color P_BLUE_BG     = new Color(219, 234, 254); // blue-100
-    private static final Color P_BLUE_FG     = new Color(37, 99, 235);   // blue-600
-    
-    private static final Color P_RED_BG      = new Color(254, 226, 226); // red-100
-    private static final Color P_RED_FG      = new Color(220, 38, 38);   // red-600
-    
-    private static final Color P_PURPLE_BG   = new Color(243, 232, 255); // purple-100
-    private static final Color P_PURPLE_FG   = new Color(147, 51, 234);  // purple-600
+    private static final Color BG = new Color(248, 250, 252); // slate-50
+    private static final Color CARD_BG = new Color(255, 255, 255);
+    private static final Color TEXT_MAIN = new Color(15, 23, 42); // slate-900
+    private static final Color TEXT_SUB = new Color(100, 116, 139); // slate-500
 
-    private JLabel lblRevenue, lblInvoices, lblAlerts;
+    // Soft pastel branding colors
+    private static final Color P_GREEN_BG = new Color(220, 252, 231); // green-100
+    private static final Color P_GREEN_FG = new Color(22, 163, 74); // green-600
+
+    private static final Color P_BLUE_BG = new Color(219, 234, 254); // blue-100
+    private static final Color P_BLUE_FG = new Color(37, 99, 235); // blue-600
+
+    private static final Color P_RED_BG = new Color(254, 226, 226); // red-100
+    private static final Color P_RED_FG = new Color(220, 38, 38); // red-600
+
+    private static final Color P_PURPLE_BG = new Color(243, 232, 255); // purple-100
+    private static final Color P_PURPLE_FG = new Color(147, 51, 234); // purple-600
+
+    private static final Color P_AMBER_BG = new Color(254, 243, 199); // amber-100
+    private static final Color P_AMBER_FG = new Color(217, 119, 6); // amber-600
+
+    private JLabel lblRevenue, lblInvoices, lblAlerts, lblBanDangPV;
+    private JLabel lblSubMangVe, lblSubAvg;
     private DefaultTableModel recentModel, alertModel;
 
     public DashboardPanel() {
@@ -65,18 +79,25 @@ public class DashboardPanel extends JPanel {
         loadData();
     }
 
-    public void setNavCallback(NavCallback cb) { this.navCallback = cb; }
-    public void refresh() { loadData(); }
+    public void setNavCallback(NavCallback cb) {
+        this.navCallback = cb;
+    }
+
+    public void refresh() {
+        loadData();
+    }
 
     private JPanel buildContent() {
         JPanel root = new JPanel();
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
         root.setBackground(BG);
-        root.setBorder(new EmptyBorder(32, 40, 32, 40)); // padding rộng hơn tạo sự thoáng đãng
+        root.setBorder(new EmptyBorder(32, 40, 32, 40));
 
         root.add(buildTopBar());
         root.add(vgap(28));
         root.add(buildKpiRow());
+        root.add(vgap(16));
+        root.add(buildSubInfoBar());
         root.add(vgap(32));
         root.add(buildSectionLabel("Truy cập nhanh"));
         root.add(vgap(12));
@@ -103,7 +124,8 @@ public class DashboardPanel extends JPanel {
         lblGreeting.setFont(new Font("Roboto", Font.BOLD, 24));
         lblGreeting.setForeground(TEXT_MAIN);
 
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", new java.util.Locale("vi", "VN")));
+        String today = LocalDate.now()
+                .format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", new java.util.Locale("vi", "VN")));
         JLabel lblDate = new JLabel(today);
         lblDate.setFont(new Font("Roboto", Font.PLAIN, 14));
         lblDate.setForeground(TEXT_SUB);
@@ -115,7 +137,8 @@ public class DashboardPanel extends JPanel {
 
         // Nút refresh bo tròn
         JPanel pnlRefresh = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(CARD_BG);
@@ -126,14 +149,26 @@ public class DashboardPanel extends JPanel {
         pnlRefresh.setOpaque(false);
         pnlRefresh.setPreferredSize(new Dimension(50, 50));
         pnlRefresh.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        JLabel lblRefresh = new JLabel(IconFontSwing.buildIcon(FontAwesome.REFRESH, 18, TEXT_SUB), SwingConstants.CENTER);
+        JLabel lblRefresh = new JLabel(IconFontSwing.buildIcon(FontAwesome.REFRESH, 18, TEXT_SUB),
+                SwingConstants.CENTER);
         pnlRefresh.add(lblRefresh);
         pnlRefresh.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { loadData(); }
-            @Override public void mouseEntered(MouseEvent e) { lblRefresh.setIcon(IconFontSwing.buildIcon(FontAwesome.REFRESH, 18, TEXT_MAIN)); }
-            @Override public void mouseExited(MouseEvent e) { lblRefresh.setIcon(IconFontSwing.buildIcon(FontAwesome.REFRESH, 18, TEXT_SUB)); }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                loadData();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                lblRefresh.setIcon(IconFontSwing.buildIcon(FontAwesome.REFRESH, 18, TEXT_MAIN));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                lblRefresh.setIcon(IconFontSwing.buildIcon(FontAwesome.REFRESH, 18, TEXT_SUB));
+            }
         });
-        
+
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 5));
         rightPanel.setOpaque(false);
         rightPanel.add(pnlRefresh);
@@ -147,20 +182,57 @@ public class DashboardPanel extends JPanel {
         row.setOpaque(false);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
 
-        lblRevenue  = kpiValueLabel();
+        lblRevenue = kpiValueLabel();
         lblInvoices = kpiValueLabel();
-        lblAlerts   = kpiValueLabel();
-        JLabel lblCaLabel = kpiValueLabel();
+        lblBanDangPV = kpiValueLabel();
+        lblAlerts = kpiValueLabel();
 
-        if (SessionManager.isCaDangMo()) lblCaLabel.setText(SessionManager.getCurrentCa().getMaCa());
-        else { lblCaLabel.setText("Chưa mở"); lblCaLabel.setForeground(P_RED_FG); }
-
-        row.add(buildKpiCard("Doanh thu", lblRevenue, FontAwesome.USD, P_GREEN_BG, P_GREEN_FG));
-        row.add(buildKpiCard("Hóa đơn",  lblInvoices, FontAwesome.FILE_TEXT_O, P_BLUE_BG, P_BLUE_FG));
-        row.add(buildKpiCard("Hết hạn mức",  lblAlerts, FontAwesome.EXCLAMATION_TRIANGLE, P_RED_BG, P_RED_FG));
-        row.add(buildKpiCard("Ca hiện tại",  lblCaLabel, FontAwesome.CLOCK_O, P_PURPLE_BG, P_PURPLE_FG));
+        row.add(buildKpiCard("Doanh thu hôm nay", lblRevenue, FontAwesome.USD, P_GREEN_BG, P_GREEN_FG));
+        row.add(buildKpiCard("Hóa đơn hôm nay", lblInvoices, FontAwesome.FILE_TEXT_O, P_BLUE_BG, P_BLUE_FG));
+        row.add(buildKpiCard("Bàn đang phục vụ", lblBanDangPV, FontAwesome.CUTLERY, P_AMBER_BG, P_AMBER_FG));
+        row.add(buildKpiCard("Cảnh báo kho", lblAlerts, FontAwesome.EXCLAMATION_TRIANGLE, P_RED_BG, P_RED_FG));
 
         return row;
+    }
+
+    private JPanel buildSubInfoBar() {
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(CARD_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                g2.dispose();
+            }
+        };
+        bar.setOpaque(false);
+        bar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        bar.setBorder(new EmptyBorder(10, 24, 10, 24));
+
+        lblSubMangVe = subInfoLabel("Mang về đang chờ: 0", FontAwesome.MOTORCYCLE, P_PURPLE_FG);
+        lblSubAvg = subInfoLabel("TB/đơn: 0 đ", FontAwesome.LINE_CHART, P_BLUE_FG);
+
+        bar.add(lblSubMangVe);
+        bar.add(subDivider());
+        bar.add(lblSubAvg);
+
+        return bar;
+    }
+
+    private JLabel subInfoLabel(String text, FontAwesome icon, Color color) {
+        JLabel lbl = new JLabel("  " + text);
+        lbl.setFont(new Font("Roboto", Font.BOLD, 13));
+        lbl.setForeground(color);
+        lbl.setIcon(IconFontSwing.buildIcon(icon, 14, color));
+        return lbl;
+    }
+
+    private JLabel subDivider() {
+        JLabel d = new JLabel("   |   ");
+        d.setForeground(new Color(226, 232, 240));
+        d.setFont(new Font("Roboto", Font.PLAIN, 14));
+        return d;
     }
 
     private JLabel kpiValueLabel() {
@@ -172,7 +244,8 @@ public class DashboardPanel extends JPanel {
 
     private JPanel buildKpiCard(String title, JLabel valueLabel, FontAwesome icon, Color bgIcn, Color fgIcn) {
         JPanel card = new JPanel(new BorderLayout(16, 0)) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(CARD_BG);
@@ -185,7 +258,8 @@ public class DashboardPanel extends JPanel {
 
         // Icon circle mềm mại Pastel
         JPanel iconPnl = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(bgIcn);
@@ -219,11 +293,13 @@ public class DashboardPanel extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
         row.add(quickBtn("Bán Hàng", FontAwesome.SHOPPING_BAG, "BAN_HANG"));
-        row.add(quickBtn("Đặt Bàn",  FontAwesome.CALENDAR, "DAT_BAN"));
-        row.add(quickBtn("Hoá Đơn",  FontAwesome.FILE_TEXT, "HOA_DON"));
+        row.add(quickBtn("Đặt Bàn", FontAwesome.CALENDAR, "DAT_BAN"));
+        row.add(quickBtn("Hoá Đơn", FontAwesome.FILE_TEXT, "HOA_DON"));
         if (SessionManager.isQuanLy()) {
             row.add(quickBtn("Thống Kê", FontAwesome.PIE_CHART, "THONG_KE"));
             row.add(quickBtn("Thực Đơn", FontAwesome.COFFEE, "ADMIN_MON"));
+            row.add(quickBtn("Quản Lý Kho", FontAwesome.ARCHIVE, "ADMIN_KHO"));
+            row.add(quickBtn("Công Thức", FontAwesome.FLASK, "ADMIN_CONG_THUC"));
         }
 
         return row;
@@ -234,18 +310,34 @@ public class DashboardPanel extends JPanel {
             private boolean hovered = false;
             {
                 addMouseListener(new MouseAdapter() {
-                    @Override public void mouseEntered(MouseEvent e) { hovered = true; repaint(); }
-                    @Override public void mouseExited(MouseEvent e)  { hovered = false; repaint(); }
-                    @Override public void mouseClicked(MouseEvent e) { if (navCallback != null) navCallback.navigate(key); }
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        hovered = true;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        hovered = false;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (navCallback != null)
+                            navCallback.navigate(key);
+                    }
                 });
             }
-            @Override protected void paintComponent(Graphics g) {
+
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(CARD_BG);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                 if (hovered) {
-                    g2.setColor(new Color(0,0,0, 10)); // hover shadow overlay
+                    g2.setColor(new Color(0, 0, 0, 10)); // hover shadow overlay
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                 }
                 g2.dispose();
@@ -278,18 +370,28 @@ public class DashboardPanel extends JPanel {
         JPanel row = new JPanel(new GridLayout(1, 2, 24, 0));
         row.setOpaque(false);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 400)); // Cao rộng thoải mái
-        row.add(buildTableCard("Hóa đơn gần đây", () -> recentModel = new DefaultTableModel(new String[]{"Mã HD", "Giờ", "Bàn", "Tiền"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        }, true));
-        row.add(buildTableCard("Cảnh báo nguyên liệu", () -> alertModel = new DefaultTableModel(new String[]{"Nguyên Liệu", "Tồn", "Tối Thiểu"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        }, false));
+        row.add(buildTableCard("Hóa đơn gần đây",
+                () -> recentModel = new DefaultTableModel(new String[] { "Mã HD", "Giờ", "Bàn", "Tiền" }, 0) {
+                    @Override
+                    public boolean isCellEditable(int r, int c) {
+                        return false;
+                    }
+                }, true));
+        row.add(buildTableCard("Cảnh báo nguyên liệu",
+                () -> alertModel = new DefaultTableModel(new String[] { "Nguyên Liệu", "Tồn", "Tối Thiểu" }, 0) {
+                    @Override
+                    public boolean isCellEditable(int r, int c) {
+                        return false;
+                    }
+                }, false));
         return row;
     }
 
-    private JPanel buildTableCard(String titleStr, java.util.function.Supplier<DefaultTableModel> modelSupplier, boolean isInvoice) {
+    private JPanel buildTableCard(String titleStr, java.util.function.Supplier<DefaultTableModel> modelSupplier,
+            boolean isInvoice) {
         JPanel card = new JPanel(new BorderLayout(0, 14)) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(CARD_BG);
@@ -312,7 +414,8 @@ public class DashboardPanel extends JPanel {
         table.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 12));
         table.getTableHeader().setBackground(CARD_BG);
         table.getTableHeader().setForeground(TEXT_SUB);
-        table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0,0,1,0, new Color(241, 245, 249))); // viền mỏng
+        table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249))); // viền
+                                                                                                                 // mỏng
         table.setShowGrid(false); // Xóa sạch border grid xấu xí
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setSelectionBackground(BG);
@@ -323,11 +426,16 @@ public class DashboardPanel extends JPanel {
             table.getColumnModel().getColumn(3).setCellRenderer(right);
         } else {
             table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
+                @Override
+                public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row,
+                        int col) {
                     Component c = super.getTableCellRendererComponent(t, v, sel, foc, row, col);
-                    if (col == 0 && String.valueOf(v).contains("✓")) c.setForeground(P_GREEN_FG);
-                    else if (col == 0) c.setForeground(P_RED_FG);
-                    else c.setForeground(TEXT_MAIN);
+                    if (col == 0 && String.valueOf(v).contains("✓"))
+                        c.setForeground(P_GREEN_FG);
+                    else if (col == 0)
+                        c.setForeground(P_RED_FG);
+                    else
+                        c.setForeground(TEXT_MAIN);
                     return c;
                 }
             });
@@ -345,92 +453,153 @@ public class DashboardPanel extends JPanel {
         lblRevenue.setText("...");
         lblInvoices.setText("...");
         lblAlerts.setText("...");
+        lblBanDangPV.setText("...");
 
         new SwingWorker<Void, Void>() {
             double revenue = 0;
             int invoiceCount = 0;
+            int banCoKhach = 0;
+            int donDangPV = 0;
+            int donMangVe = 0;
             List<HoaDon> recentHD = new ArrayList<>();
             List<TonKho> alertList = new ArrayList<>();
 
-            @Override protected Void doInBackground() {
+            @Override
+            protected Void doInBackground() {
                 try {
                     HoaDonDAO dao = new HoaDonDAOImpl();
                     LocalDate today = LocalDate.now();
-                    recentHD = dao.findAll().stream()
-                            .filter(h -> h.getThoiGianXuat() != null && h.getThoiGianXuat().toLocalDate().equals(today))
-                            .sorted((a, b) -> b.getThoiGianXuat().compareTo(a.getThoiGianXuat()))
-                            .limit(6).collect(Collectors.toList());
-                    revenue = recentHD.stream().mapToDouble(HoaDon::getTongTienPhaiTra).sum();
-                    invoiceCount = recentHD.size();
-                } catch (Exception ignored) {}
 
+                    // Lấy tất cả hóa đơn hôm nay (đã thanh toán)
+                    List<HoaDon> todayHD = dao.findByNgay(today).stream()
+                            .filter(h -> TrangThaiHoaDon.DA_THANH_TOAN.equals(h.getTrangThai()))
+                            .collect(Collectors.toList());
+
+                    revenue = todayHD.stream().mapToDouble(HoaDon::getTongTienPhaiTra).sum();
+                    invoiceCount = todayHD.size();
+
+                    // 8 hóa đơn gần nhất
+                    recentHD = todayHD.stream()
+                            .sorted((a, b) -> {
+                                if (b.getThoiGianXuat() == null)
+                                    return -1;
+                                if (a.getThoiGianXuat() == null)
+                                    return 1;
+                                return b.getThoiGianXuat().compareTo(a.getThoiGianXuat());
+                            })
+                            .limit(8).collect(Collectors.toList());
+                } catch (Exception ignored) {
+                }
+
+                // Đếm bàn đang có khách từ DB
+                try {
+                    BanDAO banDAO = new BanDAOImpl();
+                    List<Ban> dsBan = banDAO.findByTrangThai(TrangThaiBan.CO_KHACH);
+                    banCoKhach = dsBan.size();
+                } catch (Exception ignored) {
+                }
+
+                // Đếm đơn đang phục vụ & mang về từ OrderManager (RAM)
+                try {
+                    OrderManager om = OrderManager.getInstance();
+                    List<entity.DonHang> allOpen = new ArrayList<>();
+                    // Use getOpenTakeawayOrders for takeaway count
+                    donMangVe = om.getOpenTakeawayOrders().size();
+                    // Total active orders = all DANG_PHUC_VU in OrderManager
+                    donDangPV = banCoKhach + donMangVe;
+                } catch (Exception ignored) {
+                }
+
+                // Cảnh báo tồn kho
                 try {
                     KhoController khoController = new KhoController();
                     List<TonKho> allTK = khoController.getAllTonKho();
-                    LocalDate now = LocalDate.now();
-                    LocalDate soon = now.plusDays(7);
-                    
+
                     alertList = allTK.stream()
-                            .filter(tk -> {
-                                boolean sapHet = tk.isSapHet();
-                                entity.NguyenLieu nl = khoController.getNguyenLieuById(tk.getMaNL());
-                                boolean hetHan = false;
-                                if (nl != null && nl.getNgayHetHan() != null) {
-                                    hetHan = nl.getNgayHetHan().isBefore(soon);
-                                }
-                                return sapHet || hetHan;
-                            })
+                            .filter(TonKho::isSapHet)
                             .limit(10)
                             .collect(Collectors.toList());
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
                 return null;
             }
 
-            @Override protected void done() {
+            @Override
+            protected void done() {
+                // KPI Cards
                 lblRevenue.setText(CurrencyUtils.formatNoUnit(revenue));
                 lblInvoices.setText(String.valueOf(invoiceCount));
-                
-                if (alertList.isEmpty()) {
-                    lblAlerts.setText("An toàn ✓"); lblAlerts.setForeground(P_GREEN_FG);
+
+                lblBanDangPV.setText(String.valueOf(banCoKhach));
+                if (banCoKhach > 0) {
+                    lblBanDangPV.setForeground(P_AMBER_FG);
                 } else {
-                    lblAlerts.setText(alertList.size() + " cảnh báo"); lblAlerts.setForeground(P_RED_FG);
+                    lblBanDangPV.setForeground(TEXT_MAIN);
                 }
 
+                if (alertList.isEmpty()) {
+                    lblAlerts.setText("An toàn ✓");
+                    lblAlerts.setForeground(P_GREEN_FG);
+                } else {
+                    lblAlerts.setText(alertList.size() + " cảnh báo");
+                    lblAlerts.setForeground(P_RED_FG);
+                }
+
+                // Sub-info bar
+                lblSubMangVe.setText("  Mang về đang chờ: " + donMangVe);
+                double avg = invoiceCount > 0 ? revenue / invoiceCount : 0;
+                lblSubAvg.setText("  TB/đơn: " + CurrencyUtils.format(avg));
+
+                // Recent invoices table
                 recentModel.setRowCount(0);
                 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
-                for (HoaDon h : recentHD) recentModel.addRow(new Object[]{h.getMaHD(), h.getThoiGianXuat() != null ? h.getThoiGianXuat().format(fmt) : "—", h.getMaBan(), CurrencyUtils.format(h.getTongTienPhaiTra())});
-                if (recentHD.isEmpty()) recentModel.addRow(new Object[]{"Chưa có", "dữ liệu", "hôm nay", ""});
+                for (HoaDon h : recentHD) {
+                    String ban = h.getMaBan() != null ? h.getMaBan() : "Mang về";
+                    recentModel.addRow(new Object[] {
+                            h.getMaHD(),
+                            h.getThoiGianXuat() != null ? h.getThoiGianXuat().format(fmt) : "—",
+                            ban,
+                            CurrencyUtils.format(h.getTongTienPhaiTra())
+                    });
+                }
+                if (recentHD.isEmpty())
+                    recentModel.addRow(new Object[] { "Chưa có", "dữ liệu", "hôm nay", "" });
 
+                // Alert table
                 alertModel.setRowCount(0);
                 KhoController khoController = new KhoController();
-                LocalDate now = LocalDate.now();
-                LocalDate soon = now.plusDays(7);
 
                 for (TonKho tk : alertList) {
                     entity.NguyenLieu nl = khoController.getNguyenLieuById(tk.getMaNL());
                     String name = (nl != null) ? nl.getTenNL() : tk.getMaNL();
                     String reason = "";
-                    
-                    if (tk.getSoLuongTon() <= 0) reason = " [Hết hàng]";
-                    else if (tk.isSapHet()) reason = " [Sắp hết]";
-                    
-                    if (nl != null && nl.getNgayHetHan() != null) {
-                        if (nl.getNgayHetHan().isBefore(now)) reason += " [Hết hạn]";
-                        else if (nl.getNgayHetHan().isBefore(soon)) reason += " [Sắp hết hạn]";
-                    }
-                    
-                    alertModel.addRow(new Object[]{name + reason, tk.getSoLuongTon(), tk.getMucToiThieu()});
+
+                    if (tk.getSoLuongTon() <= 0)
+                        reason = " [Hết hàng]";
+                    else if (tk.isSapHet())
+                        reason = " [Sắp hết]";
+
+                    alertModel.addRow(new Object[] { name + reason, String.format("%.0f", tk.getSoLuongTon()),
+                            String.format("%.0f", tk.getMucToiThieu()) });
                 }
-                if (alertList.isEmpty()) alertModel.addRow(new Object[]{"Mọi thứ ổn ✓", "", ""});
+                if (alertList.isEmpty())
+                    alertModel.addRow(new Object[] { "Mọi thứ ổn ✓", "", "" });
             }
         }.execute();
     }
 
-    private JLabel buildSectionLabel(String txt) {
+    private JPanel buildSectionLabel(String txt) {
+        JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        wrapper.setOpaque(false);
+        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         JLabel l = new JLabel(txt);
         l.setFont(new Font("Roboto", Font.BOLD, 18));
         l.setForeground(TEXT_MAIN);
-        return l;
+        wrapper.add(l);
+        return wrapper;
     }
-    private Component vgap(int h) { return Box.createRigidArea(new Dimension(0, h)); }
+
+    private Component vgap(int h) {
+        return Box.createRigidArea(new Dimension(0, h));
+    }
 }
