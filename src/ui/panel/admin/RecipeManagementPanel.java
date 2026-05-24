@@ -209,7 +209,7 @@ public class RecipeManagementPanel extends JPanel {
         lblCurrentMon.setForeground(new Color(16, 185, 129)); // emerald-500
         p.add(lblCurrentMon, BorderLayout.NORTH);
 
-        modDinhMuc = new DefaultTableModel(new String[]{"ID", "Mã NL", "Tên Nguyên Liệu", "Định Mức Tiêu Hao", "ĐVT", "Obj"}, 0) {
+        modDinhMuc = new DefaultTableModel(new String[]{"ID", "Mã Nguyên Liệu", "Tên Nguyên Liệu", "Định Mức Tiêu Hao", "Đơn Vị Tính", "Obj"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblDinhMuc = buildStyledTable(modDinhMuc);
@@ -283,10 +283,10 @@ public class RecipeManagementPanel extends JPanel {
         // Row 3: Buttons
         JPanel pnlBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlBtns.setOpaque(false);
-        btnAdd    = createBtn("Thêm NL", new Color(16, 185, 129));
+        btnClear  = createBtn("Hủy Chọn", new Color(148, 163, 184));
+        btnAdd    = createBtn("Thêm Nguyên Liệu", new Color(16, 185, 129));
         btnUpdate = createBtn("Cập Nhật", new Color(245, 158, 11));
-        btnDelete = createBtn("Xóa NL", new Color(239, 68, 68));
-        btnClear  = createBtn("Làm Mới", new Color(148, 163, 184));
+        btnDelete = createBtn("Xóa Nguyên Liệu", new Color(239, 68, 68));
         btnUpdate.setEnabled(false);
         btnDelete.setEnabled(false);
 
@@ -295,10 +295,10 @@ public class RecipeManagementPanel extends JPanel {
         btnDelete.addActionListener(e -> actionDelete());
         btnClear.addActionListener(e -> clearForm());
 
+        pnlBtns.add(btnClear);
         pnlBtns.add(btnAdd);
         pnlBtns.add(btnUpdate);
         pnlBtns.add(btnDelete);
-        pnlBtns.add(btnClear);
 
         g.gridx = 0; g.gridy = 2; g.gridwidth = 3;
         g.insets = new Insets(15, 5, 0, 5);

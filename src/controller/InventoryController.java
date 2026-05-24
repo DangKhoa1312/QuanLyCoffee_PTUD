@@ -38,7 +38,7 @@ public class InventoryController {
      * Cần nhân Hệ số Size (S: 0.8, M: 1.0, L: 1.2) - (giả định)
      * Đồng thời tạo phiếu xuất tự động.
      */
-    public void deductStock(List<CartItem> cartItems) {
+    public boolean deductStock(List<CartItem> cartItems) {
         for (CartItem item : cartItems) {
             String maMon = item.getMon().getMaMon();
             int qty = item.getSoLuong();
@@ -53,9 +53,10 @@ public class InventoryController {
         // Tạo phiếu xuất tự động khi thanh toán
         String maNV = SessionManager.isLoggedIn() ? SessionManager.getCurrentUser().getMaNV() : "NV001";
         try {
-            khoController.processXuatKhoFromPayment(cartItems, maNV);
+            return khoController.processXuatKhoFromPayment(cartItems, maNV);
         } catch (Exception e) {
             System.err.println("InventoryController: Loi tao phieu xuat tu dong: " + e.getMessage());
+            return false;
         }
     }
 

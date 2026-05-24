@@ -24,10 +24,16 @@ public interface StatisticDAO {
     Map<String, Double> getDoanhThuTheoLoaiMon(LocalDate from, LocalDate to);
 
     /**
-     * Số đơn hàng và doanh thu theo từng giờ trong ngày (0-23) trong khoảng [from, to].
+     * Số đơn hàng theo từng giờ trong ngày (0-23) trong khoảng [from, to].
      * @return Map<Giờ (0-23), Số đơn>
      */
     Map<Integer, Integer> getSoDonTheoGio(LocalDate from, LocalDate to);
+
+    /**
+     * Doanh thu theo từng giờ trong ngày (0-23) trong khoảng [from, to].
+     * @return Map<Giờ (0-23), Doanh thu>
+     */
+    Map<Integer, Double> getDoanhThuTheoGio(LocalDate from, LocalDate to);
 
     /**
      * Tổng số hóa đơn đã thanh toán trong khoảng [from, to].

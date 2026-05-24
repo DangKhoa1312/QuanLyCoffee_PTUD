@@ -294,9 +294,22 @@ public class PriceManagementPanel extends JPanel {
             JPanel p = createActionPanel();
             p.setBackground(isS ? t.getSelectionBackground() : (r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
 
-            if (raw instanceof BangGia && !((BangGia) raw).isHoatDong()) {
-                p.getComponent(0).setEnabled(false);
-                p.getComponent(1).setEnabled(false);
+            if (raw instanceof BangGia) {
+                BangGia bg = (BangGia) raw;
+                if (!bg.isHoatDong()) {
+                    p.getComponent(0).setEnabled(false);
+                    p.getComponent(1).setEnabled(false);
+                    p.getComponent(2).setEnabled(false);
+                } else {
+                    JButton btnToggle = (JButton) p.getComponent(2);
+                    if (bg.isTrangThai()) {
+                        btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_ON, 20, new Color(46, 204, 113)));
+                        btnToggle.setToolTipText("Bảng giá đang bật. Nhấn để Tạm ngưng");
+                    } else {
+                        btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_OFF, 20, new Color(150, 150, 150)));
+                        btnToggle.setToolTipText("Bảng giá đang tắt. Nhấn để Kích hoạt");
+                    }
+                }
             }
             return p;
         }
@@ -307,6 +320,7 @@ public class PriceManagementPanel extends JPanel {
         p.setOpaque(true);
         p.add(createBtn(FontAwesome.PENCIL, new Color(52, 152, 219)));
         p.add(createBtn(FontAwesome.TRASH, new Color(231, 76, 60)));
+        p.add(createBtn(FontAwesome.TOGGLE_OFF, new Color(150, 150, 150))); // Nút Kích hoạt / Tạm ngưng
         return p;
     }
 
@@ -321,13 +335,29 @@ public class PriceManagementPanel extends JPanel {
 
             JButton btnDel = (JButton) p.getComponent(1);
             btnDel.addActionListener(e -> { stopCellEditing(); handleDelete(current); });
+
+            JButton btnToggle = (JButton) p.getComponent(2);
+            btnToggle.addActionListener(e -> { stopCellEditing(); handleToggleStatus(current); });
         }
 
         @Override public Component getTableCellEditorComponent(JTable t, Object v, boolean isS, int r, int c) {
             current = (BangGia) v;
             p.setBackground(t.getSelectionBackground());
-            p.getComponent(0).setEnabled(current.isHoatDong());
-            p.getComponent(1).setEnabled(current.isHoatDong());
+            boolean active = current.isHoatDong();
+            p.getComponent(0).setEnabled(active);
+            p.getComponent(1).setEnabled(active);
+            
+            JButton btnToggle = (JButton) p.getComponent(2);
+            btnToggle.setEnabled(active);
+            if (active) {
+                if (current.isTrangThai()) {
+                    btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_ON, 20, new Color(46, 204, 113)));
+                    btnToggle.setToolTipText("Bảng giá đang bật. Nhấn để Tạm ngưng");
+                } else {
+                    btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_OFF, 20, new Color(150, 150, 150)));
+                    btnToggle.setToolTipText("Bảng giá đang tắt. Nhấn để Kích hoạt");
+                }
+            }
             return p;
         }
 
@@ -372,6 +402,50 @@ public class PriceManagementPanel extends JPanel {
             } else {
                 JOptionPane.showMessageDialog(this, "Lỗi khi ẩn bảng giá!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void handleToggleStatus(BangGia bg) {
+        boolean newState = !bg.isTrangThai();
+        
+        if (!newState) {
+            // Check Business Rule before suspending
+            boolean hasFallback = false;
+            java.time.LocalDate today = java.time.LocalDate.now();
+            List<BangGia> all = controller.getAllBangGia();
+            for (BangGia other : all) {
+                if (!other.getMaBangGia().equals(bg.getMaBangGia()) 
+                    && other.isHoatDong() && other.isTrangThai()
+                    && !today.isBefore(other.getNgayBatDau())
+                    && (other.getNgayKetThuc() == null || !today.isAfter(other.getNgayKetThuc()))) {
+                    hasFallback = true;
+                    break;
+                }
+            }
+            
+            if (!hasFallback) {
+                if (!today.isBefore(bg.getNgayBatDau()) 
+                    && (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc()))) {
+                    JOptionPane.showMessageDialog(this, "<html><b style='color:red'>LỖI NGHIỆP VỤ: KHÔNG THỂ TẠM NGƯNG!</b><br><br>"
+                            + "Hệ thống yêu cầu phải luôn có ít nhất 1 bảng giá đang áp dụng cho hôm nay.<br>"
+                            + "Nếu bạn tạm ngưng bảng giá này, thu ngân sẽ không thể bán hàng.</html>", "Chặn Thao Tác", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+            
+            int opt = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn Tạm Ngưng bảng giá '" + bg.getTenBangGia() + "'?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (opt != JOptionPane.YES_OPTION) return;
+        } else {
+            int opt = JOptionPane.showConfirmDialog(this, "Kích hoạt bảng giá '" + bg.getTenBangGia() + "'?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (opt != JOptionPane.YES_OPTION) return;
+        }
+        
+        bg.setTrangThai(newState);
+        if (controller.saveBangGia(bg, true)) {
+            loadData();
+        } else {
+            JOptionPane.showMessageDialog(this, "Có lỗi xảy ra khi đổi trạng thái!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            bg.setTrangThai(!newState); // revert local
         }
     }
 }

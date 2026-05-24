@@ -132,7 +132,7 @@ INSERT INTO NhanVien (maNV, tenNV, ngaySinh, soDienThoai, diaChi, username, pass
 ('NV003', N'Lê Sỹ Hùng', '2000-01-01', '0901234562', N'TP.HCM', 'syhung', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'QUAN_LY'),
 ('NV004', N'Nguyễn Đức Hùng', '2000-01-01', '0901234563', N'TP.HCM', 'duchung', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'QUAN_LY'),
 ('NV005', N'Trần Gia Huy', '2000-01-01', '0901234564', N'TP.HCM', 'giahuy', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'QUAN_LY'),
-('NV006', N'Admin', '2000-01-01', '0901234565', N'TP.HCM', 'admin', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'QUAN_LY'),
+('NV006', N'Admin', '2000-01-01', '0901234565', N'TP.HCM', 'admin', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'ADMIN'),
 ('NV007', N'Nhân viên 7', '2000-01-01', '0901234566', N'TP.HCM', 'nv7', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'NHAN_VIEN'),
 ('NV008', N'Nhân viên 8', '2000-01-01', '0901234567', N'TP.HCM', 'nv8', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'NHAN_VIEN'),
 ('NV009', N'Nhân viên 9', '2000-01-01', '0901234568', N'TP.HCM', 'nv9', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'DANG_LAM_VIEC', 'NHAN_VIEN'),

@@ -141,6 +141,9 @@ public class StaffDialog extends JDialog {
 
         addLabelRow(form, gbc, "Vai Trò:", FontAwesome.SHIELD);
         cbVaiTro = new JComboBox<>(VaiTro.values());
+        if (!SessionManager.isAdmin()) {
+            cbVaiTro.removeItem(VaiTro.ADMIN);
+        }
         form.add(cbVaiTro, gbc);
         gbc.gridy++;
 

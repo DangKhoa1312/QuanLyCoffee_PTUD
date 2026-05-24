@@ -13,7 +13,9 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AccordionSidebar extends JPanel {
 
@@ -30,6 +32,11 @@ public class AccordionSidebar extends JPanel {
 
     public interface NavListener { void navigate(String cardKey); }
 
+    private final JPanel contentBox;
+    private final Map<String, SidebarItem> itemMap = new HashMap<String, AccordionSidebar.SidebarItem>();
+    
+    private JLabel lblName; // Để cập nhật tên sau khi sửa hồ sơ
+
     private NavListener navListener;
     private String activePage = "";
     private final List<SidebarItem> allItems = new ArrayList<>();
@@ -38,7 +45,8 @@ public class AccordionSidebar extends JPanel {
     private Timer badgeTimer;
 
     public AccordionSidebar() {
-        jiconfont.swing.IconFontSwing.register(jiconfont.icons.FontAwesome.getIconFont());
+        this.contentBox = new JPanel();
+		jiconfont.swing.IconFontSwing.register(jiconfont.icons.FontAwesome.getIconFont());
 
         setLayout(new BorderLayout()); // CHIA 3 VÙNG: NORTH, CENTER, SOUTH
         setBackground(C_BG);
@@ -85,38 +93,37 @@ public class AccordionSidebar extends JPanel {
         pnlMenu.setOpaque(false);
 
         pnlMenu.add(Box.createVerticalStrut(12)); 
-        pnlMenu.add(makeItem("Tổng Quan", FontAwesome.HOME, "HOME"));
+        pnlMenu.add(makeItem("Tổng Quan", FontAwesome.HOME, "HOME", 0));
         pnlMenu.add(Box.createVerticalStrut(8)); 
         pnlMenu.add(createDivider());
 
-        AccordionGroup gVH = new AccordionGroup("Vận Hành", true);
-        gVH.addItem(makeItem("Bán Hàng", FontAwesome.SHOPPING_BAG, "BAN_HANG"));
-        SidebarItem itmDatBan = makeItem("Đặt Bàn", FontAwesome.CALENDAR_CHECK_O, "DAT_BAN");
+        AccordionGroup gVH = new AccordionGroup("Vận Hành", true, 0);
+        gVH.addItem(makeItem("Bán Hàng", FontAwesome.SHOPPING_BAG, "BAN_HANG", 1));
+        SidebarItem itmDatBan = makeItem("Đặt Bàn", FontAwesome.CALENDAR_CHECK_O, "DAT_BAN", 1);
         pnlBadgeDatBan = new BadgePanel();
         itmDatBan.attachBadge(pnlBadgeDatBan);
         gVH.addItem(itmDatBan);
-        gVH.addItem(makeItem("Hoá Đơn", FontAwesome.FILE_TEXT_O, "HOA_DON"));
+        gVH.addItem(makeItem("Hoá Đơn", FontAwesome.FILE_TEXT_O, "HOA_DON", 1));
         pnlMenu.add(gVH);
 
         if (isQL) {
             pnlMenu.add(createDivider());
-            AccordionGroup gTL = new AccordionGroup("Thiết Lập", true);
-            AccordionGroup gTD = new AccordionGroup("Thực Đơn", true);
-            gTD.setSubGroupStyle(true); 
-            gTD.addItem(makeSubItem("Món & Size", FontAwesome.CUBE,         "ADMIN_MON"));
-            gTD.addItem(makeSubItem("Topping",    FontAwesome.PUZZLE_PIECE, "ADMIN_TOPPING"));
-            gTD.addItem(makeSubItem("Công Thức",  FontAwesome.FLASK,        "ADMIN_CONG_THUC"));
+            AccordionGroup gTL = new AccordionGroup("Thiết Lập", true, 0);
+            AccordionGroup gTD = new AccordionGroup("Thực Đơn", true, 1);
+            gTD.addItem(makeItem("Món & Size", FontAwesome.CUBE,         "ADMIN_MON", 2));
+            gTD.addItem(makeItem("Topping",    FontAwesome.PUZZLE_PIECE, "ADMIN_TOPPING", 2));
+            gTD.addItem(makeItem("Công Thức",  FontAwesome.FLASK,        "ADMIN_CONG_THUC", 2));
             gTL.addNestedGroup(gTD);
 
-            gTL.addItem(makeItem("Bảng Giá",  FontAwesome.MONEY,    "ADMIN_GIA"));
-            gTL.addItem(makeItem("Sơ Đồ Bàn", FontAwesome.TH_LARGE, "ADMIN_BAN"));
+            gTL.addItem(makeItem("Bảng Giá",  FontAwesome.MONEY,    "ADMIN_GIA", 1));
+            gTL.addItem(makeItem("Sơ Đồ Bàn", FontAwesome.TH_LARGE, "ADMIN_BAN", 1));
             pnlMenu.add(gTL);
 
             pnlMenu.add(createDivider());
-            AccordionGroup gQT = new AccordionGroup("Quản Trị", true);
-            gQT.addItem(makeItem("Nhân Viên",   FontAwesome.USERS,     "ADMIN_NHAN_VIEN"));
-            gQT.addItem(makeItem("Quản Lý Kho", FontAwesome.ARCHIVE,   "ADMIN_KHO"));
-            gQT.addItem(makeItem("Thống Kê",    FontAwesome.PIE_CHART, "THONG_KE"));
+            AccordionGroup gQT = new AccordionGroup("Quản Trị", true, 0);
+            gQT.addItem(makeItem("Nhân Viên",   FontAwesome.USERS,     "ADMIN_NHAN_VIEN", 1));
+            gQT.addItem(makeItem("Quản Lý Kho", FontAwesome.ARCHIVE,   "ADMIN_KHO", 1));
+            gQT.addItem(makeItem("Thống Kê",    FontAwesome.PIE_CHART, "THONG_KE", 1));
             pnlMenu.add(gQT);
         }
 
@@ -147,7 +154,29 @@ public class AccordionSidebar extends JPanel {
     }
 
     private JPanel buildUserPanel() {
-        JPanel p = new JPanel(new BorderLayout(14, 0)); 
+        JPanel p = new JPanel(new BorderLayout(14, 0)) {
+            private boolean hovered = false;
+            {
+                addMouseListener(new java.awt.event.MouseAdapter() {
+                    @Override public void mouseEntered(java.awt.event.MouseEvent e) { hovered = true; setCursor(new Cursor(Cursor.HAND_CURSOR)); repaint(); }
+                    @Override public void mouseExited(java.awt.event.MouseEvent e) { hovered = false; repaint(); }
+                    @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                        if (navListener != null) navListener.navigate("ACTION_PROFILE");
+                    }
+                });
+            }
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (hovered) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(241, 245, 249)); // hover bg
+                    g2.fillRoundRect(12, 6, getWidth() - 24, getHeight() - 12, 12, 12);
+                    g2.dispose();
+                }
+                super.paintComponent(g);
+            }
+        };
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(12, 24, 16, 24)); 
         fixHeight(p, 70);
@@ -159,30 +188,38 @@ public class AccordionSidebar extends JPanel {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(241, 245, 249)); 
+                g2.setColor(new Color(226, 232, 240)); 
                 g2.fillRoundRect(0, 0, 42, 42, 12, 12);
                 g2.dispose();
             }
         };
         ava.setOpaque(false);
         ava.setPreferredSize(new Dimension(42, 42));
-        JLabel lblAvaIcon = new JLabel(IconFontSwing.buildIcon(FontAwesome.USER, 20, C_MUTED), SwingConstants.CENTER);
+        JLabel lblAvaIcon = new JLabel(IconFontSwing.buildIcon(FontAwesome.USER, 20, new Color(71, 85, 105)), SwingConstants.CENTER);
         ava.add(lblAvaIcon, BorderLayout.CENTER);
 
         JPanel text = new JPanel();
         text.setOpaque(false);
         text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 
-        JLabel lblName = new JLabel(ten);
+        lblName = new JLabel(ten);
         lblName.setFont(new Font("Roboto", Font.BOLD, 14));
         lblName.setForeground(C_TEXT);
         
-        text.add(Box.createVerticalStrut(2)); 
+        text.add(Box.createVerticalStrut(10)); 
         text.add(lblName);
 
         p.add(ava, BorderLayout.WEST);
         p.add(text, BorderLayout.CENTER);
         return p;
+    }
+
+    public void updateUserName(String newName) {
+        if (lblName != null) {
+            lblName.setText(newName);
+            lblName.revalidate();
+            lblName.repaint();
+        }
     }
 
     private JPanel buildBottomPanel() {
@@ -221,15 +258,8 @@ public class AccordionSidebar extends JPanel {
         c.setPreferredSize(new Dimension(250, h));
     }
 
-    private SidebarItem makeItem(String text, FontAwesome icon, String key) {
-        SidebarItem item = new SidebarItem(text, icon, key, false);
-        allItems.add(item);
-        item.addMouseListener(new MouseAdapter() { @Override public void mouseClicked(MouseEvent e) { doNav(key); } });
-        return item;
-    }
-
-    private SidebarItem makeSubItem(String text, FontAwesome icon, String key) {
-        SidebarItem item = new SidebarItem(text, icon, key, true);
+    private SidebarItem makeItem(String text, FontAwesome icon, String key, int level) {
+        SidebarItem item = new SidebarItem(text, icon, key, level);
         allItems.add(item);
         item.addMouseListener(new MouseAdapter() { @Override public void mouseClicked(MouseEvent e) { doNav(key); } });
         return item;
@@ -261,7 +291,7 @@ public class AccordionSidebar extends JPanel {
         private boolean expanded;
         private Timer animTimer;
 
-        AccordionGroup(String title, boolean startExpanded) {
+        AccordionGroup(String title, boolean startExpanded, int level) {
             this.expanded = startExpanded;
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             setOpaque(false);
@@ -270,16 +300,16 @@ public class AccordionSidebar extends JPanel {
 
             pnlHeader = new JPanel(new BorderLayout());
             pnlHeader.setOpaque(false);
-            pnlHeader.setBorder(new EmptyBorder(0, 24, 0, 24)); 
-            fixHeight(pnlHeader, 36);
+            pnlHeader.setBorder(new EmptyBorder(4, 24 + (level * 24), 4, 24)); 
+            fixHeight(pnlHeader, 38);
 
             JLabel lblTitle = new JLabel(title.toUpperCase());
-            lblTitle.setFont(new Font("Roboto", Font.BOLD, 12));
-            lblTitle.setForeground(C_GROUP);
+            lblTitle.setFont(new Font("Roboto", Font.BOLD, 13));
+            lblTitle.setForeground(new Color(51, 65, 85)); // slate-700 (sậm hơn)
 
             lblArrow = new JLabel(startExpanded ? "▾" : "▸");
             lblArrow.setFont(new Font("Roboto", Font.BOLD, 14));
-            lblArrow.setForeground(C_GROUP);
+            lblArrow.setForeground(new Color(100, 116, 139));
 
             pnlHeader.add(lblTitle, BorderLayout.WEST);
             pnlHeader.add(lblArrow, BorderLayout.EAST);
@@ -304,14 +334,9 @@ public class AccordionSidebar extends JPanel {
             add(pnlContent);
         }
 
-        // Kỹ thuật Block chiều dọc của BoxLayout
         @Override
         public Dimension getMaximumSize() {
             return new Dimension(Integer.MAX_VALUE, getPreferredSize().height);
-        }
-
-        void setSubGroupStyle(boolean sub) {
-            if (sub) pnlHeader.setBorder(new EmptyBorder(0, 48, 0, 24)); 
         }
 
         void addItem(SidebarItem item) { pnlContent.add(item); }
@@ -356,15 +381,15 @@ public class AccordionSidebar extends JPanel {
         private JLabel lblIcon;
         private final FontAwesome faIcon;
 
-        SidebarItem(String text, FontAwesome icon, String cardKey, boolean sub) {
+        SidebarItem(String text, FontAwesome icon, String cardKey, int level) {
             this.cardKey = cardKey;
             this.currBg  = C_BG; 
             this.faIcon  = icon;
 
-            int h = sub ? 40 : 46; 
+            int h = level > 0 ? 40 : 46; 
             setOpaque(false);
             setLayout(new BorderLayout());
-            setBorder(new EmptyBorder(0, sub ? 48 : 24, 0, 24));
+            setBorder(new EmptyBorder(0, 24 + (level * 20), 0, 24)); // Mỗi level lùi 20px
             fixHeight(this, h);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
@@ -384,8 +409,8 @@ public class AccordionSidebar extends JPanel {
 
             gbc.insets = new Insets(0, 0, 0, 0); 
             lblText = new JLabel(text);
-            lblText.setFont(new Font("Roboto", sub ? Font.PLAIN : Font.BOLD, 14)); 
-            lblText.setForeground(sub ? C_MUTED : C_TEXT);
+            lblText.setFont(new Font("Roboto", level > 0 ? Font.PLAIN : Font.BOLD, 14)); 
+            lblText.setForeground(level > 0 ? C_MUTED : C_TEXT);
             inner.add(lblText, gbc);
             
             add(inner, BorderLayout.WEST);

@@ -34,6 +34,11 @@ public class StatisticController {
         return statDAO.getSoDonTheoGio(from, to);
     }
 
+    // ── Doanh thu theo giờ ──────────────────────────────────────
+    public Map<Integer, Double> getDoanhThuTheoGio(LocalDate from, LocalDate to) {
+        return statDAO.getDoanhThuTheoGio(from, to);
+    }
+
     // ── KPI ─────────────────────────────────────────────────────
     public int getSoHoaDon(LocalDate from, LocalDate to) {
         return statDAO.getSoHoaDon(from, to);

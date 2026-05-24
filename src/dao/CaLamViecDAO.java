@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface CaLamViecDAO extends BaseDAO<CaLamViec, String> {
-    CaLamViec      findCaHienTai(String maNV);               // Ca DANG_LAM của NV
+    CaLamViec      findCaHienTai(String maNV);               // Ca DANG_MO của NV
     List<CaLamViec> findByNgay(LocalDate ngay);
     List<CaLamViec> findByNhanVien(String maNV);
     boolean         updateTongDoanhThu(String maCa, double tongDoanhThu);

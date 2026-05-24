@@ -111,7 +111,7 @@ public class CaLamViecDAOImpl implements CaLamViecDAO {
 
     @Override
     public CaLamViec findCaHienTai(String maNV) {
-        String sql = "SELECT TOP 1 * FROM CaLamViec WHERE maNV=? AND trangThai='DANG_LAM'";
+        String sql = "SELECT TOP 1 * FROM CaLamViec WHERE maNV=? AND trangThai='DANG_MO'";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maNV);
             ResultSet rs = ps.executeQuery();
@@ -169,7 +169,7 @@ public class CaLamViecDAOImpl implements CaLamViecDAO {
 
     @Override
     public boolean dongCa(String maCa) {
-        String sql = "UPDATE CaLamViec SET trangThai='DA_DONG', gioKetThuc=? WHERE maCa=? AND trangThai='DANG_LAM'";
+        String sql = "UPDATE CaLamViec SET trangThai='DA_DONG', gioKetThuc=? WHERE maCa=? AND trangThai='DANG_MO'";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setTime(1, Time.valueOf(LocalTime.now()));
             ps.setString(2, maCa);

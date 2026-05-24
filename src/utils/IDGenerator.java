@@ -23,8 +23,10 @@ public class IDGenerator {
                                    String idColumn, int digits) {
         String sql = "SELECT MAX(" + idColumn + ") FROM " + tableName
                    + " WHERE " + idColumn + " LIKE ?";
-        try (Connection conn = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        // KHÔNG dùng try-with-resources cho Connection vì đây là singleton connection
+        // dùng chung — nếu đóng ở đây sẽ làm hỏng transaction đang mở ở nơi khác
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, prefix + "%");
             ResultSet rs = ps.executeQuery();

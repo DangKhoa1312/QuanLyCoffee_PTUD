@@ -78,82 +78,119 @@ public class PaymentController {
             throw new AppException("Không đủ nguyên liệu để thanh toán đơn hàng này:\n" + missingInfo);
         }
 
-        // 1. Tạo HoaDon (chứa trực tiếp maBan, maCa, loaiDon, ghiChu)
-        String maHD = IDGenerator.newMaHoaDon();
-        HoaDon hd = new HoaDon(
-            maHD,
-            LocalDateTime.now(), // thoiGianXuat
-            LocalDateTime.now(), // thoiGianThanhToan
-            tongTienPhaiTra,
-            TrangThaiHoaDon.DA_THANH_TOAN,
-            hinhThuc,
-            donHang.getMaBan(),                          // maBan từ DonHang
-            SessionManager.getCurrentCa().getMaCa(),     // maCa
-            donHang.getLoaiDon(),                        // loaiDon
-            donHang.getGhiChu(),                         // ghiChu
-            SessionManager.getMaNVHienTai()               // maNV thu ngân
-        );
-        // Gán tenNV để in PDF hiển thị đúng tên nhân viên
-        if (SessionManager.getCurrentUser() != null) {
-            hd.setTenNV(SessionManager.getCurrentUser().getTenNV());
-        }
+        java.sql.Connection conn = connectDB.DatabaseConnection.getInstance().getConnection();
+        boolean originalAutoCommit = true;
+        try {
+            originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
 
-        boolean ok = hoaDonDAO.insert(hd);
-        if (!ok) {
-            throw new AppException("Lỗi hệ thống khi lưu hóa đơn!");
-        }
-
-        // 2. Tạo ChiTietHoaDon + ChiTietHoaDonTopping cho mỗi món
-        for (CartItem item : cart) {
-            String maCTHD = IDGenerator.newMaChiTietHoaDon();
-            double thanhTienMon = item.getDonGiaSize() * item.getSoLuong();
-
-            ChiTietHoaDon cthd = new ChiTietHoaDon(
-                maCTHD,
-                item.getSoLuong(),
-                item.getDonGiaSize(),
-                thanhTienMon,
-                item.getGhiChu(),
+            // 1. Tạo HoaDon
+            String maHD = IDGenerator.newMaHoaDon();
+            HoaDon hd = new HoaDon(
                 maHD,
-                item.getMon().getMaMon(),
-                item.getSize().getMaSize()
+                LocalDateTime.now(), // thoiGianXuat
+                LocalDateTime.now(), // thoiGianThanhToan
+                tongTienPhaiTra,
+                TrangThaiHoaDon.DA_THANH_TOAN,
+                hinhThuc,
+                donHang.getMaBan(),                          // maBan từ DonHang
+                SessionManager.getCurrentCa().getMaCa(),     // maCa
+                donHang.getLoaiDon(),                        // loaiDon
+                donHang.getGhiChu(),                         // ghiChu
+                SessionManager.getMaNVHienTai()               // maNV thu ngân
             );
-            ctHoaDonDAO.insert(cthd);
+            if (SessionManager.getCurrentUser() != null) {
+                hd.setTenNV(SessionManager.getCurrentUser().getTenNV());
+            }
 
-            // Insert toppings
-            for (CartItem.CartTopping top : item.getToppings()) {
-                ChiTietHoaDonTopping ctht = new ChiTietHoaDonTopping(
-                    IDGenerator.newMaCTHDTopping(),
-                    top.soLuong,
-                    top.giaTopping,
+            boolean ok = hoaDonDAO.insert(hd);
+            if (!ok) {
+                conn.rollback();
+                throw new AppException("Lỗi hệ thống khi lưu hóa đơn!");
+            }
+
+            // 2. Tạo ChiTietHoaDon + ChiTietHoaDonTopping
+            for (CartItem item : cart) {
+                String maCTHD = IDGenerator.newMaChiTietHoaDon();
+                double thanhTienMon = item.getDonGiaSize() * item.getSoLuong();
+
+                ChiTietHoaDon cthd = new ChiTietHoaDon(
                     maCTHD,
-                    top.topping.getMaTopping()
+                    item.getSoLuong(),
+                    item.getDonGiaSize(),
+                    thanhTienMon,
+                    item.getGhiChu(),
+                    maHD,
+                    item.getMon().getMaMon(),
+                    item.getSize().getMaSize()
                 );
-                ctToppingDAO.insert(ctht);
+                if (!ctHoaDonDAO.insert(cthd)) {
+                    conn.rollback();
+                    throw new AppException("Lỗi hệ thống khi lưu chi tiết hóa đơn!");
+                }
+
+                // Insert toppings
+                for (CartItem.CartTopping top : item.getToppings()) {
+                    ChiTietHoaDonTopping ctht = new ChiTietHoaDonTopping(
+                        IDGenerator.newMaCTHDTopping(),
+                        top.soLuong,
+                        top.giaTopping,
+                        maCTHD,
+                        top.topping.getMaTopping()
+                    );
+                    if (!ctToppingDAO.insert(ctht)) {
+                        conn.rollback();
+                        throw new AppException("Lỗi hệ thống khi lưu topping!");
+                    }
+                }
             }
-        }
 
-        // 3. Xử lý đặt bàn nếu là bàn thật
-        String maBan = donHang.getMaBan();
-        if (maBan != null && !maBan.isEmpty() && !"MANG_VE".equals(maBan)) {
-            // Tìm đặt bàn DA_XAC_NHAN của bàn này (nếu có)
-            DatBan datBanXacNhan = findDatBanDaXacNhan(maBan);
-            if (datBanXacNhan != null) {
-                // Có đặt bàn đã xác nhận → mark DA_THANH_TOAN kèm mã hoá đơn
-                datBanDAO.updateMaHD(datBanXacNhan.getMaDatBan(), maHD);
+            // 3. Xử lý đặt bàn nếu là bàn thật
+            String maBan = donHang.getMaBan();
+            if (maBan != null && !maBan.isEmpty() && !"MANG_VE".equals(maBan)) {
+                DatBan datBanXacNhan = findDatBanDaXacNhan(maBan);
+                if (datBanXacNhan != null) {
+                    datBanDAO.updateMaHD(datBanXacNhan.getMaDatBan(), maHD);
+                }
+                reservationController.resetTrangThaiBan(maBan);
             }
 
-            // Quyết định trạng thái bàn sau thanh toán bằng hàm dùng chung
-            reservationController.resetTrangThaiBan(maBan);
+            // 4. Trừ tồn kho nguyên liệu (tạo phiếu xuất)
+            if (!inventory.deductStock(cart)) {
+                conn.rollback();
+                throw new AppException("Lỗi khi tạo phiếu xuất / trừ tồn kho!");
+            }
+
+            // 5. Commit transaction
+            conn.commit();
+
+            // 6. Xóa đơn hàng tạm khỏi RAM sau khi thành công
+            orderManager.removeOrder(donHang.getMaDonHang());
+
+            return hd;
+        } catch (java.sql.SQLException ex) {
+            try {
+                if (conn != null && !conn.isClosed()) conn.rollback();
+            } catch (java.sql.SQLException ignored) {}
+            throw new AppException("Lỗi kết nối cơ sở dữ liệu khi thanh toán: " + ex.getMessage());
+        } catch (AppException ae) {
+            // Re-throw AppException to show correct message on UI
+            try {
+                if (conn != null && !conn.isClosed()) conn.rollback();
+            } catch (java.sql.SQLException ignored) {}
+            throw ae;
+        } catch (Exception e) {
+            try {
+                if (conn != null && !conn.isClosed()) conn.rollback();
+            } catch (java.sql.SQLException ignored) {}
+            throw new AppException("Lỗi không xác định khi thanh toán: " + e.getMessage());
+        } finally {
+            try {
+                if (conn != null && !conn.isClosed()) {
+                    conn.setAutoCommit(originalAutoCommit);
+                }
+            } catch (java.sql.SQLException ignored) {}
         }
-
-        // 4. Xóa đơn hàng tạm khỏi RAM
-        orderManager.removeOrder(donHang.getMaDonHang());
-
-        // 5. Trừ tồn kho nguyên liệu
-        inventory.deductStock(cart);
-
-        return hd;
     }
 
     /**

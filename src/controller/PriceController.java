@@ -10,7 +10,9 @@ import entity.BangGia;
 import entity.BangGiaChiTiet;
 import entity.Size;
 import utils.IDGenerator;
+import connectDB.DatabaseConnection;
 
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,8 +30,33 @@ public class PriceController {
     }
 
     public boolean saveBangGia(BangGia bg, boolean isEdit) {
+        if (checkConflict(bg)) {
+            throw new exception.AppException("Xung đột: Không thể có 2 bảng giá bắt đầu vào CÙNG MỘT NGÀY! Vui lòng chọn ngày bắt đầu khác để hệ thống biết bảng nào ưu tiên hơn.");
+        }
         if (isEdit) return bgDAO.update(bg);
         return bgDAO.insert(bg);
+    }
+
+    /**
+     * Bảng giá dùng cơ chế Ghi Đè (Override): Bảng nào có Ngày Bắt Đầu MỚI NHẤT sẽ được ưu tiên áp dụng.
+     * Do đó, cho phép các bảng giá lồng nhau (giao nhau) về thời gian (ví dụ: Bảng Lễ hội đè lên Bảng Gốc).
+     * Tuy nhiên, XUNG ĐỘT DỮ LIỆU thực sự xảy ra khi có 2 bảng giá CÙNG Ngày Bắt Đầu.
+     * Khi đó hệ thống không biết bảng nào ưu tiên hơn (do ORDER BY ngayBatDau bị trùng).
+     */
+    private boolean checkConflict(BangGia newBg) {
+        if (!newBg.isTrangThai() || !newBg.isHoatDong()) return false;
+        
+        List<BangGia> all = bgDAO.findAll();
+        for (BangGia bg : all) {
+            if (!bg.isTrangThai() || !bg.isHoatDong()) continue; 
+            if (bg.getMaBangGia().equals(newBg.getMaBangGia())) continue;
+
+            // Xung đột khi có 2 bảng giá hoạt động CÙNG ngày bắt đầu
+            if (bg.getNgayBatDau().equals(newBg.getNgayBatDau())) {
+                return true; 
+            }
+        }
+        return false;
     }
 
     /** Soft Delete: đặt hoatDong=0 */
@@ -44,15 +71,25 @@ public class PriceController {
      * Sao chép toàn bộ giá từ bảng giá nguồn sang bảng giá đích.
      */
     public void clonePriceList(String fromMaBG, String toMaBG) {
-        List<BangGiaChiTiet> details = bgctDAO.findByBangGia(fromMaBG);
-        for (BangGiaChiTiet d : details) {
-            BangGiaChiTiet clone = new BangGiaChiTiet(
-                generateNextMaBGCT(),
-                d.getGiaBan(),
-                d.getMaSize(),
-                toMaBG
-            );
-            bgctDAO.insert(clone);
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        try {
+            conn.setAutoCommit(false);
+            List<BangGiaChiTiet> details = bgctDAO.findByBangGia(fromMaBG);
+            for (BangGiaChiTiet d : details) {
+                BangGiaChiTiet clone = new BangGiaChiTiet(
+                    generateNextMaBGCT(),
+                    d.getGiaBan(),
+                    d.getMaSize(),
+                    toMaBG
+                );
+                bgctDAO.insert(clone);
+            }
+            conn.commit();
+        } catch (Exception e) {
+            try { conn.rollback(); } catch (Exception ex) {}
+            throw new RuntimeException("Lỗi sao chép bảng giá", e);
+        } finally {
+            try { conn.setAutoCommit(true); } catch (Exception ex) {}
         }
     }
 
@@ -72,12 +109,45 @@ public class PriceController {
      * @param fixedAmount Số tiền cộng thêm cố định (VD: 5000)
      */
     public void batchAdjustPrice(String maBG, double percent, double fixedAmount) {
-        List<BangGiaChiTiet> details = bgctDAO.findByBangGia(maBG);
-        for (BangGiaChiTiet d : details) {
-            double newPrice = d.getGiaBan() * (1 + percent) + fixedAmount;
-            newPrice = Math.round(newPrice / 1000.0) * 1000.0;
-            d.setGiaBan(newPrice);
-            bgctDAO.update(d);
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        try {
+            conn.setAutoCommit(false);
+            List<BangGiaChiTiet> details = bgctDAO.findByBangGia(maBG);
+            for (BangGiaChiTiet d : details) {
+                double newPrice = d.getGiaBan() * (1 + percent) + fixedAmount;
+                newPrice = Math.round(newPrice / 1000.0) * 1000.0;
+                if (newPrice < 0) newPrice = 0.0; // GUARD: Giá không được âm
+                d.setGiaBan(newPrice);
+                bgctDAO.update(d);
+            }
+            conn.commit();
+        } catch (Exception e) {
+            try { conn.rollback(); } catch (Exception ex) {}
+            throw new RuntimeException("Lỗi điều chỉnh giá hàng loạt", e);
+        } finally {
+            try { conn.setAutoCommit(true); } catch (Exception ex) {}
+        }
+    }
+
+    /**
+     * Lưu danh sách chi tiết bảng giá trong 1 transaction (Dùng cho UI lúc save).
+     */
+    public void saveDetailsTransactionally(List<BangGiaChiTiet> toInsert, List<BangGiaChiTiet> toUpdate) {
+        Connection conn = DatabaseConnection.getInstance().getConnection();
+        try {
+            conn.setAutoCommit(false);
+            if (toInsert != null) {
+                for (BangGiaChiTiet d : toInsert) bgctDAO.insert(d);
+            }
+            if (toUpdate != null) {
+                for (BangGiaChiTiet d : toUpdate) bgctDAO.update(d);
+            }
+            conn.commit();
+        } catch (Exception e) {
+            try { conn.rollback(); } catch (Exception ex) {}
+            throw new RuntimeException("Lỗi lưu chi tiết bảng giá", e);
+        } finally {
+            try { conn.setAutoCommit(true); } catch (Exception ex) {}
         }
     }
 
@@ -134,10 +204,10 @@ public class PriceController {
     public boolean isBangGiaComplete(String maBG) {
         List<BangGiaChiTiet> details = getDetailsOf(maBG);
 
-        // [BUG-03 FIX] Dùng Set để lookup O(1): chỉ đưa vào Set khi giá > 0
+        // Đưa vào Set các size đã có giá trong Database (kể cả giá = 0 tức là Miễn Phí)
         java.util.Set<String> pricedSizes = new java.util.HashSet<>();
         for (BangGiaChiTiet d : details) {
-            if (d.getGiaBan() > 0) pricedSizes.add(d.getMaSize());
+            pricedSizes.add(d.getMaSize()); // Nếu record tồn tại thì nghĩa là đã định giá
         }
 
         // Kiểm tra từng size đang active xem đã có giá chưa

@@ -1,6 +1,7 @@
 package enums;
 
 public enum VaiTro {
+    ADMIN("Quản Trị Viên"),
     QUAN_LY("Quản Lý"),
     NHAN_VIEN("Nhân Viên");
 

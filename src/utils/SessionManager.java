@@ -31,7 +31,13 @@ public class SessionManager {
 
     public static boolean isQuanLy() {
         if (currentUser == null) return false;
-        return enums.VaiTro.QUAN_LY.equals(currentUser.getVaiTro());
+        return enums.VaiTro.QUAN_LY.equals(currentUser.getVaiTro()) 
+            || enums.VaiTro.ADMIN.equals(currentUser.getVaiTro());
+    }
+
+    public static boolean isAdmin() {
+        if (currentUser == null) return false;
+        return enums.VaiTro.ADMIN.equals(currentUser.getVaiTro());
     }
 
     // ── CaLamViec ─────────────────────────────────────────────────────────
@@ -45,8 +51,8 @@ public class SessionManager {
     }
 
     public static boolean isCaDangMo() {
-        return currentCa != null
-            && enums.TrangThaiCa.DANG_LAM.equals(currentCa.getTrangThai());
+        return currentCa != null && currentCa.getMaCa() != null
+            && enums.TrangThaiCa.DANG_MO.equals(currentCa.getTrangThai());
     }
 
     /** Tiện ích lấy maCa đang mở (dùng khi tạo DonHang) */

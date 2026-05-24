@@ -120,10 +120,11 @@ public class MainFrame extends JFrame {
         lblDiv.setFont(new Font("Roboto", Font.BOLD, 16));
         rightPanel.add(lblDiv);
 
-        if (SessionManager.isCaDangMo()) {
+        if (utils.SessionManager.isCaDangMo()) {
             // Nút đóng ca đã được ẩn theo yêu cầu, tích hợp vào Đăng Xuất
         }
-        rightPanel.add(createHeaderBtn("Đăng Xuất", FontAwesome.SIGN_OUT, new Color(71, 85, 105),
+        
+        rightPanel.add(createHeaderBtn("Đăng Xuất", jiconfont.icons.FontAwesome.SIGN_OUT, new Color(71, 85, 105),
                 new Color(241, 245, 249), () -> handleNav("ACTION_LOGOUT")));
 
         header.add(rightPanel, BorderLayout.EAST);
@@ -242,6 +243,14 @@ public class MainFrame extends JFrame {
                 return;
             case "ACTION_LOGOUT":
                 handleLogout();
+                return;
+            case "ACTION_PROFILE":
+                entity.NhanVien nv = utils.SessionManager.getCurrentUser();
+                ui.dialog.UserProfileDialog dlg = new ui.dialog.UserProfileDialog(MainFrame.this, nv);
+                dlg.setVisible(true);
+                if (dlg.isUpdated()) {
+                    sidebar.updateUserName(nv.getTenNV());
+                }
                 return;
             case "HOME":
                 dashboardPanel.refresh();

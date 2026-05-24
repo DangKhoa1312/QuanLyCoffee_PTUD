@@ -73,7 +73,7 @@ public class ShiftController {
             LocalTime.now(),
             null,
             tienDauCa,
-            TrangThaiCa.DANG_LAM,
+            TrangThaiCa.DANG_MO,
             maNV,
             maKhuVuc
         );
@@ -92,9 +92,21 @@ public class ShiftController {
         if (ca == null) {
             throw new AppException("Không có ca nào đang mở để đóng.");
         }
-        if (!TrangThaiCa.DANG_LAM.equals(ca.getTrangThai())) {
-            // Ca đã bị đóng từ trước (SessionManager không đồng bộ) → vẫn cho qua
-            System.err.println("ShiftController.dongCa: ca " + ca.getMaCa() + " đang ở trạng thái " + ca.getTrangThai());
+        // Kiểm tra đúng là ca đang mở mới cho đóng
+        if (!TrangThaiCa.DANG_MO.equals(ca.getTrangThai())) {
+            throw new AppException("Ca này không ở trạng thái đang mở, không thể đóng!");
+        }
+
+        // Đảm bảo connection ở trạng thái sạch (autoCommit = true)
+        // Phòng trường hợp lần thanh toán trước fail để lại autoCommit = false
+        try {
+            java.sql.Connection conn = connectDB.DatabaseConnection.getInstance().getConnection();
+            if (conn != null && !conn.isClosed() && !conn.getAutoCommit()) {
+                try { conn.rollback(); } catch (Exception ignored) {}
+                conn.setAutoCommit(true);
+            }
+        } catch (java.sql.SQLException e) {
+            System.err.println("ShiftController.dongCa: lỗi reset autoCommit: " + e.getMessage());
         }
 
         // Cập nhật tiền thực đếm (không block nếu thất bại)

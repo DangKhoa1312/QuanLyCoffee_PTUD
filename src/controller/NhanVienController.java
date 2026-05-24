@@ -43,6 +43,9 @@ public class NhanVienController {
      * @param nv Đối tượng nhân viên với mật khẩu chưa băm.
      */
     public boolean addEmployee(NhanVien nv) {
+        if (!utils.SessionManager.isQuanLy()) {
+            throw new AppException("Bạn không có quyền thêm nhân viên!");
+        }
         validateEmployee(nv);
         
         // Kiểm tra trùng mã
@@ -66,11 +69,19 @@ public class NhanVienController {
      * Cập nhật thông tin nhân viên.
      */
     public boolean updateEmployee(NhanVien nv) {
+        if (!utils.SessionManager.isQuanLy()) {
+            throw new AppException("Bạn không có quyền sửa nhân viên!");
+        }
         validateEmployee(nv);
         
         NhanVien current = nhanVienDAO.findById(nv.getMaNV());
         if (current == null) {
             throw new AppException("Không tìm thấy nhân viên mã " + nv.getMaNV());
+        }
+
+        // Quản lý không được sửa tài khoản ADMIN
+        if (enums.VaiTro.ADMIN.equals(current.getVaiTro()) && !utils.SessionManager.isAdmin()) {
+            throw new AppException("Bạn không có quyền sửa tài khoản Quản trị viên (ADMIN)!");
         }
 
         // Nếu người dùng không nhập mật khẩu mới (để trống), giữ nguyên mật khẩu cũ
@@ -88,6 +99,15 @@ public class NhanVienController {
      * "Xóa" nhân viên bằng cách chuyển trạng thái sang NGHI_VIEC.
      */
     public boolean deactivateEmployee(String maNV) {
+        if (!utils.SessionManager.isQuanLy()) {
+            throw new AppException("Bạn không có quyền vô hiệu hóa nhân viên!");
+        }
+
+        NhanVien current = nhanVienDAO.findById(maNV);
+        if (current != null && enums.VaiTro.ADMIN.equals(current.getVaiTro())) {
+            throw new AppException("Không thể khóa tài khoản Quản trị viên (ADMIN)!");
+        }
+
         return nhanVienDAO.updateTrangThai(maNV, TrangThaiNhanVien.DA_NGHI);
     }
 
@@ -109,6 +129,27 @@ public class NhanVienController {
         if (nv == null) return false;
 
         nv.setPasswordHash(PasswordUtils.hash(newPassword));
+        return nhanVienDAO.update(nv);
+    }
+
+    /**
+     * Tự cập nhật hồ sơ cá nhân (không yêu cầu quyền Quản lý).
+     * Chỉ cho phép đổi: Tên, SĐT, Địa chỉ, Ngày sinh, Mật khẩu.
+     */
+    public boolean updateSelfProfile(NhanVien nv) {
+        validateEmployee(nv);
+        NhanVien current = nhanVienDAO.findById(nv.getMaNV());
+        if (current == null) {
+            throw new AppException("Không tìm thấy nhân viên mã " + nv.getMaNV());
+        }
+
+        // Nếu có nhập mật khẩu mới, tiến hành băm
+        if (nv.getPasswordHash() != null && !nv.getPasswordHash().trim().isEmpty()) {
+            nv.setPasswordHash(PasswordUtils.hash(nv.getPasswordHash()));
+        } else {
+            nv.setPasswordHash(current.getPasswordHash());
+        }
+
         return nhanVienDAO.update(nv);
     }
 

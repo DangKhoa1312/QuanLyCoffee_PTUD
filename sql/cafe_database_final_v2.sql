@@ -73,7 +73,7 @@ CREATE TABLE NhanVien (
     CONSTRAINT UQ_NV_Username   UNIQUE (username),
     CONSTRAINT UQ_NV_SDT        UNIQUE (soDienThoai),
     CONSTRAINT CHK_NV_TrangThai CHECK (trangThai IN ('DANG_LAM_VIEC','DA_NGHI')),
-    CONSTRAINT CHK_NV_VaiTro    CHECK (vaiTro    IN ('QUAN_LY','NHAN_VIEN'))
+    CONSTRAINT CHK_NV_VaiTro    CHECK (vaiTro    IN ('ADMIN','QUAN_LY','NHAN_VIEN'))
 );
 GO
 
@@ -84,15 +84,15 @@ CREATE TABLE CaLamViec (
     gioBatDau    TIME          NOT NULL,
     gioKetThuc   TIME          NULL,
     tongDoanhThu DECIMAL(12,2) NOT NULL DEFAULT 0,
-    trangThai    VARCHAR(20)   NOT NULL DEFAULT 'DANG_LAM',
+    trangThai    VARCHAR(20)   NOT NULL DEFAULT 'DANG_MO',
     maNV         VARCHAR(20)   NOT NULL,
     maKhuVuc     VARCHAR(20)   NULL,
 
     CONSTRAINT PK_CaLamViec      PRIMARY KEY (maCa),
     CONSTRAINT FK_Ca_NhanVien    FOREIGN KEY (maNV)     REFERENCES NhanVien(maNV),
     CONSTRAINT FK_Ca_KhuVuc      FOREIGN KEY (maKhuVuc) REFERENCES KhuVuc(maKhuVuc),
-    CONSTRAINT CHK_Ca_TrangThai  CHECK (trangThai IN ('DANG_LAM','DA_DONG')),
-    CONSTRAINT CHK_Ca_Gio        CHECK (gioKetThuc IS NULL OR gioKetThuc > gioBatDau)
+    CONSTRAINT CHK_Ca_TrangThai  CHECK (trangThai IN ('DANG_MO','DA_DONG')),
+    -- CONSTRAINT CHK_Ca_Gio        CHECK (gioKetThuc IS NULL OR gioKetThuc > gioBatDau)
 );
 GO
 

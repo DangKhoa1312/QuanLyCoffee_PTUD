@@ -160,7 +160,9 @@ public class StaffManagementPanel extends JPanel {
     private void loadData() {
         tableModel.setRowCount(0);
         List<NhanVien> list = controller.getAllEmployees();
+        boolean isAdmin = utils.SessionManager.isAdmin();
         for (NhanVien nv : list) {
+            if (!isAdmin && enums.VaiTro.ADMIN.equals(nv.getVaiTro())) continue;
             tableModel.addRow(new Object[] { nv.getMaNV(), nv.getTenNV(), nv.getSoDienThoai(), nv.getVaiTro(),
                     nv.getTrangThai(), nv });
         }
@@ -177,7 +179,9 @@ public class StaffManagementPanel extends JPanel {
         List<NhanVien> list = controller.searchEmployees(keyword);
         int filterIdx = cbFilterStatus.getSelectedIndex();
         tableModel.setRowCount(0);
+        boolean isAdmin = utils.SessionManager.isAdmin();
         for (NhanVien nv : list) {
+            if (!isAdmin && enums.VaiTro.ADMIN.equals(nv.getVaiTro())) continue;
             if (filterIdx == 1 && !nv.getTrangThai().equals(TrangThaiNhanVien.DANG_LAM_VIEC))
                 continue;
             if (filterIdx == 2 && !nv.getTrangThai().equals(TrangThaiNhanVien.DA_NGHI))

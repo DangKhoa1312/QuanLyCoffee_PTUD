@@ -145,6 +145,37 @@ public class StatisticDAOImpl implements StatisticDAO {
         return result;
     }
 
+    // ── Doanh thu theo giờ ──────────────────────────────────────
+    @Override
+    public Map<Integer, Double> getDoanhThuTheoGio(LocalDate from, LocalDate to) {
+        // Khởi tạo 0-23 giờ
+        Map<Integer, Double> result = new LinkedHashMap<>();
+        for (int i = 0; i < 24; i++) result.put(i, 0.0);
+
+        String sql = """
+            SELECT DATEPART(HOUR, hd.thoiGianThanhToan) as Gio,
+                   ISNULL(SUM(hd.tongTienPhaiTra), 0) as DoanhThu
+            FROM HoaDon hd
+            WHERE hd.trangThai = 'DA_THANH_TOAN'
+              AND CAST(hd.thoiGianThanhToan AS DATE) BETWEEN ? AND ?
+            GROUP BY DATEPART(HOUR, hd.thoiGianThanhToan)
+            ORDER BY Gio
+        """;
+
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.put(rs.getInt("Gio"), rs.getDouble("DoanhThu"));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("StatisticDAO.getDoanhThuTheoGio: " + e.getMessage());
+        }
+        return result;
+    }
+
     // ── Tổng số hóa đơn ────────────────────────────────────────
     @Override
     public int getSoHoaDon(LocalDate from, LocalDate to) {

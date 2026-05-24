@@ -14,7 +14,6 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 
 public class LoginForm extends JFrame {
-
     private final AuthController authController = new AuthController();
     private final ShiftController shiftController = new ShiftController();
 

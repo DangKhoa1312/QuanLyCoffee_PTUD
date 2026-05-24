@@ -35,12 +35,12 @@ public class PriceMasterDialog extends JDialog {
     private final boolean isEditMode;
     private String sourceMaBG;
     private boolean confirmed = false;
-    private boolean isDirty   = false; // [IMP-01] Track thay đổi chưa lưu
+    private boolean isDirty = false; // [IMP-01] Track thay đổi chưa lưu
 
     // UI Components - Header General Info
     private JTextField txtMa, txtTen;
     private JDateChooser dcBatDau, dcKetThuc;
-    private JCheckBox chkStatus;
+    // Removed btnStatus from here
 
     // UI Components - Detail Table
     private JTable table;
@@ -49,7 +49,7 @@ public class PriceMasterDialog extends JDialog {
     private JTextField txtSearchDish;
     private JCheckBox chkShowInactive;
     private JCheckBox chkMissingPrice;
-    private Runnable  updateFilter;  // [BUG-07 FIX] Field để syncNewMenuItems có thể gọi refresh filter
+    private Runnable updateFilter; // [BUG-07 FIX] Field để syncNewMenuItems có thể gọi refresh filter
 
     // UI Components - Batch Actions
     private JComboBox<BangGia> cbCloneSource;
@@ -95,7 +95,8 @@ public class PriceMasterDialog extends JDialog {
             int r = JOptionPane.showConfirmDialog(this,
                     "Bạn có thay đổi giá chưa được lưu.\nBạn chắc chắn muốn thoát không?",
                     "Xác nhận thoát", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (r != JOptionPane.YES_OPTION) return;
+            if (r != JOptionPane.YES_OPTION)
+                return;
         }
         super.dispose();
     }
@@ -198,28 +199,10 @@ public class PriceMasterDialog extends JDialog {
         dcKetThuc.setDateFormatString("yyyy-MM-dd");
         pnl.add(dcKetThuc, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(10, 5, 0, 5);
-        chkStatus = new JCheckBox("Kích hoạt ngay (Áp dụng cho POS)");
-        chkStatus.setFont(new Font("Roboto", Font.ITALIC, 12));
-        chkStatus.setOpaque(false);
-        pnl.add(chkStatus, gbc);
-
-        // Logic giới hạn ngày
-        dcBatDau.addPropertyChangeListener("date", evt -> {
-            java.util.Date minD = dcBatDau.getDate();
-            if (minD != null) {
-                dcKetThuc.setMinSelectableDate(minD);
-            }
-        });
-
         if (!bangGia.isHoatDong()) {
             txtTen.setEditable(false);
             dcBatDau.setEnabled(false);
             dcKetThuc.setEnabled(false);
-            chkStatus.setEnabled(false);
         }
 
         return pnl;
@@ -246,14 +229,16 @@ public class PriceMasterDialog extends JDialog {
 
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 4 || columnIndex == 5) return Boolean.class;
+                if (columnIndex == 4 || columnIndex == 5)
+                    return Boolean.class;
                 return super.getColumnClass(columnIndex);
             }
 
             @Override
             public void setValueAt(Object aValue, int row, int column) {
                 // [FIX] Col 2 (giá bán): luôn lưu dưới dạng Double
-                // JTable cell editor mặc định trả về String — nếu lưu String thì filter/renderer sẽ ClassCastException
+                // JTable cell editor mặc định trả về String — nếu lưu String thì
+                // filter/renderer sẽ ClassCastException
                 if (column == 2) {
                     if (aValue instanceof String) {
                         String s = ((String) aValue).trim().replace(",", "").replace(".", "");
@@ -261,7 +246,8 @@ public class PriceMasterDialog extends JDialog {
                             aValue = null;
                         } else {
                             try {
-                                aValue = Double.parseDouble(s);
+                                double p = Double.parseDouble(s);
+                                aValue = p < 0 ? 0.0 : p; // KHÔNG CHO PHÉP GIÁ ÂM
                             } catch (NumberFormatException ex) {
                                 aValue = null; // Giá không hợp lệ → xóa
                             }
@@ -344,9 +330,8 @@ public class PriceMasterDialog extends JDialog {
 
                     if (showMissingOnly) {
                         Object priceObj = entry.getModel().getValueAt(entry.getIdentifier(), 2);
-                        // [FIX] Dùng helper an toàn — tránh ClassCastException khi priceObj là String
-                        if (parsePrice(priceObj) > 0)
-                            return false; // Có giá hợp lệ → ẩn khỏi bộ lọc "chưa có giá"
+                        if (parsePrice(priceObj) != null)
+                            return false; // Có giá hợp lệ (kể cả 0đ) → ẩn khỏi bộ lọc "chưa có giá"
                     }
 
                     return true;
@@ -474,7 +459,7 @@ public class PriceMasterDialog extends JDialog {
 
         JButton btnSave = new JButton(" LƯU ");
         btnSave.setPreferredSize(new Dimension(150, 40));
-        btnSave.setBackground(new Color(46, 204, 113));
+        btnSave.setBackground(new Color(41, 128, 185));
         btnSave.setForeground(Color.WHITE);
         btnSave.setFont(new Font("Roboto", Font.BOLD, 13));
         btnSave.setIcon(IconFontSwing.buildIcon(FontAwesome.FLOPPY_O, 16, Color.WHITE));
@@ -503,7 +488,6 @@ public class PriceMasterDialog extends JDialog {
             dcBatDau.setDate(java.sql.Date.valueOf(bangGia.getNgayBatDau()));
         if (bangGia.getNgayKetThuc() != null)
             dcKetThuc.setDate(java.sql.Date.valueOf(bangGia.getNgayKetThuc()));
-        chkStatus.setSelected(bangGia.isTrangThai());
     }
 
     private void loadTableData() {
@@ -567,10 +551,7 @@ public class PriceMasterDialog extends JDialog {
                 String tbSize = (String) model.getValueAt(i, 3);
                 for (BangGiaChiTiet s : srcData) {
                     if (s.getMaSize().equals(tbSize)) {
-                        // [BUG-04 FIX] Chỉ ghi đè khi giá nguồn > 0 — tránh xoá giá đang có
-                        if (s.getGiaBan() > 0) {
-                            model.setValueAt(s.getGiaBan(), i, 2);
-                        }
+                        model.setValueAt(s.getGiaBan(), i, 2);
                         break;
                     }
                 }
@@ -593,9 +574,11 @@ public class PriceMasterDialog extends JDialog {
                 if (val == null)
                     continue;
                 double currentPrice = Double.parseDouble(val.toString());
-                if (currentPrice > 0) {
+                if (currentPrice >= 0) {
                     double newPrice = currentPrice * (1 + p) + f;
                     newPrice = Math.round(newPrice / 1000.0) * 1000.0;
+                    if (newPrice < 0)
+                        newPrice = 0.0; // KHÔNG CHO PHÉP GIÁ ÂM
                     model.setValueAt(newPrice, i, 2);
                 }
             }
@@ -625,7 +608,7 @@ public class PriceMasterDialog extends JDialog {
                     }
                 }
                 if (!found) {
-                    model.addRow(new Object[] { m.getTenMon(), s.getTenSize(), 0.0, s.getMaSize(), m.isTrangThai(),
+                    model.addRow(new Object[] { m.getTenMon(), s.getTenSize(), null, s.getMaSize(), m.isTrangThai(),
                             s.isTrangThai() });
                     count++;
                 }
@@ -634,7 +617,8 @@ public class PriceMasterDialog extends JDialog {
 
         if (count > 0) {
             // [BUG-07 FIX] Refresh filter để hiện món mới trong bộ lọc đang bật
-            if (updateFilter != null) updateFilter.run();
+            if (updateFilter != null)
+                updateFilter.run();
             JOptionPane.showMessageDialog(this,
                     "Đã tìm thấy và bổ sung " + count + " món/size mới vào cuối danh sách.");
         } else {
@@ -666,10 +650,41 @@ public class PriceMasterDialog extends JDialog {
             java.util.Date dEnd = dcKetThuc.getDate();
             bangGia.setNgayKetThuc(dEnd != null ? new java.sql.Date(dEnd.getTime()).toLocalDate() : null);
 
-            bangGia.setTrangThai(chkStatus.isSelected());
             bangGia.setHoatDong(true); // Bảng mới luôn hoạt động
 
-            // 2. Kiểm tra tính toàn vẹn (Validation All-or-Nothing trước)
+            // [BUSINESS RULE] Không được phép làm mất "Winner" của hôm nay nếu hệ thống đang có
+            BangGia currentWinner = priceController.getWinningPriceList();
+            if (currentWinner != null) {
+                boolean hasWinnerForToday = false;
+                java.time.LocalDate today = java.time.LocalDate.now();
+                
+                // 1. Kiểm tra xem chính bảng giá đang lưu này có cover cho hôm nay không
+                if (bangGia.isTrangThai() && bangGia.isHoatDong() 
+                    && !today.isBefore(bangGia.getNgayBatDau()) 
+                    && (bangGia.getNgayKetThuc() == null || !today.isAfter(bangGia.getNgayKetThuc()))) {
+                    hasWinnerForToday = true;
+                } else {
+                    // 2. Nếu bảng này không cover, tìm xem có bảng NÀO KHÁC cover không
+                    java.util.List<BangGia> all = priceController.getAllBangGia();
+                    for (BangGia bg : all) {
+                        if (!bg.getMaBangGia().equals(bangGia.getMaBangGia()) 
+                            && bg.isHoatDong() && bg.isTrangThai()
+                            && !today.isBefore(bg.getNgayBatDau())
+                            && (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc()))) {
+                            hasWinnerForToday = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!hasWinnerForToday) {
+                    JOptionPane.showMessageDialog(this, "<html><b style='color:red'>LỖI NGHIỆP VỤ: LỖ HỔNG BẢNG GIÁ!</b><br><br>"
+                            + "Hệ thống hiện đang có bảng giá áp dụng cho hôm nay.<br>"
+                            + "Việc thay đổi này (Đổi ngày áp dụng) sẽ khiến hệ thống <b>MẤT BẢNG GIÁ</b>.<br>"
+                            + "Phải luôn có ít nhất 1 bảng giá đang hoạt động để thu ngân có thể bán hàng.</html>", "Chặn Thao Tác", JOptionPane.ERROR_MESSAGE);
+                    return; // Chặn lưu
+                }
+            }
             for (int i = 0; i < model.getRowCount(); i++) {
                 Object val = model.getValueAt(i, 2);
                 Boolean dishActive = (Boolean) model.getValueAt(i, 4);
@@ -677,7 +692,7 @@ public class PriceMasterDialog extends JDialog {
 
                 // Nếu món đang hoạt động mà chưa nhập giá thì CHẶN LUÔN
                 if (dishActive != null && dishActive && sizeActive != null && sizeActive) {
-                    if (parsePrice(val) <= 0) {
+                    if (parsePrice(val) == null) {
                         String tenMon = (String) model.getValueAt(i, 0);
                         String sizeMon = (String) model.getValueAt(i, 1);
 
@@ -715,6 +730,8 @@ public class PriceMasterDialog extends JDialog {
 
             // 3. Lưu chi tiết giá (detail) sau khi đã validate an toàn
             List<BangGiaChiTiet> currentDbDetails = priceController.getDetailsOf(bangGia.getMaBangGia());
+            List<BangGiaChiTiet> toInsert = new java.util.ArrayList<>();
+            List<BangGiaChiTiet> toUpdate = new java.util.ArrayList<>();
 
             for (int i = 0; i < model.getRowCount(); i++) {
                 String maSize = (String) model.getValueAt(i, 3);
@@ -723,11 +740,19 @@ public class PriceMasterDialog extends JDialog {
                 Boolean sizeActive = (Boolean) model.getValueAt(i, 5);
 
                 // Bỏ qua nếu món bị ẩn VÀ không có giá
-                if ((dishActive == null || !dishActive || sizeActive == null || !sizeActive) && parsePrice(val) <= 0) {
+                if ((dishActive == null || !dishActive || sizeActive == null || !sizeActive)
+                        && parsePrice(val) == null) {
                     continue;
                 }
 
-                double guiPrice = parsePrice(val);
+                Double parsedPrice = parsePrice(val);
+                double guiPrice = parsedPrice != null ? parsedPrice : 0.0;
+
+                if (guiPrice < 0) {
+                    JOptionPane.showMessageDialog(this, "Lỗi: Phát hiện giá bán âm (" + guiPrice + ") ở món "
+                            + model.getValueAt(i, 0) + ". Vui lòng sửa lại!");
+                    return; // Chặn lưu
+                }
 
                 // Tìm xem đã có trong DB chưa
                 BangGiaChiTiet existing = null;
@@ -752,7 +777,7 @@ public class PriceMasterDialog extends JDialog {
                 }
             }
 
-            isDirty   = false; // [IMP-01] Reset dirty flag sau khi lưu thành công
+            isDirty = false; // [IMP-01] Reset dirty flag sau khi lưu thành công
             confirmed = true;
             JOptionPane.showMessageDialog(this, "Đã lưu thành công toàn bộ Bảng giá & Chi tiết!");
             dispose();
@@ -768,13 +793,13 @@ public class PriceMasterDialog extends JDialog {
 
     // --- RENDERER ---
     private class PriceRowRenderer extends DefaultTableCellRenderer {
-        private final Color COLOR_INACTIVE    = new Color(150, 160, 170);
+        private final Color COLOR_INACTIVE = new Color(150, 160, 170);
         private final Color COLOR_BG_INACTIVE = new Color(242, 242, 242);
-        private final Color COLOR_FG_WARN     = new Color(192, 57, 43);
-        private final Color COLOR_BG_WARN     = new Color(255, 235, 238);
-        private final Font  FONT_ITALIC = new Font("Roboto", Font.ITALIC, 14);
-        private final Font  FONT_NORMAL = new Font("Roboto", Font.PLAIN, 14);
-        private final Font  FONT_BOLD   = new Font("Roboto", Font.BOLD, 14);
+        private final Color COLOR_FG_WARN = new Color(192, 57, 43);
+        private final Color COLOR_BG_WARN = new Color(255, 235, 238);
+        private final Font FONT_ITALIC = new Font("Roboto", Font.ITALIC, 14);
+        private final Font FONT_NORMAL = new Font("Roboto", Font.PLAIN, 14);
+        private final Font FONT_BOLD = new Font("Roboto", Font.BOLD, 14);
 
         @Override
         public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
@@ -790,8 +815,8 @@ public class PriceMasterDialog extends JDialog {
             boolean isInactive = (dishActive != null && !dishActive) || (sizeActive != null && !sizeActive);
 
             Object priceObject = t.getModel().getValueAt(modelRow, 2);
-            // [FIX] Dùng parsePrice() an toàn — xử lý cả null, Double, String
-            boolean isMissingPrice = parsePrice(priceObject) <= 0;
+            // Giá bị thiếu nếu parsePrice trả về null (chưa nhập)
+            boolean isMissingPrice = parsePrice(priceObject) == null;
 
             if (isInactive) {
                 comp.setFont(FONT_ITALIC);
@@ -812,8 +837,12 @@ public class PriceMasterDialog extends JDialog {
             if (c == 2) {
                 if (isMissingPrice && !isInactive) {
                     setText(" ⚠ Chưa có giá ");
-                } else if (v instanceof Double && (Double) v > 0) {
-                    setText(String.format("%,.0f", (Double) v));
+                } else if (v instanceof Double) {
+                    Double dVal = (Double) v;
+                    if (dVal == 0.0)
+                        setText("Miễn phí (0đ)");
+                    else
+                        setText(String.format("%,.0f", dVal));
                 } else {
                     setText("");
                 }
@@ -837,19 +866,24 @@ public class PriceMasterDialog extends JDialog {
     }
 
     /**
-     * [HELPER] Parse giá bán an toàn từ Object (có thể là Double, String, hoặc null).
+     * [HELPER] Parse giá bán an toàn từ Object (có thể là Double, String, hoặc
+     * null).
      * Dùng cho RowFilter và bất kỳ chỗ nào cần đọc giá từ model.
-     * @return giá dạng double, 0.0 nếu null / không hợp lệ
+     * 
+     * @return giá dạng Double, null nếu không hợp lệ hoặc chưa nhập
      */
-    private static double parsePrice(Object priceObj) {
-        if (priceObj == null) return 0.0;
-        if (priceObj instanceof Double) return (Double) priceObj;
-        if (priceObj instanceof Number) return ((Number) priceObj).doubleValue();
+    private static Double parsePrice(Object priceObj) {
+        if (priceObj == null)
+            return null;
+        if (priceObj instanceof Double)
+            return (Double) priceObj;
+        if (priceObj instanceof Number)
+            return ((Number) priceObj).doubleValue();
         try {
             String s = priceObj.toString().trim().replace(",", "").replace(".", "");
-            return s.isEmpty() ? 0.0 : Double.parseDouble(s);
+            return s.isEmpty() ? null : Double.parseDouble(s);
         } catch (NumberFormatException ex) {
-            return 0.0;
+            return null;
         }
     }
 }

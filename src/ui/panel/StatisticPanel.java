@@ -60,7 +60,8 @@ public class StatisticPanel extends JPanel {
     };
 
     // ── UI components ───────────────────────────────────────────
-    private JComboBox<String> cboRange;
+    private JComboBox<String> cboRange, cboGioMode;
+    private int currentGioMode = 0; // 0: Số Đơn, 1: Doanh Thu
     private JSpinner spnFrom, spnTo;
     private JPanel pnlCustomDate;
     private JLabel lblRevenue, lblInvoices, lblAvgOrder, lblTopItem;
@@ -195,6 +196,19 @@ public class StatisticPanel extends JPanel {
         pnlChartLoaiMon  = createChartCard();
         pnlChartGio      = createChartCard();
 
+        // Thêm ComboBox nhỏ ở góc chart Giờ
+        cboGioMode = new JComboBox<>(new String[]{"Lượng Đơn Theo Giờ", "Doanh Thu Theo Giờ"});
+        cboGioMode.setFont(new Font("Roboto", Font.PLAIN, 11));
+        cboGioMode.setPreferredSize(new Dimension(140, 24));
+        cboGioMode.addActionListener(e -> {
+            currentGioMode = cboGioMode.getSelectedIndex();
+            loadCharts();
+        });
+        JPanel headerGio = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        headerGio.setOpaque(false);
+        headerGio.add(cboGioMode);
+        pnlChartGio.add(headerGio, BorderLayout.NORTH);
+
         grid.add(pnlChartDoanhThu);
         grid.add(pnlChartTopMon);
         grid.add(pnlChartLoaiMon);
@@ -219,7 +233,8 @@ public class StatisticPanel extends JPanel {
             Map<String, Double> mapDT;
             Map<String, Integer> mapMon;
             Map<String, Double> mapLoai;
-            Map<Integer, Integer> mapGio;
+            Map<Integer, Integer> mapGioDon;
+            Map<Integer, Double> mapGioTien;
 
             @Override
             protected Void doInBackground() {
@@ -228,7 +243,13 @@ public class StatisticPanel extends JPanel {
                 mapDT   = statController.getDoanhThuTheoNgay(dateFrom, dateTo);
                 mapMon  = statController.getTopMonBanChay(10, dateFrom, dateTo);
                 mapLoai = statController.getDoanhThuTheoLoaiMon(dateFrom, dateTo);
-                mapGio  = statController.getSoDonTheoGio(dateFrom, dateTo);
+                
+                if (currentGioMode == 0) {
+                    mapGioDon = statController.getSoDonTheoGio(dateFrom, dateTo);
+                } else {
+                    mapGioTien = statController.getDoanhThuTheoGio(dateFrom, dateTo);
+                }
+
                 if (!mapMon.isEmpty()) topItemName = mapMon.keySet().iterator().next();
                 return null;
             }
@@ -246,7 +267,12 @@ public class StatisticPanel extends JPanel {
                 buildLineChart(mapDT);
                 buildBarChartMon(mapMon);
                 buildPieChart(mapLoai);
-                buildBarChartGio(mapGio);
+                
+                if (currentGioMode == 0) {
+                    buildBarChartGioDon(mapGioDon);
+                } else {
+                    buildBarChartGioTien(mapGioTien);
+                }
             }
         }.execute();
     }
@@ -383,8 +409,11 @@ public class StatisticPanel extends JPanel {
         pnlChartLoaiMon.repaint();
     }
 
-    private void buildBarChartGio(Map<Integer, Integer> data) {
-        pnlChartGio.removeAll();
+    private void buildBarChartGioDon(Map<Integer, Integer> data) {
+        // Remove old chart panel (it's at CENTER, NORTH is the combobox)
+        if (pnlChartGio.getComponentCount() > 1) {
+            pnlChartGio.remove(1);
+        }
 
         DefaultCategoryDataset ds = new DefaultCategoryDataset();
         for (Map.Entry<Integer, Integer> e : data.entrySet()) {
@@ -411,6 +440,51 @@ public class StatisticPanel extends JPanel {
         CategoryAxis domainAxis = plot.getDomainAxis();
         domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
         domainAxis.setTickLabelFont(new Font("Roboto", Font.PLAIN, 9));
+
+        ChartPanel cp = new ChartPanel(chart);
+        cp.setMinimumDrawWidth(0);
+        cp.setMinimumDrawHeight(0);
+        cp.setMaximumDrawWidth(Integer.MAX_VALUE);
+        cp.setMaximumDrawHeight(Integer.MAX_VALUE);
+        pnlChartGio.add(cp, BorderLayout.CENTER);
+        pnlChartGio.revalidate();
+        pnlChartGio.repaint();
+    }
+
+    private void buildBarChartGioTien(Map<Integer, Double> data) {
+        if (pnlChartGio.getComponentCount() > 1) {
+            pnlChartGio.remove(1);
+        }
+
+        DefaultCategoryDataset ds = new DefaultCategoryDataset();
+        for (Map.Entry<Integer, Double> e : data.entrySet()) {
+            String label = String.format("%02dh", e.getKey());
+            ds.addValue(e.getValue(), "Doanh thu", label);
+        }
+
+        JFreeChart chart = ChartFactory.createBarChart(
+            null, null, "Doanh Thu (VNĐ)", ds,
+            PlotOrientation.VERTICAL, false, true, false
+        );
+        styleChart(chart);
+
+        CategoryPlot plot = chart.getCategoryPlot();
+        plot.setRangeGridlinePaint(new Color(230, 230, 230));
+        plot.setDomainGridlinesVisible(false);
+
+        BarRenderer renderer = (BarRenderer) plot.getRenderer();
+        renderer.setSeriesPaint(0, new Color(59, 130, 246)); // Blue cho doanh thu
+        renderer.setBarPainter(new org.jfree.chart.renderer.category.StandardBarPainter());
+        renderer.setShadowVisible(false);
+        renderer.setMaximumBarWidth(0.04);
+
+        CategoryAxis domainAxis = plot.getDomainAxis();
+        domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
+        domainAxis.setTickLabelFont(new Font("Roboto", Font.PLAIN, 9));
+
+        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+        rangeAxis.setTickLabelFont(new Font("Roboto", Font.PLAIN, 10));
+        rangeAxis.setNumberFormatOverride(NumberFormat.getInstance(new Locale("vi", "VN")));
 
         ChartPanel cp = new ChartPanel(chart);
         cp.setMinimumDrawWidth(0);

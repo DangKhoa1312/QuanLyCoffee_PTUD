@@ -330,7 +330,7 @@ public class PriceDetailDialog extends JDialog {
                 }
             }
             if (!exists) {
-                model.addRow(new Object[] { m.getTenMon(), s.getTenSize(), 0.0, s.getMaSize() });
+                model.addRow(new Object[] { m.getTenMon(), s.getTenSize(), null, s.getMaSize() });
                 isDirty = true;
                 checkDirty();
             }
@@ -436,10 +436,14 @@ public class PriceDetailDialog extends JDialog {
                     "Xác nhận", JOptionPane.YES_NO_OPTION);
             if (opt == JOptionPane.YES_OPTION) {
                 for (int i = 0; i < model.getRowCount(); i++) {
-                    double oldPrice = Double.parseDouble(model.getValueAt(i, 2).toString());
+                    Object val = model.getValueAt(i, 2);
+                    if (val == null || val.toString().trim().isEmpty()) continue;
+                    
+                    double oldPrice = Double.parseDouble(val.toString());
                     double newPrice = oldPrice * (1 + p) + f;
                     // Round to nearest 1000
                     newPrice = Math.round(newPrice / 1000.0) * 1000.0;
+                    if (newPrice < 0) newPrice = 0.0; // KHÔNG CHO PHÉP GIÁ ÂM
                     model.setValueAt(newPrice, i, 2);
                 }
                 isDirty = true;
@@ -471,6 +475,40 @@ public class PriceDetailDialog extends JDialog {
                     start != null ? start.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : LocalDate.now());
             bangGia.setNgayKetThuc(end != null ? end.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null);
 
+            // [BUSINESS RULE] Không được phép làm mất "Winner" của hôm nay nếu hệ thống đang có
+            BangGia currentWinner = priceController.getWinningPriceList();
+            if (currentWinner != null) {
+                boolean hasWinnerForToday = false;
+                LocalDate today = LocalDate.now();
+                
+                // 1. Kiểm tra xem chính bảng giá đang lưu này có cover cho hôm nay không
+                if (bangGia.isTrangThai() && bangGia.isHoatDong() 
+                    && !today.isBefore(bangGia.getNgayBatDau()) 
+                    && (bangGia.getNgayKetThuc() == null || !today.isAfter(bangGia.getNgayKetThuc()))) {
+                    hasWinnerForToday = true;
+                } else {
+                    // 2. Nếu bảng này không cover, tìm xem có bảng NÀO KHÁC cover không
+                    List<BangGia> all = priceController.getAllBangGia();
+                    for (BangGia bg : all) {
+                        if (!bg.getMaBangGia().equals(bangGia.getMaBangGia()) 
+                            && bg.isHoatDong() && bg.isTrangThai()
+                            && !today.isBefore(bg.getNgayBatDau())
+                            && (bg.getNgayKetThuc() == null || !today.isAfter(bg.getNgayKetThuc()))) {
+                            hasWinnerForToday = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!hasWinnerForToday) {
+                    JOptionPane.showMessageDialog(this, "<html><b style='color:red'>LỖI NGHIỆP VỤ: LỖ HỔNG BẢNG GIÁ!</b><br><br>"
+                            + "Hệ thống hiện đang có bảng giá áp dụng cho hôm nay.<br>"
+                            + "Việc thay đổi này (Đổi ngày áp dụng) sẽ khiến hệ thống <b>MẤT BẢNG GIÁ</b>.<br>"
+                            + "Phải luôn có ít nhất 1 bảng giá đang hoạt động để thu ngân có thể bán hàng.</html>", "Chặn Thao Tác", JOptionPane.ERROR_MESSAGE);
+                    return; // Chặn lưu
+                }
+            }
+
             priceController.saveBangGia(bangGia, isEditMode);
 
             // 2. Save Item Prices
@@ -479,9 +517,23 @@ public class PriceDetailDialog extends JDialog {
 
             List<BangGiaChiTiet> currentDBDetails = priceController.getDetailsOf(bangGia.getMaBangGia());
 
+            List<BangGiaChiTiet> toInsert = new java.util.ArrayList<>();
+            List<BangGiaChiTiet> toUpdate = new java.util.ArrayList<>();
+
             for (int i = 0; i < model.getRowCount(); i++) {
                 String maSize = (String) model.getValueAt(i, 3);
-                double price = Double.parseDouble(model.getValueAt(i, 2).toString());
+                Object val = model.getValueAt(i, 2);
+                
+                if (val == null || val.toString().trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Vui lòng nhập giá cho tất cả các món!");
+                    return;
+                }
+                
+                double price = Double.parseDouble(val.toString());
+                if (price < 0) {
+                    JOptionPane.showMessageDialog(this, "Lỗi: Giá bán không được là số âm ở món " + model.getValueAt(i, 0));
+                    return;
+                }
 
                 BangGiaChiTiet existing = currentDBDetails.stream()
                         .filter(d -> d.getMaSize().equals(maSize))
@@ -490,14 +542,16 @@ public class PriceDetailDialog extends JDialog {
                 if (existing != null) {
                     if (existing.getGiaBan() != price) {
                         existing.setGiaBan(price);
-                        priceController.saveDetail(existing, true);
+                        toUpdate.add(existing);
                     }
                 } else {
                     BangGiaChiTiet nw = new BangGiaChiTiet(priceController.generateNextMaBGCT(), price, maSize,
                             bangGia.getMaBangGia());
-                    priceController.saveDetail(nw, false);
+                    toInsert.add(nw);
                 }
             }
+            
+            priceController.saveDetailsTransactionally(toInsert, toUpdate);
 
             JOptionPane.showMessageDialog(this, "✅ Đã lưu thông tin bảng giá!");
             isDirty = false;

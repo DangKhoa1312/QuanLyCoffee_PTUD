@@ -390,8 +390,6 @@ public class KhoController {
         if (conn == null) return false;
         
         try {
-            conn.setAutoCommit(false); // Bắt đầu transaction
-
             PhieuXuat px = new PhieuXuat();
             px.setMaPX(generateNextMaPX());
             px.setNgayXuat(LocalDateTime.now());
@@ -400,7 +398,6 @@ public class KhoController {
             px.setMaKho(kho.getMaKho());
 
             if (!phieuXuatDAO.insert(conn, px)) {
-                conn.rollback();
                 return false;
             }
 
@@ -434,7 +431,6 @@ public class KhoController {
                     ct.setMaNL(dm.getMaNL());
                     
                     if (!chiTietPXDAO.insert(conn, ct)) {
-                        conn.rollback();
                         return false;
                     }
                     
@@ -447,14 +443,9 @@ public class KhoController {
                     }
                 }
             }
-            conn.commit();
             return true;
         } catch (Exception e) {
-            try { if (conn != null) conn.rollback(); } catch (Exception ex) {}
             return false;
-        } finally {
-            try { if (conn != null) conn.setAutoCommit(true); } catch (Exception ex) {}
-            // connectDB.DatabaseConnection.getInstance().closeConnection(); -> không đóng vì là singleton
         }
     }
 }
