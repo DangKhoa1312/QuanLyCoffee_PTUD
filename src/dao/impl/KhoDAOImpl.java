@@ -55,13 +55,8 @@ public class KhoDAOImpl implements KhoDAO {
 
     @Override
     public boolean delete(String maKho) {
-        String sql = "DELETE FROM Kho WHERE maKho=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setString(1, maKho);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("KhoDAOImpl.delete: " + e.getMessage());
-        }
+        // Không cho phép xóa kho mặc định
+        System.err.println("KhoDAOImpl.delete: Không được phép xóa Kho!");
         return false;
     }
 

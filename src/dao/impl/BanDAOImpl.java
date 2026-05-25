@@ -58,7 +58,7 @@ public class BanDAOImpl implements BanDAO {
 
     @Override
     public boolean delete(String maBan) {
-        String sql = "DELETE FROM Ban WHERE maBan=?";
+        String sql = "UPDATE Ban SET hienThi=0 WHERE maBan=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maBan);
             return ps.executeUpdate() > 0;
@@ -85,7 +85,7 @@ public class BanDAOImpl implements BanDAO {
     @Override
     public List<Ban> findAll() {
         List<Ban> list = new ArrayList<>();
-        String sql = "SELECT * FROM Ban ORDER BY maKhuVuc, soBan";
+        String sql = "SELECT * FROM Ban WHERE hienThi=1 ORDER BY maKhuVuc, soBan";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
             while (rs.next())
@@ -99,7 +99,7 @@ public class BanDAOImpl implements BanDAO {
     @Override
     public List<Ban> findByKhuVuc(String maKhuVuc) {
         List<Ban> list = new ArrayList<>();
-        String sql = "SELECT * FROM Ban WHERE maKhuVuc=? ORDER BY soBan";
+        String sql = "SELECT * FROM Ban WHERE maKhuVuc=? AND hienThi=1 ORDER BY soBan";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
             ResultSet rs = ps.executeQuery();
@@ -114,7 +114,7 @@ public class BanDAOImpl implements BanDAO {
     @Override
     public List<Ban> findByTrangThai(TrangThaiBan trangThai) {
         List<Ban> list = new ArrayList<>();
-        String sql = "SELECT * FROM Ban WHERE trangThai=? ORDER BY soBan";
+        String sql = "SELECT * FROM Ban WHERE trangThai=? AND hienThi=1 ORDER BY soBan";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, trangThai.name());
             ResultSet rs = ps.executeQuery();
@@ -141,7 +141,7 @@ public class BanDAOImpl implements BanDAO {
 
     @Override
     public int countByKhuVuc(String maKhuVuc) {
-        String sql = "SELECT COUNT(*) FROM Ban WHERE maKhuVuc=?";
+        String sql = "SELECT COUNT(*) FROM Ban WHERE maKhuVuc=? AND hienThi=1";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
             ResultSet rs = ps.executeQuery();
@@ -155,7 +155,7 @@ public class BanDAOImpl implements BanDAO {
 
     @Override
     public int countTrongByKhuVuc(String maKhuVuc) {
-        String sql = "SELECT COUNT(*) FROM Ban WHERE maKhuVuc=? AND trangThai='TRONG'";
+        String sql = "SELECT COUNT(*) FROM Ban WHERE maKhuVuc=? AND trangThai='TRONG' AND hienThi=1";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
             ResultSet rs = ps.executeQuery();

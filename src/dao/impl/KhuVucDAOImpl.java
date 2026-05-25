@@ -55,7 +55,7 @@ public class KhuVucDAOImpl implements KhuVucDAO {
 
     @Override
     public boolean delete(String maKhuVuc) {
-        String sql = "DELETE FROM KhuVuc WHERE maKhuVuc=?";
+        String sql = "UPDATE KhuVuc SET trangThai=0 WHERE maKhuVuc=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maKhuVuc);
             return ps.executeUpdate() > 0;
@@ -81,7 +81,7 @@ public class KhuVucDAOImpl implements KhuVucDAO {
     @Override
     public List<KhuVuc> findAll() {
         List<KhuVuc> list = new ArrayList<>();
-        String sql = "SELECT * FROM KhuVuc ORDER BY maKhuVuc";
+        String sql = "SELECT * FROM KhuVuc WHERE trangThai=1 ORDER BY maKhuVuc";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));

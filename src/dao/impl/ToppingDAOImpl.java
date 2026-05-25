@@ -55,7 +55,7 @@ public class ToppingDAOImpl implements ToppingDAO {
 
     @Override
     public boolean delete(String maTopping) {
-        String sql = "DELETE FROM Topping WHERE maTopping=?";
+        String sql = "UPDATE Topping SET trangThai=0 WHERE maTopping=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maTopping);
             return ps.executeUpdate() > 0;
@@ -81,7 +81,7 @@ public class ToppingDAOImpl implements ToppingDAO {
     @Override
     public List<Topping> findAll() {
         List<Topping> list = new ArrayList<>();
-        String sql = "SELECT * FROM Topping ORDER BY tenTopping";
+        String sql = "SELECT * FROM Topping WHERE trangThai=1 ORDER BY tenTopping";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));

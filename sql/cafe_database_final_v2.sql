@@ -177,6 +177,7 @@ CREATE TABLE NguyenLieu (
     ngayHetHan       DATE          NULL,
     donViDongGoi     NVARCHAR(50)  NULL,
     khoiLuongDongGoi FLOAT         NOT NULL DEFAULT 1,
+    trangThai        BIT           NOT NULL DEFAULT 1,
 
     CONSTRAINT PK_NguyenLieu   PRIMARY KEY (maNL),
     CONSTRAINT CHK_NL_DonGia   CHECK (donGiaNhap >= 0)
@@ -210,6 +211,7 @@ CREATE TABLE Ban (
     maKhuVuc  VARCHAR(20)  NOT NULL,
     sucChua   INT          NOT NULL DEFAULT 4,
     trangThai VARCHAR(20)  NOT NULL DEFAULT 'TRONG',
+    hienThi   BIT          NOT NULL DEFAULT 1,
 
     CONSTRAINT PK_Ban            PRIMARY KEY (maBan),
     CONSTRAINT FK_Ban_KhuVuc     FOREIGN KEY (maKhuVuc) REFERENCES KhuVuc(maKhuVuc),
@@ -226,6 +228,7 @@ CREATE TABLE NhaCungCap (
     diaChi      NVARCHAR(255) NULL,
     soDienThoai VARCHAR(15)   NULL,
     email       VARCHAR(100)  NULL,
+    trangThai   BIT           NOT NULL DEFAULT 1,
     CONSTRAINT PK_NhaCungCap PRIMARY KEY (maNCC)
 );
 GO

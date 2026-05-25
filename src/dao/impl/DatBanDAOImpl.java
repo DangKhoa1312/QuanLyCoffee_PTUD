@@ -97,7 +97,7 @@ public class DatBanDAOImpl implements DatBanDAO {
     // ══ BaseDAO: delete (xoá thật, chỉ dùng nội bộ) ═════════════════════════
     @Override
     public boolean delete(String maDatBan) {
-        String sql = "DELETE FROM DatBan WHERE maDatBan=?";
+        String sql = "UPDATE DatBan SET hienThi=0 WHERE maDatBan=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maDatBan);
             return ps.executeUpdate() > 0;

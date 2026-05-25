@@ -62,7 +62,7 @@ public class MonDAOImpl implements MonDAO {
 
     @Override
     public boolean delete(String maMon) {
-        String sql = "DELETE FROM Mon WHERE maMon=?";
+        String sql = "UPDATE Mon SET trangThai=0 WHERE maMon=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maMon);
             return ps.executeUpdate() > 0;
@@ -88,7 +88,7 @@ public class MonDAOImpl implements MonDAO {
     @Override
     public List<Mon> findAll() {
         List<Mon> list = new ArrayList<>();
-        String sql = "SELECT * FROM Mon ORDER BY maMon";
+        String sql = "SELECT * FROM Mon WHERE trangThai=1 ORDER BY maMon";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));

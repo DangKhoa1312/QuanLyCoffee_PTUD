@@ -116,13 +116,8 @@ public class HoaDonDAOImpl implements HoaDonDAO {
 
     @Override
     public boolean delete(String maHD) {
-        String sql = "DELETE FROM HoaDon WHERE maHD=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setString(1, maHD);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("HoaDonDAOImpl.delete: " + e.getMessage());
-        }
+        // Không cho phép xóa hóa đơn
+        System.err.println("HoaDonDAOImpl.delete: Không được phép xóa Hóa Đơn!");
         return false;
     }
 

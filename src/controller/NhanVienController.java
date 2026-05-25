@@ -79,6 +79,26 @@ public class NhanVienController {
             throw new AppException("Không tìm thấy nhân viên mã " + nv.getMaNV());
         }
 
+        // --- BẢO VỆ TÀI KHOẢN ROOT (KIM BÀI MIỄN TỬ) ---
+        if ("admin".equals(current.getUsername())) {
+            String loggedInUsername = utils.SessionManager.getCurrentUser() != null ? utils.SessionManager.getCurrentUser().getUsername() : "";
+            // Người khác không được phép sửa Root
+            if (!"admin".equals(loggedInUsername)) {
+                throw new AppException("Tài khoản 'admin' là tài khoản tối cao (Root), không thể bị tác động bởi người khác!");
+            }
+            // Root tự sửa thông tin của mình: Không cho phép tự đổi username, tự hạ quyền hoặc tự khóa
+            if (!"admin".equals(nv.getUsername())) {
+                throw new AppException("Không thể thay đổi tên đăng nhập của tài khoản Root!");
+            }
+            if (!enums.VaiTro.ADMIN.equals(nv.getVaiTro())) {
+                throw new AppException("Không thể hạ quyền của tài khoản Root!");
+            }
+            if (!enums.TrangThaiNhanVien.DANG_LAM_VIEC.equals(nv.getTrangThai())) {
+                throw new AppException("Không thể thay đổi trạng thái của tài khoản Root!");
+            }
+        }
+        // -------------------------------------------------
+
         // Quản lý không được sửa tài khoản ADMIN
         if (enums.VaiTro.ADMIN.equals(current.getVaiTro()) && !utils.SessionManager.isAdmin()) {
             throw new AppException("Bạn không có quyền sửa tài khoản Quản trị viên (ADMIN)!");
@@ -104,6 +124,13 @@ public class NhanVienController {
         }
 
         NhanVien current = nhanVienDAO.findById(maNV);
+        
+        // --- BẢO VỆ TÀI KHOẢN ROOT (KIM BÀI MIỄN TỬ) ---
+        if (current != null && "admin".equals(current.getUsername())) {
+            throw new AppException("Tài khoản 'admin' là tài khoản tối cao (Root), không thể bị khóa!");
+        }
+        // -------------------------------------------------
+
         if (current != null && enums.VaiTro.ADMIN.equals(current.getVaiTro())) {
             throw new AppException("Không thể khóa tài khoản Quản trị viên (ADMIN)!");
         }

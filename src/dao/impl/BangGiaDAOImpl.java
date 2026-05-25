@@ -92,7 +92,7 @@ public class BangGiaDAOImpl implements BangGiaDAO {
     @Override
     public List<BangGia> findAll() {
         List<BangGia> list = new ArrayList<>();
-        String sql = "SELECT * FROM BangGia ORDER BY ngayBatDau DESC";
+        String sql = "SELECT * FROM BangGia WHERE hoatDong=1 ORDER BY ngayBatDau DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));

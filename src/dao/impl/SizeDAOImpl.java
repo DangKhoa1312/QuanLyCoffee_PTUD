@@ -57,7 +57,7 @@ public class SizeDAOImpl implements SizeDAO {
 
     @Override
     public boolean delete(String maSize) {
-        String sql = "DELETE FROM Size WHERE maSize=?";
+        String sql = "UPDATE Size SET trangThai=0 WHERE maSize=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maSize);
             return ps.executeUpdate() > 0;

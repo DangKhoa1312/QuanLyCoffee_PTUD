@@ -65,7 +65,7 @@ public class NguyenLieuDAOImpl implements NguyenLieuDAO {
 
     @Override
     public boolean delete(String maNL) {
-        String sql = "DELETE FROM NguyenLieu WHERE maNL=?";
+        String sql = "UPDATE NguyenLieu SET trangThai=0 WHERE maNL=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maNL);
             return ps.executeUpdate() > 0;
@@ -91,7 +91,7 @@ public class NguyenLieuDAOImpl implements NguyenLieuDAO {
     @Override
     public List<NguyenLieu> findAll() {
         List<NguyenLieu> list = new ArrayList<>();
-        String sql = "SELECT * FROM NguyenLieu ORDER BY tenNL";
+        String sql = "SELECT * FROM NguyenLieu WHERE trangThai=1 ORDER BY tenNL";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));

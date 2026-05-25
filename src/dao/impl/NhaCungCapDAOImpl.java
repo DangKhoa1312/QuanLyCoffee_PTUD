@@ -58,7 +58,7 @@ public class NhaCungCapDAOImpl implements NhaCungCapDAO {
 
     @Override
     public boolean delete(String maNCC) {
-        String sql = "DELETE FROM NhaCungCap WHERE maNCC=?";
+        String sql = "UPDATE NhaCungCap SET trangThai=0 WHERE maNCC=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maNCC);
             return ps.executeUpdate() > 0;
@@ -84,7 +84,7 @@ public class NhaCungCapDAOImpl implements NhaCungCapDAO {
     @Override
     public List<NhaCungCap> findAll() {
         List<NhaCungCap> list = new ArrayList<>();
-        String sql = "SELECT * FROM NhaCungCap ORDER BY tenNCC";
+        String sql = "SELECT * FROM NhaCungCap WHERE trangThai=1 ORDER BY tenNCC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));

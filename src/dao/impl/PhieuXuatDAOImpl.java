@@ -63,13 +63,8 @@ public class PhieuXuatDAOImpl implements PhieuXuatDAO {
 
     @Override
     public boolean delete(String maPX) {
-        String sql = "DELETE FROM PhieuXuat WHERE maPX=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setString(1, maPX);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("PhieuXuatDAOImpl.delete: " + e.getMessage());
-        }
+        // Không cho phép xóa Phiếu xuất kho
+        System.err.println("PhieuXuatDAOImpl.delete: Không được phép xóa Phiếu Xuất!");
         return false;
     }
 

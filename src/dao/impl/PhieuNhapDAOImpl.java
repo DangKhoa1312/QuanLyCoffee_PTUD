@@ -66,13 +66,8 @@ public class PhieuNhapDAOImpl implements PhieuNhapDAO {
 
     @Override
     public boolean delete(String maPN) {
-        String sql = "DELETE FROM PhieuNhap WHERE maPN=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setString(1, maPN);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("PhieuNhapDAOImpl.delete: " + e.getMessage());
-        }
+        // Không cho phép xóa Phiếu nhập kho
+        System.err.println("PhieuNhapDAOImpl.delete: Không được phép xóa Phiếu Nhập!");
         return false;
     }
 
