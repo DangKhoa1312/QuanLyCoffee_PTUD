@@ -20,6 +20,7 @@ public class HoaDon {
     
     // Các trường mới cho Phase 2: Khuyến Mãi & Khách Hàng
     private double            tienGiamGia;
+    private double            tienThueVAT;         // Lưu cứng số tiền thuế đã thu (Chuẩn POS)
     private int               diemSuDung;
     private KhachHang         khachHang;           // Đúng chuẩn OOP (Composition)
     private KhuyenMai         khuyenMai;           // Đúng chuẩn OOP (Composition)
@@ -83,6 +84,9 @@ public class HoaDon {
 
     public double getTienGiamGia() { return tienGiamGia; }
     public void setTienGiamGia(double tienGiamGia) { this.tienGiamGia = tienGiamGia; }
+
+    public double getTienThueVAT() { return tienThueVAT; }
+    public void setTienThueVAT(double tienThueVAT) { this.tienThueVAT = tienThueVAT; }
 
     public KhachHang getKhachHang() { return khachHang; }
     public void setKhachHang(KhachHang khachHang) { this.khachHang = khachHang; }

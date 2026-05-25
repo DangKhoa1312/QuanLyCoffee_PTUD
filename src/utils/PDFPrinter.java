@@ -140,8 +140,8 @@ public class PDFPrinter {
         // 1. Tổng tiền món
         addTotalRow(totalTable, "T\u1ED5ng ti\u1EC1n m\u00F3n:", nf.format(tongTienMon) + " \u0111", fontNormal);
 
-        // 2. Thuế VAT (Hiện tại fix 0đ)
-        addTotalRow(totalTable, "Thu\u1EBF VAT:", "0 \u0111", fontNormal);
+        // 2. Thuế VAT
+        addTotalRow(totalTable, "Thu\u1EBF VAT:", nf.format(hoaDon.getTienThueVAT()) + " \u0111", fontNormal);
 
         // 3. Giảm giá Khuyến Mãi
         if (hoaDon.getTienGiamGia() > 0) {

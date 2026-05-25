@@ -52,12 +52,14 @@ public class PaymentDialog extends JDialog {
     private JLabel lblTongTienMon;
     private JLabel lblTienGiamKM;
     private JLabel lblTienGiamDiem;
+    private JLabel lblTienThueVAT;
     private JLabel lblTongPhaiTra;
 
     private double tongTienDon; // Từ đơn hàng gốc
     private double tongPhaiTra; // Số tiền cuối cùng
     private double tienGiamGiaKM = 0;
     private double tienGiamGiaDiem = 0;
+    private double tienThueVAT = 0;
     private int diemSuDung = 0;
 
     private KhachHang currentKhachHang = null;
@@ -79,7 +81,7 @@ public class PaymentDialog extends JDialog {
 
         initUI();
         loadKhuyenMai();
-        updateTienThua();
+        calculateTotal();
     }
 
     private void initUI() {
@@ -220,12 +222,17 @@ public class PaymentDialog extends JDialog {
         lblTienGiamDiem = new JLabel("Dùng điểm: -0 đ");
         lblTienGiamDiem.setFont(new Font("Roboto", Font.PLAIN, 14));
         lblTienGiamDiem.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        lblTienThueVAT = new JLabel("Thuế VAT: +0 đ");
+        lblTienThueVAT.setFont(new Font("Roboto", Font.PLAIN, 14));
+        lblTienThueVAT.setHorizontalAlignment(SwingConstants.RIGHT);
         
-        JPanel pnlLabels = new JPanel(new GridLayout(3, 1));
+        JPanel pnlLabels = new JPanel(new GridLayout(4, 1));
         pnlLabels.setOpaque(false);
         pnlLabels.add(lblTongTienMon);
         pnlLabels.add(lblTienGiamKM);
         pnlLabels.add(lblTienGiamDiem);
+        pnlLabels.add(lblTienThueVAT);
         
         pnlSummary.add(pnlKM);
         pnlSummary.add(pnlLabels);
@@ -412,6 +419,8 @@ public class PaymentDialog extends JDialog {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value == null) {
                     setText("-- Không áp dụng --");
+                } else if (value instanceof KhuyenMai) {
+                    setText(((KhuyenMai) value).getTenKhuyenMai());
                 }
                 return this;
             }
@@ -502,11 +511,17 @@ public class PaymentDialog extends JDialog {
         }
         
         // 3. Update UI
-        tongPhaiTra = tongTienDon - tienGiamGiaKM - tienGiamGiaDiem;
-        if (tongPhaiTra < 0) tongPhaiTra = 0;
+        double tienSauGiam = tongTienDon - tienGiamGiaKM - tienGiamGiaDiem;
+        if (tienSauGiam < 0) tienSauGiam = 0;
         
-        lblTienGiamKM.setText("-" + nf.format(tienGiamGiaKM) + " đ");
-        lblTienGiamDiem.setText("-" + nf.format(tienGiamGiaDiem) + " đ");
+        double vatRate = AppConfig.getInstance().getDouble("THUE_VAT", 0);
+        tienThueVAT = tienSauGiam * (vatRate / 100.0);
+        
+        tongPhaiTra = tienSauGiam + tienThueVAT;
+        
+        lblTienGiamKM.setText("Giảm giá (KM): -" + nf.format(tienGiamGiaKM) + " đ");
+        lblTienGiamDiem.setText("Dùng điểm: -" + nf.format(tienGiamGiaDiem) + " đ");
+        lblTienThueVAT.setText("Thuế VAT: +" + nf.format(tienThueVAT) + " đ");
         lblTongPhaiTra.setText("Cần TT: " + nf.format(tongPhaiTra) + " đ");
         
         if (rbChuyenKhoan.isSelected()) {
@@ -554,7 +569,7 @@ public class PaymentDialog extends JDialog {
             KhuyenMai km = (KhuyenMai) cbxKhuyenMai.getSelectedItem();
             double tongGiam = tienGiamGiaKM + tienGiamGiaDiem;
 
-            HoaDon hd = paymentController.thanhToan(donHang, cart, tongPhaiTra, ht, tongGiam, km, currentKhachHang, diemSuDung);
+            HoaDon hd = paymentController.thanhToan(donHang, cart, tongPhaiTra, ht, tongGiam, km, currentKhachHang, diemSuDung, tienThueVAT);
             isPaid = true;
 
             JOptionPane.showMessageDialog(this, "Đã thanh toán thành công mã " + hd.getMaHD() + "!", "Thành Công", JOptionPane.INFORMATION_MESSAGE);

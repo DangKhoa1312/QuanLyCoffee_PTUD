@@ -87,6 +87,13 @@ public class SystemConfigPanel extends JPanel {
         formPanel.add(Box.createVerticalStrut(10));
         formPanel.add(createInputRow("Tỷ lệ tích điểm (VNĐ / Điểm)", "TY_LE_TICH_DIEM", "Ví dụ: 10000đ = 1 điểm"));
         formPanel.add(createInputRow("Giá trị quy đổi (VNĐ / Điểm)", "GIA_TRI_DIEM", "Ví dụ: 1 điểm = 1000đ khi thanh toán"));
+        
+        formPanel.add(Box.createVerticalStrut(20));
+
+        // Nhóm Tài Chính
+        formPanel.add(createSectionTitle("Kế Toán & Tài Chính"));
+        formPanel.add(Box.createVerticalStrut(10));
+        formPanel.add(createInputRow("Thuế VAT (%)", "THUE_VAT", "Thuế giá trị gia tăng áp dụng trên hóa đơn"));
 
         JScrollPane scroll = new JScrollPane(formPanel);
         scroll.setBorder(null);

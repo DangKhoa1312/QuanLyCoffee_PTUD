@@ -64,7 +64,7 @@ public class PaymentController {
      * Xóa đơn hàng tạm khỏi RAM.
      */
     public HoaDon thanhToan(DonHang donHang, List<CartItem> cart, double tongTienPhaiTra, HinhThucThanhToan hinhThuc,
-                            double tienGiamGia, entity.KhuyenMai km, entity.KhachHang kh, int diemSuDung) {
+                            double tienGiamGia, entity.KhuyenMai km, entity.KhachHang kh, int diemSuDung, double tienThueVAT) {
         if (!SessionManager.isCaDangMo()) {
             throw new AppException("Vui lòng mở ca làm việc trước khi thanh toán!");
         }
@@ -101,6 +101,7 @@ public class PaymentController {
                 SessionManager.getMaNVHienTai()               // maNV thu ngân
             );
             hd.setTienGiamGia(tienGiamGia);
+            hd.setTienThueVAT(tienThueVAT);
             hd.setDiemSuDung(diemSuDung);
             hd.setKhuyenMai(km);
             hd.setKhachHang(kh);

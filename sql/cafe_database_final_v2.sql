@@ -341,7 +341,8 @@ INSERT INTO CauHinh(maCauHinh, tenCauHinh, giaTri, kieuDuLieu, moTa) VALUES
     ('TEN_QUAN', N'Tên quán', N'COFFEE 11:01', 'STRING', N'Tên hiển thị trên hóa đơn'), 
     ('DIA_CHI', N'Địa chỉ quán', N'123 Đường ABC, Quận 1, TP.HCM', 'STRING', N'Địa chỉ in trên hóa đơn'), 
     ('TY_LE_TICH_DIEM', N'Tỷ lệ tích điểm (VNĐ / Điểm)', '10000', 'NUMBER', N'Số tiền để được cộng 1 điểm'), 
-    ('GIA_TRI_DIEM', N'Giá trị 1 điểm (VNĐ)', '1000', 'NUMBER', N'Số tiền quy đổi khi dùng điểm');
+    ('GIA_TRI_DIEM', N'Giá trị 1 điểm (VNĐ)', '1000', 'NUMBER', N'Số tiền quy đổi khi dùng điểm'),
+    ('THUE_VAT', N'Thuế VAT (%)', '0', 'NUMBER', N'Thuế giá trị gia tăng áp dụng trên hóa đơn');
 GO
 
 -- 16.2. KhachHang
@@ -376,6 +377,7 @@ CREATE TABLE HoaDon (
     thoiGianThanhToan DATETIME      NULL,
     tongTienPhaiTra   DECIMAL(12,2) NOT NULL,
     tienGiamGia       DECIMAL(12,2) NOT NULL DEFAULT 0,
+    tienThueVAT       DECIMAL(12,2) NOT NULL DEFAULT 0,
     trangThai         VARCHAR(20)   NOT NULL DEFAULT 'CHUA_THANH_TOAN',
     hinhThucThanhToan VARCHAR(20)   NULL,
     maBan             VARCHAR(20)   NULL,       -- FK Ban (NULL neu mang ve)

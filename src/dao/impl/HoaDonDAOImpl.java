@@ -37,6 +37,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
         
         // Cập nhật Phase 2
         try { hd.setTienGiamGia(rs.getDouble("tienGiamGia")); } catch (SQLException ignored) {}
+        try { hd.setTienThueVAT(rs.getDouble("tienThueVAT")); } catch (SQLException ignored) {}
         try { hd.setDiemSuDung(rs.getInt("diemSuDung")); } catch (SQLException ignored) {}
         
         try { 
@@ -64,7 +65,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
 
     @Override
     public boolean insert(HoaDon hd) {
-        String sql = "INSERT INTO HoaDon(maHD, thoiGianXuat, thoiGianThanhToan, tongTienPhaiTra, trangThai, hinhThucThanhToan, maBan, maCa, loaiDon, ghiChu, maNV, tienGiamGia, soDienThoai, maKhuyenMai, diemSuDung) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO HoaDon(maHD, thoiGianXuat, thoiGianThanhToan, tongTienPhaiTra, trangThai, hinhThucThanhToan, maBan, maCa, loaiDon, ghiChu, maNV, tienGiamGia, tienThueVAT, soDienThoai, maKhuyenMai, diemSuDung) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, hd.getMaHD());
             ps.setTimestamp(2, hd.getThoiGianXuat() != null ? Timestamp.valueOf(hd.getThoiGianXuat()) : null);
@@ -78,9 +79,10 @@ public class HoaDonDAOImpl implements HoaDonDAO {
             ps.setString(10, hd.getGhiChu());
             ps.setString(11, hd.getMaNV());
             ps.setDouble(12, hd.getTienGiamGia());
-            ps.setString(13, hd.getKhachHang() != null ? hd.getKhachHang().getSoDienThoai() : null);
-            ps.setString(14, hd.getKhuyenMai() != null ? hd.getKhuyenMai().getMaKhuyenMai() : null);
-            ps.setInt(15, hd.getDiemSuDung());
+            ps.setDouble(13, hd.getTienThueVAT());
+            ps.setString(14, hd.getKhachHang() != null ? hd.getKhachHang().getSoDienThoai() : null);
+            ps.setString(15, hd.getKhuyenMai() != null ? hd.getKhuyenMai().getMaKhuyenMai() : null);
+            ps.setInt(16, hd.getDiemSuDung());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("HoaDonDAOImpl.insert: " + e.getMessage());
@@ -90,7 +92,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
 
     @Override
     public boolean update(HoaDon hd) {
-        String sql = "UPDATE HoaDon SET thoiGianXuat=?, thoiGianThanhToan=?, tongTienPhaiTra=?, trangThai=?, hinhThucThanhToan=?, maBan=?, maCa=?, loaiDon=?, ghiChu=?, maNV=?, tienGiamGia=?, soDienThoai=?, maKhuyenMai=?, diemSuDung=? WHERE maHD=?";
+        String sql = "UPDATE HoaDon SET thoiGianXuat=?, thoiGianThanhToan=?, tongTienPhaiTra=?, trangThai=?, hinhThucThanhToan=?, maBan=?, maCa=?, loaiDon=?, ghiChu=?, maNV=?, tienGiamGia=?, tienThueVAT=?, soDienThoai=?, maKhuyenMai=?, diemSuDung=? WHERE maHD=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setTimestamp(1, hd.getThoiGianXuat() != null ? Timestamp.valueOf(hd.getThoiGianXuat()) : null);
             ps.setTimestamp(2, hd.getThoiGianThanhToan() != null ? Timestamp.valueOf(hd.getThoiGianThanhToan()) : null);
@@ -103,10 +105,11 @@ public class HoaDonDAOImpl implements HoaDonDAO {
             ps.setString(9, hd.getGhiChu());
             ps.setString(10, hd.getMaNV());
             ps.setDouble(11, hd.getTienGiamGia());
-            ps.setString(12, hd.getKhachHang() != null ? hd.getKhachHang().getSoDienThoai() : null);
-            ps.setString(13, hd.getKhuyenMai() != null ? hd.getKhuyenMai().getMaKhuyenMai() : null);
-            ps.setInt(14, hd.getDiemSuDung());
-            ps.setString(15, hd.getMaHD());
+            ps.setDouble(12, hd.getTienThueVAT());
+            ps.setString(13, hd.getKhachHang() != null ? hd.getKhachHang().getSoDienThoai() : null);
+            ps.setString(14, hd.getKhuyenMai() != null ? hd.getKhuyenMai().getMaKhuyenMai() : null);
+            ps.setInt(15, hd.getDiemSuDung());
+            ps.setString(16, hd.getMaHD());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("HoaDonDAOImpl.update: " + e.getMessage());
