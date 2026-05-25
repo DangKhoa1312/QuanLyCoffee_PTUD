@@ -117,11 +117,14 @@ public class AccordionSidebar extends JPanel {
 
             gTL.addItem(makeItem("Bảng Giá",  FontAwesome.MONEY,    "ADMIN_GIA", 1));
             gTL.addItem(makeItem("Sơ Đồ Bàn", FontAwesome.TH_LARGE, "ADMIN_BAN", 1));
+            gTL.addItem(makeItem("Cấu Hình", FontAwesome.COGS, "ADMIN_CAU_HINH", 1));
             pnlMenu.add(gTL);
 
             pnlMenu.add(createDivider());
             AccordionGroup gQT = new AccordionGroup("Quản Trị", true, 0);
             gQT.addItem(makeItem("Nhân Viên",   FontAwesome.USERS,     "ADMIN_NHAN_VIEN", 1));
+            gQT.addItem(makeItem("Khách Hàng",  FontAwesome.ID_CARD_O, "KHACH_HANG", 1));
+            gQT.addItem(makeItem("Khuyến Mãi",  FontAwesome.GIFT,      "ADMIN_KHUYEN_MAI", 1));
             gQT.addItem(makeItem("Quản Lý Kho", FontAwesome.ARCHIVE,   "ADMIN_KHO", 1));
             gQT.addItem(makeItem("Thống Kê",    FontAwesome.PIE_CHART, "THONG_KE", 1));
             pnlMenu.add(gQT);
@@ -138,6 +141,14 @@ public class AccordionSidebar extends JPanel {
         add(scroll, BorderLayout.CENTER);
     }
 
+    private JLabel lblBrand;
+
+    public void updateBrandName(String newName) {
+        if (lblBrand != null) {
+            lblBrand.setText(newName.toUpperCase());
+        }
+    }
+
     private JPanel buildBrand() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         p.setOpaque(false);
@@ -145,11 +156,12 @@ public class AccordionSidebar extends JPanel {
         p.setBorder(new EmptyBorder(16, 24, 0, 24)); 
         
         JLabel icn = new JLabel(IconFontSwing.buildIcon(FontAwesome.COFFEE, 24, C_ACCENT));
-        JLabel lbl = new JLabel("COFFEE 11:01");
-        lbl.setFont(new Font("Roboto", Font.BOLD, 18));
-        lbl.setForeground(new Color(15, 23, 42)); 
+        String tenQuan = utils.AppConfig.getInstance().getString("TEN_QUAN", "COFFEE 11:01");
+        lblBrand = new JLabel(tenQuan.toUpperCase());
+        lblBrand.setFont(new Font("Montserrat", Font.BOLD, 22));
+        lblBrand.setForeground(new Color(15, 23, 42)); 
         p.add(icn);
-        p.add(lbl);
+        p.add(lblBrand);
         return p;
     }
 

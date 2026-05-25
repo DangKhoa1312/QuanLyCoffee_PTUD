@@ -43,11 +43,14 @@ public class PDFPrinter {
         NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
 
         // --- Header ---
-        Paragraph pTitle = new Paragraph("COFFEE 11:01", fontTitle);
+        String tenQuan = utils.AppConfig.getInstance().getString("TEN_QUAN", "COFFEE 11:01");
+        String diaChiQuan = utils.AppConfig.getInstance().getString("DIA_CHI", "123 Đường ABC, Quận 1, TP.HCM");
+
+        Paragraph pTitle = new Paragraph(tenQuan, fontTitle);
         pTitle.setAlignment(Element.ALIGN_CENTER);
         document.add(pTitle);
 
-        Paragraph pAddress = new Paragraph("123 \u0110\u01B0\u1EDDng ABC, Qu\u1EADn 1, TP.HCM", fontSmall);
+        Paragraph pAddress = new Paragraph(diaChiQuan, fontSmall);
         pAddress.setAlignment(Element.ALIGN_CENTER);
         document.add(pAddress);
 
@@ -128,6 +131,34 @@ public class PDFPrinter {
         PdfPTable totalTable = new PdfPTable(2);
         totalTable.setWidthPercentage(100);
 
+        // Tính tổng tiền món
+        double tongTienMon = 0;
+        for (dto.CartItem item : cartItems) {
+            tongTienMon += item.getThanhTien();
+        }
+
+        // 1. Tổng tiền món
+        addTotalRow(totalTable, "T\u1ED5ng ti\u1EC1n m\u00F3n:", nf.format(tongTienMon) + " \u0111", fontNormal);
+
+        // 2. Thuế VAT (Hiện tại fix 0đ)
+        addTotalRow(totalTable, "Thu\u1EBF VAT:", "0 \u0111", fontNormal);
+
+        // 3. Giảm giá Khuyến Mãi
+        if (hoaDon.getTienGiamGia() > 0) {
+            addTotalRow(totalTable, "Gi\u1EA3m gi\u00E1 (KM):", "-" + nf.format(hoaDon.getTienGiamGia()) + " \u0111", fontNormal);
+        }
+
+        // 4. Khách hàng & Dùng điểm
+        if (hoaDon.getKhachHang() != null) {
+            addTotalRow(totalTable, "Kh\u00E1ch h\u00E0ng:", hoaDon.getKhachHang().getTenKhachHang(), fontNormal);
+            if (hoaDon.getDiemSuDung() > 0) {
+                double giaTriDiem = utils.AppConfig.getInstance().getDouble("GIA_TRI_DIEM", 1000);
+                addTotalRow(totalTable, "D\u00F9ng \u0111i\u1EC3m:", "-" + nf.format(hoaDon.getDiemSuDung() * giaTriDiem) + " \u0111", fontNormal);
+            }
+            addTotalRow(totalTable, "\u0110i\u1EC3m t\u00EDch l\u0169y:", hoaDon.getKhachHang().getDiemTichLuy() + " \u0111i\u1EC3m", fontSmall);
+        }
+
+        // 5. Hình thức TT & TỔNG CỘNG
         String hinhThuc = hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().getLabel()
                 : "Ti\u1EC1n M\u1EB7t";
         addTotalRow(totalTable, "H\u00ECnh th\u1EE9c TT:", hinhThuc, fontNormal);

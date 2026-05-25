@@ -48,9 +48,9 @@ public class StatisticController {
         return statDAO.getTongDoanhThu(from, to);
     }
 
-    // ── Convenience (giữ tương thích cũ) ────────────────────────
-    public Map<String, Double> getDoanhThu7NgayQua() {
-        return statDAO.getDoanhThu7NgayQua();
+    public Map<String, Double> getDoanhThuGanDay() {
+        int days = utils.AppConfig.getInstance().getInt("THOI_GIAN_THONG_KE", 7);
+        return statDAO.getDoanhThuTheoNgay(LocalDate.now().minusDays(days - 1), LocalDate.now());
     }
 
     public Map<String, Integer> getTopMonBanChay(int top) {

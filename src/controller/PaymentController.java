@@ -63,7 +63,8 @@ public class PaymentController {
      * Tạo HoaDon + ChiTietHoaDon + ChiTietHoaDonTopping trong DB.
      * Xóa đơn hàng tạm khỏi RAM.
      */
-    public HoaDon thanhToan(DonHang donHang, List<CartItem> cart, double tongTienPhaiTra, HinhThucThanhToan hinhThuc) {
+    public HoaDon thanhToan(DonHang donHang, List<CartItem> cart, double tongTienPhaiTra, HinhThucThanhToan hinhThuc,
+                            double tienGiamGia, entity.KhuyenMai km, entity.KhachHang kh, int diemSuDung) {
         if (!SessionManager.isCaDangMo()) {
             throw new AppException("Vui lòng mở ca làm việc trước khi thanh toán!");
         }
@@ -99,6 +100,11 @@ public class PaymentController {
                 donHang.getGhiChu(),                         // ghiChu
                 SessionManager.getMaNVHienTai()               // maNV thu ngân
             );
+            hd.setTienGiamGia(tienGiamGia);
+            hd.setDiemSuDung(diemSuDung);
+            hd.setKhuyenMai(km);
+            hd.setKhachHang(kh);
+
             if (SessionManager.getCurrentUser() != null) {
                 hd.setTenNV(SessionManager.getCurrentUser().getTenNV());
             }
@@ -161,10 +167,27 @@ public class PaymentController {
                 throw new AppException("Lỗi khi tạo phiếu xuất / trừ tồn kho!");
             }
 
-            // 5. Commit transaction
+            // 5. Cập nhật điểm khách hàng
+            if (kh != null) {
+                dao.KhachHangDAO khDAO = new dao.impl.KhachHangDAOImpl();
+                // Trừ điểm đã dùng
+                if (diemSuDung > 0) {
+                    khDAO.updateDiem(kh.getSoDienThoai(), -diemSuDung);
+                }
+                // Cộng điểm mới từ hóa đơn (tongTienPhaiTra / tyLeTichDiem)
+                double tyLe = utils.AppConfig.getInstance().getDouble("TY_LE_TICH_DIEM", 10000);
+                if (tyLe > 0) {
+                    int diemCong = (int) (tongTienPhaiTra / tyLe);
+                    if (diemCong > 0) {
+                        khDAO.updateDiem(kh.getSoDienThoai(), diemCong);
+                    }
+                }
+            }
+
+            // 6. Commit transaction
             conn.commit();
 
-            // 6. Xóa đơn hàng tạm khỏi RAM sau khi thành công
+            // 7. Xóa đơn hàng tạm khỏi RAM sau khi thành công
             orderManager.removeOrder(donHang.getMaDonHang());
 
             return hd;

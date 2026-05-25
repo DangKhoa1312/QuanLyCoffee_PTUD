@@ -27,6 +27,9 @@ IF OBJECT_ID('DatBan', 'U') IS NOT NULL DROP TABLE DatBan;
 IF OBJECT_ID('ChiTietHoaDonTopping', 'U') IS NOT NULL DROP TABLE ChiTietHoaDonTopping;
 IF OBJECT_ID('ChiTietHoaDon', 'U') IS NOT NULL DROP TABLE ChiTietHoaDon;
 IF OBJECT_ID('HoaDon', 'U') IS NOT NULL DROP TABLE HoaDon;
+IF OBJECT_ID('KhuyenMai', 'U') IS NOT NULL DROP TABLE KhuyenMai;
+IF OBJECT_ID('KhachHang', 'U') IS NOT NULL DROP TABLE KhachHang;
+IF OBJECT_ID('CauHinh', 'U') IS NOT NULL DROP TABLE CauHinh;
 IF OBJECT_ID('TonKho', 'U') IS NOT NULL DROP TABLE TonKho;
 IF OBJECT_ID('ChiTietPhieuXuat', 'U') IS NOT NULL DROP TABLE ChiTietPhieuXuat;
 IF OBJECT_ID('PhieuXuat', 'U') IS NOT NULL DROP TABLE PhieuXuat;
@@ -318,6 +321,50 @@ CREATE TABLE TonKho (
 );
 GO
 
+-- 16.1. CauHinh
+CREATE TABLE CauHinh (
+    maCauHinh VARCHAR(50) PRIMARY KEY,
+    tenCauHinh NVARCHAR(100) NOT NULL,
+    giaTri NVARCHAR(MAX) NOT NULL,
+    kieuDuLieu VARCHAR(20) NOT NULL,
+    moTa NVARCHAR(255)
+);
+GO
+
+INSERT INTO CauHinh(maCauHinh, tenCauHinh, giaTri, kieuDuLieu, moTa) VALUES 
+    ('THOI_GIAN_HUY_BAN', N'Thời gian giữ bàn (phút)', '15', 'NUMBER', N'Tự động hủy bàn nếu khách đến trễ'), 
+    ('KHOANG_CACH_DAT_BAN', N'Khoảng cách nhận bàn (phút)', '60', 'NUMBER', N'Khoảng cách an toàn giữa 2 lượt khách'), 
+    ('THOI_GIAN_THONG_KE', N'Số ngày thống kê mặc định', '7', 'NUMBER', N'Số ngày mặc định trong biểu đồ'), 
+    ('TEN_QUAN', N'Tên quán', N'COFFEE 11:01', 'STRING', N'Tên hiển thị trên hóa đơn'), 
+    ('DIA_CHI', N'Địa chỉ quán', N'123 Đường ABC, Quận 1, TP.HCM', 'STRING', N'Địa chỉ in trên hóa đơn'), 
+    ('TY_LE_TICH_DIEM', N'Tỷ lệ tích điểm (VNĐ / Điểm)', '10000', 'NUMBER', N'Số tiền để được cộng 1 điểm'), 
+    ('GIA_TRI_DIEM', N'Giá trị 1 điểm (VNĐ)', '1000', 'NUMBER', N'Số tiền quy đổi khi dùng điểm');
+GO
+
+-- 16.2. KhachHang
+CREATE TABLE KhachHang (
+    soDienThoai VARCHAR(15) PRIMARY KEY,
+    tenKhachHang NVARCHAR(100) NOT NULL,
+    diemTichLuy INT DEFAULT 0,
+    ngayThamGia DATETIME DEFAULT GETDATE(),
+    hienThi BIT DEFAULT 1
+);
+GO
+
+-- 16.3. KhuyenMai
+CREATE TABLE KhuyenMai (
+    maKhuyenMai VARCHAR(50) PRIMARY KEY,
+    tenKhuyenMai NVARCHAR(100) NOT NULL,
+    loaiKhuyenMai VARCHAR(20) NOT NULL,
+    giaTri FLOAT NOT NULL,
+    donHangToiThieu FLOAT DEFAULT 0,
+    giamToiDa FLOAT DEFAULT 0,
+    ngayBatDau DATETIME,
+    ngayKetThuc DATETIME,
+    trangThai VARCHAR(20) DEFAULT 'DANG_HOAT_DONG'
+);
+GO
+
 -- 17. HoaDon (Luu tru vinh vien khi khach thanh toan)
 -- Chua truc tiep maBan, maCa, loaiDon, ghiChu (truoc day nam trong DonHang)
 CREATE TABLE HoaDon (
@@ -325,6 +372,7 @@ CREATE TABLE HoaDon (
     thoiGianXuat      DATETIME      NOT NULL DEFAULT GETDATE(),
     thoiGianThanhToan DATETIME      NULL,
     tongTienPhaiTra   DECIMAL(12,2) NOT NULL,
+    tienGiamGia       DECIMAL(12,2) NOT NULL DEFAULT 0,
     trangThai         VARCHAR(20)   NOT NULL DEFAULT 'CHUA_THANH_TOAN',
     hinhThucThanhToan VARCHAR(20)   NULL,
     maBan             VARCHAR(20)   NULL,       -- FK Ban (NULL neu mang ve)
@@ -332,11 +380,16 @@ CREATE TABLE HoaDon (
     loaiDon           VARCHAR(10)   NOT NULL DEFAULT 'TAI_BAN',
     ghiChu            NVARCHAR(500) NULL,
     maNV              VARCHAR(20)   NOT NULL,   -- Thu Ngan
+    soDienThoai       VARCHAR(15)   NULL,       -- FK KhachHang
+    maKhuyenMai       VARCHAR(50)   NULL,       -- FK KhuyenMai
+    diemSuDung        INT           NOT NULL DEFAULT 0,
 
     CONSTRAINT PK_HoaDon         PRIMARY KEY (maHD),
     CONSTRAINT FK_HD_Ban         FOREIGN KEY (maBan)  REFERENCES Ban(maBan),
     CONSTRAINT FK_HD_Ca          FOREIGN KEY (maCa)   REFERENCES CaLamViec(maCa),
     CONSTRAINT FK_HD_NhanVien    FOREIGN KEY (maNV)   REFERENCES NhanVien(maNV),
+    CONSTRAINT FK_HD_KhachHang   FOREIGN KEY (soDienThoai) REFERENCES KhachHang(soDienThoai),
+    CONSTRAINT FK_HD_KhuyenMai   FOREIGN KEY (maKhuyenMai) REFERENCES KhuyenMai(maKhuyenMai),
     CONSTRAINT CHK_HD_TrangThai  CHECK (trangThai IN ('CHUA_THANH_TOAN','DA_THANH_TOAN')),
     CONSTRAINT CHK_HD_HinhThuc   CHECK (hinhThucThanhToan IN ('TIEN_MAT','CHUYEN_KHOAN') OR hinhThucThanhToan IS NULL),
     CONSTRAINT CHK_HD_LoaiDon    CHECK (loaiDon IN ('TAI_BAN','MANG_VE'))
@@ -411,7 +464,7 @@ CREATE INDEX IX_CTHD_Mon              ON ChiTietHoaDon (maMon);
 CREATE INDEX IX_Ban_KhuVuc            ON Ban (maKhuVuc, trangThai);
 GO
 
-PRINT N'Thiết lập Database v11 Thành Công!';
-PRINT N'Đã thêm bảng PhieuXuat, ChiTietPhieuXuat';
-PRINT N'Đã thay loaiNL bằng donViDongGoi trong NguyenLieu';
+PRINT N'Thiết lập Database v12 Thành Công!';
+PRINT N'Đã bổ sung Khách Hàng, Khuyến Mãi và Bảng Cấu Hình';
+PRINT N'Đã cập nhật bảng HoaDon';
 GO

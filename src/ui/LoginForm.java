@@ -32,7 +32,8 @@ public class LoginForm extends JFrame {
     private static final Color COLOR_BORDER = new Color(220, 200, 175); // viền input
 
     public LoginForm() {
-        setTitle("COFFEE 11:01 — Đăng Nhập");
+        String tenQuan = utils.AppConfig.getInstance().getString("TEN_QUAN", "COFFEE 11:01");
+        setTitle(tenQuan + " — Đăng Nhập");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(820, 540);
         setLocationRelativeTo(null);
@@ -117,7 +118,8 @@ public class LoginForm extends JFrame {
         iconLbl.setFont(new Font("Roboto", Font.PLAIN, 40));
         iconWrap.add(iconLbl);
 
-        JLabel lblBrand = new JLabel("COFFEE 11:01");
+        String tenQuan = utils.AppConfig.getInstance().getString("TEN_QUAN", "COFFEE 11:01");
+        JLabel lblBrand = new JLabel(tenQuan.toUpperCase());
         lblBrand.setFont(new Font("SansSerif", Font.BOLD, 22));
         lblBrand.setForeground(COLOR_CREAM);
         lblBrand.setAlignmentX(CENTER_ALIGNMENT);
@@ -169,7 +171,7 @@ public class LoginForm extends JFrame {
         left.add(content, BorderLayout.CENTER);
 
         // Copyright bottom
-        JLabel copy = new JLabel("© 2026 Coffee 11:01", SwingConstants.CENTER);
+        JLabel copy = new JLabel("© 2026 " + tenQuan, SwingConstants.CENTER);
         copy.setFont(new Font("SansSerif", Font.PLAIN, 11));
         copy.setForeground(new Color(120, 95, 65));
         copy.setBorder(new EmptyBorder(0, 0, 18, 0));

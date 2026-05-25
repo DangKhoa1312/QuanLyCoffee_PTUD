@@ -17,6 +17,12 @@ public class HoaDon {
     private LoaiDon           loaiDon;             // TAI_BAN hoặc MANG_VE
     private String            ghiChu;              // ghi chú đơn hàng
     private String            maNV;                // FK NhanVien (thu ngân thực hiện TT)
+    
+    // Các trường mới cho Phase 2: Khuyến Mãi & Khách Hàng
+    private double            tienGiamGia;
+    private int               diemSuDung;
+    private KhachHang         khachHang;           // Đúng chuẩn OOP (Composition)
+    private KhuyenMai         khuyenMai;           // Đúng chuẩn OOP (Composition)
 
     // Các trường bổ sung khi JOIN
     private String            soBan;
@@ -74,6 +80,18 @@ public class HoaDon {
 
     public String getMaNV()          { return maNV; }
     public void   setMaNV(String v)  { this.maNV = v; }
+
+    public double getTienGiamGia() { return tienGiamGia; }
+    public void setTienGiamGia(double tienGiamGia) { this.tienGiamGia = tienGiamGia; }
+
+    public KhachHang getKhachHang() { return khachHang; }
+    public void setKhachHang(KhachHang khachHang) { this.khachHang = khachHang; }
+
+    public KhuyenMai getKhuyenMai() { return khuyenMai; }
+    public void setKhuyenMai(KhuyenMai khuyenMai) { this.khuyenMai = khuyenMai; }
+
+    public int getDiemSuDung() { return diemSuDung; }
+    public void setDiemSuDung(int diemSuDung) { this.diemSuDung = diemSuDung; }
 
     public boolean isDaThanhToan() {
         return TrangThaiHoaDon.DA_THANH_TOAN.equals(trangThai);

@@ -34,12 +34,37 @@ public class HoaDonDAOImpl implements HoaDonDAO {
         );
         try { hd.setSoBan(rs.getString("soBan")); } catch (SQLException ignored) {}
         try { hd.setTenNV(rs.getString("tenNV")); } catch (SQLException ignored) {}
+        
+        // Cập nhật Phase 2
+        try { hd.setTienGiamGia(rs.getDouble("tienGiamGia")); } catch (SQLException ignored) {}
+        try { hd.setDiemSuDung(rs.getInt("diemSuDung")); } catch (SQLException ignored) {}
+        
+        try { 
+            String sdt = rs.getString("soDienThoai");
+            if (sdt != null) {
+                entity.KhachHang kh = new entity.KhachHang();
+                kh.setSoDienThoai(sdt);
+                try { kh.setTenKhachHang(rs.getString("tenKhachHang")); } catch (SQLException ignored) {}
+                hd.setKhachHang(kh);
+            }
+        } catch (SQLException ignored) {}
+
+        try { 
+            String makm = rs.getString("maKhuyenMai");
+            if (makm != null) {
+                entity.KhuyenMai km = new entity.KhuyenMai();
+                km.setMaKhuyenMai(makm);
+                try { km.setTenKhuyenMai(rs.getString("tenKhuyenMai")); } catch (SQLException ignored) {}
+                hd.setKhuyenMai(km);
+            }
+        } catch (SQLException ignored) {}
+        
         return hd;
     }
 
     @Override
     public boolean insert(HoaDon hd) {
-        String sql = "INSERT INTO HoaDon(maHD, thoiGianXuat, thoiGianThanhToan, tongTienPhaiTra, trangThai, hinhThucThanhToan, maBan, maCa, loaiDon, ghiChu, maNV) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO HoaDon(maHD, thoiGianXuat, thoiGianThanhToan, tongTienPhaiTra, trangThai, hinhThucThanhToan, maBan, maCa, loaiDon, ghiChu, maNV, tienGiamGia, soDienThoai, maKhuyenMai, diemSuDung) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, hd.getMaHD());
             ps.setTimestamp(2, hd.getThoiGianXuat() != null ? Timestamp.valueOf(hd.getThoiGianXuat()) : null);
@@ -52,6 +77,10 @@ public class HoaDonDAOImpl implements HoaDonDAO {
             ps.setString(9, hd.getLoaiDon() != null ? hd.getLoaiDon().name() : "TAI_BAN");
             ps.setString(10, hd.getGhiChu());
             ps.setString(11, hd.getMaNV());
+            ps.setDouble(12, hd.getTienGiamGia());
+            ps.setString(13, hd.getKhachHang() != null ? hd.getKhachHang().getSoDienThoai() : null);
+            ps.setString(14, hd.getKhuyenMai() != null ? hd.getKhuyenMai().getMaKhuyenMai() : null);
+            ps.setInt(15, hd.getDiemSuDung());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("HoaDonDAOImpl.insert: " + e.getMessage());
@@ -61,7 +90,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
 
     @Override
     public boolean update(HoaDon hd) {
-        String sql = "UPDATE HoaDon SET thoiGianXuat=?, thoiGianThanhToan=?, tongTienPhaiTra=?, trangThai=?, hinhThucThanhToan=?, maBan=?, maCa=?, loaiDon=?, ghiChu=?, maNV=? WHERE maHD=?";
+        String sql = "UPDATE HoaDon SET thoiGianXuat=?, thoiGianThanhToan=?, tongTienPhaiTra=?, trangThai=?, hinhThucThanhToan=?, maBan=?, maCa=?, loaiDon=?, ghiChu=?, maNV=?, tienGiamGia=?, soDienThoai=?, maKhuyenMai=?, diemSuDung=? WHERE maHD=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setTimestamp(1, hd.getThoiGianXuat() != null ? Timestamp.valueOf(hd.getThoiGianXuat()) : null);
             ps.setTimestamp(2, hd.getThoiGianThanhToan() != null ? Timestamp.valueOf(hd.getThoiGianThanhToan()) : null);
@@ -73,7 +102,11 @@ public class HoaDonDAOImpl implements HoaDonDAO {
             ps.setString(8, hd.getLoaiDon() != null ? hd.getLoaiDon().name() : "TAI_BAN");
             ps.setString(9, hd.getGhiChu());
             ps.setString(10, hd.getMaNV());
-            ps.setString(11, hd.getMaHD());
+            ps.setDouble(11, hd.getTienGiamGia());
+            ps.setString(12, hd.getKhachHang() != null ? hd.getKhachHang().getSoDienThoai() : null);
+            ps.setString(13, hd.getKhuyenMai() != null ? hd.getKhuyenMai().getMaKhuyenMai() : null);
+            ps.setInt(14, hd.getDiemSuDung());
+            ps.setString(15, hd.getMaHD());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("HoaDonDAOImpl.update: " + e.getMessage());
@@ -95,7 +128,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
 
     @Override
     public HoaDon findById(String maHD) {
-        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE hd.maHD=?";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV, kh.tenKhachHang, km.tenKhuyenMai FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV LEFT JOIN KhachHang kh ON hd.soDienThoai = kh.soDienThoai LEFT JOIN KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai WHERE hd.maHD=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maHD);
             ResultSet rs = ps.executeQuery();
@@ -109,7 +142,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     @Override
     public List<HoaDon> findAll() {
         List<HoaDon> list = new ArrayList<>();
-        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV ORDER BY hd.thoiGianXuat DESC";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV, kh.tenKhachHang, km.tenKhuyenMai FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV LEFT JOIN KhachHang kh ON hd.soDienThoai = kh.soDienThoai LEFT JOIN KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai ORDER BY hd.thoiGianXuat DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
@@ -122,7 +155,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     @Override
     public List<HoaDon> findByCa(String maCa) {
         List<HoaDon> list = new ArrayList<>();
-        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE hd.maCa=? ORDER BY hd.thoiGianXuat DESC";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV, kh.tenKhachHang, km.tenKhuyenMai FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV LEFT JOIN KhachHang kh ON hd.soDienThoai = kh.soDienThoai LEFT JOIN KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai WHERE hd.maCa=? ORDER BY hd.thoiGianXuat DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maCa);
             ResultSet rs = ps.executeQuery();
@@ -136,7 +169,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     @Override
     public List<HoaDon> findByNgay(LocalDate ngay) {
         List<HoaDon> list = new ArrayList<>();
-        String sql = "SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE CAST(hd.thoiGianXuat AS DATE) = ? ORDER BY hd.thoiGianXuat DESC";
+        String sql = "SELECT hd.*, b.soBan, nv.tenNV, kh.tenKhachHang, km.tenKhuyenMai FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV LEFT JOIN KhachHang kh ON hd.soDienThoai = kh.soDienThoai LEFT JOIN KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai WHERE CAST(hd.thoiGianXuat AS DATE) = ? ORDER BY hd.thoiGianXuat DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(ngay));
             ResultSet rs = ps.executeQuery();
@@ -151,7 +184,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
     public List<HoaDon> findByFilter(LocalDate tuNgay, LocalDate denNgay,
                                      String hinhThuc, String maBan, String maNV) {
         List<HoaDon> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT hd.*, b.soBan, nv.tenNV FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT hd.*, b.soBan, nv.tenNV, kh.tenKhachHang, km.tenKhuyenMai FROM HoaDon hd LEFT JOIN Ban b ON hd.maBan = b.maBan LEFT JOIN NhanVien nv ON hd.maNV = nv.maNV LEFT JOIN KhachHang kh ON hd.soDienThoai = kh.soDienThoai LEFT JOIN KhuyenMai km ON hd.maKhuyenMai = km.maKhuyenMai WHERE 1=1");
         if (tuNgay  != null) sql.append(" AND CAST(hd.thoiGianXuat AS DATE) >= ?");
         if (denNgay != null) sql.append(" AND CAST(hd.thoiGianXuat AS DATE) <= ?");
         if (hinhThuc != null && !hinhThuc.isEmpty()) sql.append(" AND hd.hinhThucThanhToan = ?");

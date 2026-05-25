@@ -251,11 +251,12 @@ public class DatBanDAOImpl implements DatBanDAO {
     // ══ isTrungGio: kiểm tra bàn có bị trùng giờ ±60 phút không ════════════
     @Override
     public boolean isTrungGio(String maBan, LocalDateTime thoiGianDen, String excludeMaDatBan) {
+        int khoangCach = utils.AppConfig.getInstance().getInt("KHOANG_CACH_DAT_BAN", 60);
         String sql = "SELECT COUNT(*) FROM DatBan " +
                      "WHERE maBan=? " +
                      "  AND maDatBan<>? " +
                      "  AND trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN') " +
-                     "  AND ABS(DATEDIFF(MINUTE, thoiGianDen, ?)) < 60";
+                     "  AND ABS(DATEDIFF(MINUTE, thoiGianDen, ?)) < " + khoangCach;
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maBan);
             ps.setString(2, excludeMaDatBan != null ? excludeMaDatBan : "");

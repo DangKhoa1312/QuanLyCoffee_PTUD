@@ -47,7 +47,8 @@ public class MainFrame extends JFrame {
     // CONSTRUCTOR
     // ══════════════════════════════════════════════════════════════════════════
     public MainFrame() {
-        setTitle("COFFEE 11:01 - Hệ Thống Quản Lý");
+        String tenQuan = utils.AppConfig.getInstance().getString("TEN_QUAN", "COFFEE 11:01");
+        setTitle(tenQuan + " - Hệ Thống Quản Lý");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1280, 800);
         setLocationRelativeTo(null);
@@ -214,6 +215,9 @@ public class MainFrame extends JFrame {
         // Hoá Đơn
         invoicePanel = new ui.panel.InvoicePanel();
         contentPanel.add(invoicePanel, "HOA_DON");
+        
+        // Khách Hàng
+        contentPanel.add(new ui.panel.CustomerManagementPanel(), "KHACH_HANG");
 
         // Thống Kê
         statisticPanel = new ui.panel.StatisticPanel();
@@ -224,7 +228,9 @@ public class MainFrame extends JFrame {
         contentPanel.add(new ui.panel.admin.PriceManagementPanel(), "ADMIN_GIA");
         contentPanel.add(new ui.panel.admin.TableManagementPanel(), "ADMIN_BAN");
         contentPanel.add(new StaffManagementPanel(), "ADMIN_NHAN_VIEN");
+        contentPanel.add(new ui.panel.PromotionManagementPanel(), "ADMIN_KHUYEN_MAI");
         contentPanel.add(new ui.panel.admin.WarehouseManagementPanel(), "ADMIN_KHO");
+        contentPanel.add(new ui.panel.SystemConfigPanel(), "ADMIN_CAU_HINH");
 
         // Placeholders cho các module chưa build
         contentPanel.add(buildPlaceholder("🕐  Lịch Sử Ca Làm Việc", "Module đang phát triển..."), "LICH_SU_CA");
@@ -281,6 +287,20 @@ public class MainFrame extends JFrame {
     // ══════════════════════════════════════════════════════════════════════════
     // HELPERS
     // ══════════════════════════════════════════════════════════════════════════
+    
+    public void refreshUI() {
+        String tenQuan = utils.AppConfig.getInstance().getString("TEN_QUAN", "COFFEE 11:01");
+        setTitle(tenQuan + " - Hệ Thống Quản Lý");
+        if (sidebar != null) {
+            sidebar.updateBrandName(tenQuan);
+        }
+        if (dashboardPanel != null) {
+            // Re-initialize or refresh dashboard title if possible
+            // Note: Dashboard doesn't have a public setter for the brand yet, so we will refresh the dashboard panel.
+            dashboardPanel.refresh(); 
+        }
+    }
+
     private void showCard(String name) {
         ((CardLayout) contentPanel.getLayout()).show(contentPanel, name);
     }
@@ -306,7 +326,8 @@ public class MainFrame extends JFrame {
         card.setBackground(Color.WHITE);
         card.setBorder(new EmptyBorder(50, 70, 50, 70));
 
-        JLabel lbl1 = new JLabel("☕  COFFEE 11:01");
+        String tenQuan = utils.AppConfig.getInstance().getString("TEN_QUAN", "COFFEE 11:01");
+        JLabel lbl1 = new JLabel("☕  " + tenQuan);
         lbl1.setFont(new Font("Roboto", Font.BOLD, 30));
         lbl1.setForeground(new Color(44, 26, 14));
         lbl1.setAlignmentX(CENTER_ALIGNMENT);

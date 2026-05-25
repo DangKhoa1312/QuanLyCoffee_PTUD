@@ -5371,3 +5371,15 @@ INSERT INTO ChiTietHoaDonTopping (maID, soLuong, giaTopping, maCTHD, maTopping) 
 ('CTHDT001029', 2, 8000, 'CTHD002511', 'TOP005');
 GO
 
+-- 20. KhuyenMai (Dữ liệu mẫu)
+INSERT INTO KhuyenMai (maKhuyenMai, tenKhuyenMai, loaiKhuyenMai, giaTri, donHangToiThieu, ngayBatDau, ngayKetThuc, trangThai) VALUES
+('KM_MUNG1THANG6', N'Quốc tế thiếu nhi', 'PHAN_TRAM', 10, 50000, '2026-06-01', '2026-06-02', 'DANG_HOAT_DONG'),
+('KM_SINHVIEN', N'Ưu đãi sinh viên', 'PHAN_TRAM', 5, 0, '2026-01-01', '2026-12-31', 'DANG_HOAT_DONG'),
+('KM_GIAM20K', N'Giảm 20k cho đơn từ 150k', 'TIEN_MAT', 20000, 150000, '2026-01-01', '2026-12-31', 'DANG_HOAT_DONG');
+GO
+
+-- 21. KhachHang (Dữ liệu mẫu)
+INSERT INTO KhachHang (soDienThoai, tenKhachHang, diemTichLuy) VALUES
+('0901112223', N'Khách VIP 1', 50),
+('0903334445', N'Khách Hàng 2', 15);
+GO

@@ -76,9 +76,10 @@ public class DatBan {
     public boolean isHienThi()          { return hienThi; }
     public void    setHienThi(boolean v){ this.hienThi = v; }
 
-    /** Kiểm tra đơn đặt bàn có bị quá hạn không (quá 15 phút so với giờ hẹn) */
+    /** Kiểm tra đơn đặt bàn có bị quá hạn không (dựa vào cấu hình hệ thống) */
     public boolean isQuaHan() {
-        return LocalDateTime.now().isAfter(thoiGianDen.plusMinutes(15));
+        int thoiGianHuyBan = utils.AppConfig.getInstance().getInt("THOI_GIAN_HUY_BAN", 15);
+        return LocalDateTime.now().isAfter(thoiGianDen.plusMinutes(thoiGianHuyBan));
     }
 
     @Override

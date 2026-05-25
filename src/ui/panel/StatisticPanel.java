@@ -75,7 +75,8 @@ public class StatisticPanel extends JPanel {
     // ═══════════════════════════════════════════════════════════════
     public StatisticPanel() {
         this.statController = new StatisticController();
-        this.dateFrom = LocalDate.now().minusDays(6);
+        int days = utils.AppConfig.getInstance().getInt("THOI_GIAN_THONG_KE", 7);
+        this.dateFrom = LocalDate.now().minusDays(days - 1);
         this.dateTo = LocalDate.now();
 
         setLayout(new BorderLayout(0, 0));
@@ -121,8 +122,9 @@ public class StatisticPanel extends JPanel {
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 2));
         filterPanel.setOpaque(false);
 
+        int days = utils.AppConfig.getInstance().getInt("THOI_GIAN_THONG_KE", 7);
         cboRange = new JComboBox<>(new String[]{
-            "7 ngày qua", "30 ngày qua", "Tháng này", "Tháng trước", "Tùy chỉnh"
+            days + " ngày qua", "30 ngày qua", "Tháng này", "Tháng trước", "Tùy chỉnh"
         });
         cboRange.setFont(new Font("Roboto", Font.PLAIN, 13));
         cboRange.setPreferredSize(new Dimension(130, 30));
@@ -518,7 +520,10 @@ public class StatisticPanel extends JPanel {
 
         LocalDate now = LocalDate.now();
         switch (idx) {
-            case 0 -> { dateFrom = now.minusDays(6);  dateTo = now; }
+            case 0 -> { 
+                int days = utils.AppConfig.getInstance().getInt("THOI_GIAN_THONG_KE", 7);
+                dateFrom = now.minusDays(days - 1);  dateTo = now; 
+            }
             case 1 -> { dateFrom = now.minusDays(29); dateTo = now; }
             case 2 -> { dateFrom = now.withDayOfMonth(1); dateTo = now; }
             case 3 -> {
@@ -541,7 +546,8 @@ public class StatisticPanel extends JPanel {
                 LocalDate tmp = dateFrom; dateFrom = dateTo; dateTo = tmp;
             }
         } catch (Exception e) {
-            dateFrom = LocalDate.now().minusDays(6);
+            int days = utils.AppConfig.getInstance().getInt("THOI_GIAN_THONG_KE", 7);
+            dateFrom = LocalDate.now().minusDays(days - 1);
             dateTo = LocalDate.now();
         }
     }
