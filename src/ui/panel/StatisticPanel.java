@@ -1,5 +1,6 @@
 package ui.panel;
 
+import com.toedter.calendar.JDateChooser;
 import controller.StatisticController;
 import jiconfont.icons.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -23,8 +24,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.util.Locale;
-import java.util.Map;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.List;
 
 /**
  * Panel Thống Kê – full-screen layout, không scroll.
@@ -60,10 +62,9 @@ public class StatisticPanel extends JPanel {
     };
 
     // ── UI components ───────────────────────────────────────────
-    private JComboBox<String> cboRange, cboGioMode;
-    private int currentGioMode = 0; // 0: Số Đơn, 1: Doanh Thu
-    private JSpinner spnFrom, spnTo;
+    private JComboBox<String> cboRange;
     private JPanel pnlCustomDate;
+    private JDateChooser dateChooserFrom, dateChooserTo;
     private JLabel lblRevenue, lblInvoices, lblAvgOrder, lblTopItem;
 
     private JPanel pnlChartDoanhThu, pnlChartTopMon, pnlChartLoaiMon, pnlChartGio;
@@ -134,29 +135,38 @@ public class StatisticPanel extends JPanel {
         pnlCustomDate.setOpaque(false);
         pnlCustomDate.setVisible(false);
 
-        spnFrom = createDateSpinner(dateFrom);
-        spnTo = createDateSpinner(dateTo);
+        dateChooserFrom = new JDateChooser();
+        dateChooserFrom.setDate(java.sql.Date.valueOf(dateFrom));
+        dateChooserFrom.setDateFormatString("dd/MM/yyyy");
+        dateChooserFrom.setFont(new Font("Roboto", Font.PLAIN, 12));
+        dateChooserFrom.setPreferredSize(new Dimension(110, 28));
 
-        pnlCustomDate.add(smallLabel("Từ:"));
-        pnlCustomDate.add(spnFrom);
-        pnlCustomDate.add(smallLabel(" → "));
-        pnlCustomDate.add(smallLabel("Đến:"));
-        pnlCustomDate.add(spnTo);
+        dateChooserTo = new JDateChooser();
+        dateChooserTo.setDate(java.sql.Date.valueOf(dateTo));
+        dateChooserTo.setDateFormatString("dd/MM/yyyy");
+        dateChooserTo.setFont(new Font("Roboto", Font.PLAIN, 12));
+        dateChooserTo.setPreferredSize(new Dimension(110, 28));
 
         JPanel btnApply = createSmallBtn("Áp Dụng", P_BLUE_FG, () -> {
             updateDateRange();
             loadCharts();
         });
 
+        pnlCustomDate.add(smallLabel("Từ:"));
+        pnlCustomDate.add(dateChooserFrom);
+        pnlCustomDate.add(smallLabel("→"));
+        pnlCustomDate.add(smallLabel("Đến:"));
+        pnlCustomDate.add(dateChooserTo);
+        pnlCustomDate.add(btnApply);
+
         JPanel btnRefresh = createSmallBtn("Làm Mới", TEXT_SUB, () -> {
-            cboRange.setSelectedIndex(0);
-            onRangeChanged();
-            loadCharts();
+            cboRange.setSelectedIndex(0); // Will trigger onRangeChanged
+            dateChooserFrom.setDate(java.sql.Date.valueOf(dateFrom));
+            dateChooserTo.setDate(java.sql.Date.valueOf(dateTo));
         });
 
         filterPanel.add(cboRange);
         filterPanel.add(pnlCustomDate);
-        filterPanel.add(btnApply);
         filterPanel.add(btnRefresh);
         p.add(filterPanel, BorderLayout.EAST);
 
@@ -198,19 +208,6 @@ public class StatisticPanel extends JPanel {
         pnlChartLoaiMon  = createChartCard();
         pnlChartGio      = createChartCard();
 
-        // Thêm ComboBox nhỏ ở góc chart Giờ
-        cboGioMode = new JComboBox<>(new String[]{"Lượng Đơn Theo Giờ", "Doanh Thu Theo Giờ"});
-        cboGioMode.setFont(new Font("Roboto", Font.PLAIN, 11));
-        cboGioMode.setPreferredSize(new Dimension(140, 24));
-        cboGioMode.addActionListener(e -> {
-            currentGioMode = cboGioMode.getSelectedIndex();
-            loadCharts();
-        });
-        JPanel headerGio = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        headerGio.setOpaque(false);
-        headerGio.add(cboGioMode);
-        pnlChartGio.add(headerGio, BorderLayout.NORTH);
-
         grid.add(pnlChartDoanhThu);
         grid.add(pnlChartTopMon);
         grid.add(pnlChartLoaiMon);
@@ -236,7 +233,6 @@ public class StatisticPanel extends JPanel {
             Map<String, Integer> mapMon;
             Map<String, Double> mapLoai;
             Map<Integer, Integer> mapGioDon;
-            Map<Integer, Double> mapGioTien;
 
             @Override
             protected Void doInBackground() {
@@ -245,12 +241,7 @@ public class StatisticPanel extends JPanel {
                 mapDT   = statController.getDoanhThuTheoNgay(dateFrom, dateTo);
                 mapMon  = statController.getTopMonBanChay(10, dateFrom, dateTo);
                 mapLoai = statController.getDoanhThuTheoLoaiMon(dateFrom, dateTo);
-                
-                if (currentGioMode == 0) {
-                    mapGioDon = statController.getSoDonTheoGio(dateFrom, dateTo);
-                } else {
-                    mapGioTien = statController.getDoanhThuTheoGio(dateFrom, dateTo);
-                }
+                mapGioDon = statController.getSoDonTheoGio(dateFrom, dateTo);
 
                 if (!mapMon.isEmpty()) topItemName = mapMon.keySet().iterator().next();
                 return null;
@@ -269,12 +260,7 @@ public class StatisticPanel extends JPanel {
                 buildLineChart(mapDT);
                 buildBarChartMon(mapMon);
                 buildPieChart(mapLoai);
-                
-                if (currentGioMode == 0) {
-                    buildBarChartGioDon(mapGioDon);
-                } else {
-                    buildBarChartGioTien(mapGioTien);
-                }
+                buildPeakHoursPanel(mapGioDon);
             }
         }.execute();
     }
@@ -411,89 +397,61 @@ public class StatisticPanel extends JPanel {
         pnlChartLoaiMon.repaint();
     }
 
-    private void buildBarChartGioDon(Map<Integer, Integer> data) {
-        // Remove old chart panel (it's at CENTER, NORTH is the combobox)
-        if (pnlChartGio.getComponentCount() > 1) {
-            pnlChartGio.remove(1);
+    private void buildPeakHoursPanel(Map<Integer, Integer> data) {
+        pnlChartGio.removeAll();
+        pnlChartGio.setLayout(new BorderLayout());
+
+        JLabel lblTitle = new JLabel("Thống Kê Giờ Cao Điểm");
+        lblTitle.setFont(new Font("Roboto", Font.BOLD, 14));
+        lblTitle.setForeground(TEXT_MAIN);
+        lblTitle.setBorder(new EmptyBorder(0, 0, 10, 0));
+        pnlChartGio.add(lblTitle, BorderLayout.NORTH);
+
+        JPanel pnlList = new JPanel();
+        pnlList.setLayout(new BoxLayout(pnlList, BoxLayout.Y_AXIS));
+        pnlList.setOpaque(false);
+
+        // Sắp xếp map theo số đơn giảm dần
+        List<Map.Entry<Integer, Integer>> list = new ArrayList<>(data.entrySet());
+        list.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
+
+        int rank = 1;
+        for (Map.Entry<Integer, Integer> entry : list) {
+            JPanel item = new JPanel(new BorderLayout());
+            item.setOpaque(false);
+            item.setBorder(new EmptyBorder(6, 4, 6, 4));
+            
+            JLabel lblHour = new JLabel(String.format("Hạng %d: %02dh - %02dh", rank, entry.getKey(), entry.getKey() + 1));
+            lblHour.setFont(new Font("Roboto", Font.PLAIN, 13));
+            lblHour.setForeground(TEXT_MAIN);
+            
+            JLabel lblCount = new JLabel(entry.getValue() + " đơn");
+            lblCount.setFont(new Font("Roboto", Font.BOLD, 13));
+            lblCount.setForeground(P_GREEN_FG);
+            
+            item.add(lblHour, BorderLayout.WEST);
+            item.add(lblCount, BorderLayout.EAST);
+            
+            pnlList.add(item);
+            pnlList.add(new JSeparator());
+            
+            rank++;
+            if (rank > 10) break; // Chỉ hiện top 10
+        }
+        
+        if (rank == 1) { // Không có dữ liệu
+            JLabel lblEmpty = new JLabel("Chưa có dữ liệu đơn hàng");
+            lblEmpty.setFont(new Font("Roboto", Font.ITALIC, 12));
+            lblEmpty.setForeground(TEXT_SUB);
+            pnlList.add(lblEmpty);
         }
 
-        DefaultCategoryDataset ds = new DefaultCategoryDataset();
-        for (Map.Entry<Integer, Integer> e : data.entrySet()) {
-            String label = String.format("%02dh", e.getKey());
-            ds.addValue(e.getValue(), "Đơn hàng", label);
-        }
+        JScrollPane scroll = new JScrollPane(pnlList);
+        scroll.setBorder(null);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        pnlChartGio.add(scroll, BorderLayout.CENTER);
 
-        JFreeChart chart = ChartFactory.createBarChart(
-            "Lượng Đơn Theo Giờ", null, "Số đơn", ds,
-            PlotOrientation.VERTICAL, false, true, false
-        );
-        styleChart(chart);
-
-        CategoryPlot plot = chart.getCategoryPlot();
-        plot.setRangeGridlinePaint(new Color(230, 230, 230));
-        plot.setDomainGridlinesVisible(false);
-
-        BarRenderer renderer = (BarRenderer) plot.getRenderer();
-        renderer.setSeriesPaint(0, new Color(16, 185, 129));
-        renderer.setBarPainter(new org.jfree.chart.renderer.category.StandardBarPainter());
-        renderer.setShadowVisible(false);
-        renderer.setMaximumBarWidth(0.04);
-
-        CategoryAxis domainAxis = plot.getDomainAxis();
-        domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
-        domainAxis.setTickLabelFont(new Font("Roboto", Font.PLAIN, 9));
-
-        ChartPanel cp = new ChartPanel(chart);
-        cp.setMinimumDrawWidth(0);
-        cp.setMinimumDrawHeight(0);
-        cp.setMaximumDrawWidth(Integer.MAX_VALUE);
-        cp.setMaximumDrawHeight(Integer.MAX_VALUE);
-        pnlChartGio.add(cp, BorderLayout.CENTER);
-        pnlChartGio.revalidate();
-        pnlChartGio.repaint();
-    }
-
-    private void buildBarChartGioTien(Map<Integer, Double> data) {
-        if (pnlChartGio.getComponentCount() > 1) {
-            pnlChartGio.remove(1);
-        }
-
-        DefaultCategoryDataset ds = new DefaultCategoryDataset();
-        for (Map.Entry<Integer, Double> e : data.entrySet()) {
-            String label = String.format("%02dh", e.getKey());
-            ds.addValue(e.getValue(), "Doanh thu", label);
-        }
-
-        JFreeChart chart = ChartFactory.createBarChart(
-            null, null, "Doanh Thu (VNĐ)", ds,
-            PlotOrientation.VERTICAL, false, true, false
-        );
-        styleChart(chart);
-
-        CategoryPlot plot = chart.getCategoryPlot();
-        plot.setRangeGridlinePaint(new Color(230, 230, 230));
-        plot.setDomainGridlinesVisible(false);
-
-        BarRenderer renderer = (BarRenderer) plot.getRenderer();
-        renderer.setSeriesPaint(0, new Color(59, 130, 246)); // Blue cho doanh thu
-        renderer.setBarPainter(new org.jfree.chart.renderer.category.StandardBarPainter());
-        renderer.setShadowVisible(false);
-        renderer.setMaximumBarWidth(0.04);
-
-        CategoryAxis domainAxis = plot.getDomainAxis();
-        domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
-        domainAxis.setTickLabelFont(new Font("Roboto", Font.PLAIN, 9));
-
-        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
-        rangeAxis.setTickLabelFont(new Font("Roboto", Font.PLAIN, 10));
-        rangeAxis.setNumberFormatOverride(NumberFormat.getInstance(new Locale("vi", "VN")));
-
-        ChartPanel cp = new ChartPanel(chart);
-        cp.setMinimumDrawWidth(0);
-        cp.setMinimumDrawHeight(0);
-        cp.setMaximumDrawWidth(Integer.MAX_VALUE);
-        cp.setMaximumDrawHeight(Integer.MAX_VALUE);
-        pnlChartGio.add(cp, BorderLayout.CENTER);
         pnlChartGio.revalidate();
         pnlChartGio.repaint();
     }
@@ -538,10 +496,10 @@ public class StatisticPanel extends JPanel {
 
     private void updateDateRange() {
         try {
-            java.util.Date dFrom = (java.util.Date) spnFrom.getValue();
-            java.util.Date dTo = (java.util.Date) spnTo.getValue();
-            dateFrom = dFrom.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-            dateTo = dTo.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            java.util.Date dFrom = dateChooserFrom.getDate();
+            java.util.Date dTo = dateChooserTo.getDate();
+            dateFrom = dFrom.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            dateTo = dTo.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             if (dateFrom.isAfter(dateTo)) {
                 LocalDate tmp = dateFrom; dateFrom = dateTo; dateTo = tmp;
             }
@@ -619,16 +577,7 @@ public class StatisticPanel extends JPanel {
         return card;
     }
 
-    private JSpinner createDateSpinner(LocalDate d) {
-        java.util.Date initDate = java.sql.Date.valueOf(d);
-        SpinnerDateModel model = new SpinnerDateModel(initDate, null, null, java.util.Calendar.DAY_OF_MONTH);
-        JSpinner spinner = new JSpinner(model);
-        JSpinner.DateEditor editor = new JSpinner.DateEditor(spinner, "dd/MM/yyyy");
-        spinner.setEditor(editor);
-        spinner.setFont(new Font("Roboto", Font.PLAIN, 12));
-        spinner.setPreferredSize(new Dimension(110, 28));
-        return spinner;
-    }
+
 
     private JPanel createSmallBtn(String text, Color color, Runnable action) {
         JPanel btn = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 1)) {
