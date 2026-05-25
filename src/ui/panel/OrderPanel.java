@@ -47,6 +47,8 @@ public class OrderPanel extends JPanel {
     private DefaultTableModel cartModel;
     private JLabel lblTotalCart;
     private JTextField txtSearchMon;
+    
+    private java.util.Map<String, java.util.List<dto.CartItem>> ghostCache = new java.util.HashMap<>();
 
     private Runnable onBackAction;
     private final NumberFormat nf = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
@@ -213,12 +215,27 @@ public class OrderPanel extends JPanel {
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
         
+        scroll.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                recalculateCardSizes();
+            }
+        });
+        
         p.add(scroll, BorderLayout.CENTER);
         return p;
     }
     
     private void loadMenuToGrid(LoaiMon cat) {
         menuGrid.removeAll();
+        ghostCache.clear();
+        java.util.List<dto.CartItem> ghostItems = orderController.getGhostTableItems();
+        for (dto.CartItem gi : ghostItems) {
+            String mm = gi.getMon().getMaMon();
+            ghostCache.putIfAbsent(mm, new java.util.ArrayList<>());
+            ghostCache.get(mm).add(gi);
+        }
+        
         List<Mon> dsMon = menuController.getMon(cat);
         String keyword = (txtSearchMon != null) ? txtSearchMon.getText().trim().toLowerCase() : "";
         for (Mon m : dsMon) {
@@ -226,8 +243,29 @@ public class OrderPanel extends JPanel {
                 menuGrid.add(createItemCard(m));
             }
         }
-        menuGrid.revalidate();
+        recalculateCardSizes();
         menuGrid.repaint();
+    }
+
+    private void recalculateCardSizes() {
+        if (menuGrid == null || menuGrid.getParent() == null) return;
+        int availableWidth = menuGrid.getParent().getWidth() - 20; // 10px padding 2 bên của menuGrid
+        if (availableWidth <= 0) return;
+        
+        int minCardWidth = 165;
+        int hgap = 15;
+        // Số cột tự động (tối thiểu là 2)
+        int columns = Math.max(2, availableWidth / (minCardWidth + hgap));
+        
+        // Tính Width mới sao cho lấp đầy availableWidth
+        int newWidth = (availableWidth - hgap * (columns + 1)) / columns;
+        
+        for (java.awt.Component c : menuGrid.getComponents()) {
+            if (c instanceof JPanel) {
+                c.setPreferredSize(new Dimension(newWidth, 230));
+            }
+        }
+        menuGrid.revalidate();
     }
 
     /** Lọc món theo từ khóa trong thanh tìm kiếm (giữ danh mục đang chọn) */
@@ -355,6 +393,41 @@ public class OrderPanel extends JPanel {
             pnlBadge.add(lblWarningBadge);
             pnlTop.add(pnlBadge, BorderLayout.NORTH);
         }
+        
+        // --- ADD GHOST BADGE ---
+        final java.util.List<dto.CartItem> ghostMatches = ghostCache.get(m.getMaMon());
+        int ghostQty = 0;
+        if (ghostMatches != null) {
+            for (dto.CartItem gi : ghostMatches) {
+                ghostQty += gi.getSoLuong();
+            }
+        }
+        
+        if (ghostQty > 0) {
+            JLabel lblGhostBadge = new JLabel(" Sẵn có: " + ghostQty + " ");
+            lblGhostBadge.setFont(new Font("Roboto", Font.BOLD, 12));
+            lblGhostBadge.setOpaque(true);
+            lblGhostBadge.setBackground(new Color(243, 156, 18));
+            lblGhostBadge.setForeground(Color.WHITE);
+            
+            // Check if pnlBadge already exists in pnlTop
+            java.awt.Component[] comps = pnlTop.getComponents();
+            JPanel existingBadgePanel = null;
+            for (java.awt.Component c : comps) {
+                if (c instanceof JPanel) {
+                    existingBadgePanel = (JPanel) c;
+                    break;
+                }
+            }
+            if (existingBadgePanel != null) {
+                existingBadgePanel.add(lblGhostBadge);
+            } else {
+                JPanel pnlBadge2 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
+                pnlBadge2.setOpaque(false);
+                pnlBadge2.add(lblGhostBadge);
+                pnlTop.add(pnlBadge2, BorderLayout.NORTH);
+            }
+        }
 
         // Info Area
         JPanel pnlInfo = new JPanel(new BorderLayout());
@@ -427,6 +500,11 @@ public class OrderPanel extends JPanel {
                 }
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent e) {
+                    if (currentBan != null && "BAN_MA".equals(currentBan.getMaBan())) {
+                        JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(OrderPanel.this),
+                            "Kho Lưu Tạm chỉ dùng để chứa đồ dư, KHÔNG ĐƯỢC PHÉP gọi thêm món mới!", "Từ chối", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
                     // Nếu sắp hết NL → cảnh báo trước khi cho gọi món
                     if (isSapHetNL) {
                         java.util.List<String> warnings = menuController.getCanhBaoNguyenLieu(m.getMaMon());
@@ -446,13 +524,23 @@ public class OrderPanel extends JPanel {
                             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                         if (xn != JOptionPane.YES_OPTION) return;
                     }
-                    showOptionDialog(m);
+                    
+                    if (ghostMatches != null && !ghostMatches.isEmpty()) {
+                        handleGhostTableSuggestion(m, ghostMatches);
+                    } else {
+                        showOptionDialog(m);
+                    }
                 }
             };
             
             card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             card.addMouseListener(clickHandler);
             btnAdd.addActionListener(e -> {
+                if (currentBan != null && "BAN_MA".equals(currentBan.getMaBan())) {
+                    JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(OrderPanel.this),
+                        "Kho Lưu Tạm chỉ dùng để chứa đồ dư, KHÔNG ĐƯỢC PHÉP gọi thêm món mới!", "Từ chối", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 // Trigger cùng logic cảnh báo khi ấn nút "Thêm"
                 if (isSapHetNL) {
                     java.util.List<String> warnings = menuController.getCanhBaoNguyenLieu(m.getMaMon());
@@ -465,7 +553,12 @@ public class OrderPanel extends JPanel {
                         JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                     if (xn != JOptionPane.YES_OPTION) return;
                 }
-                showOptionDialog(m);
+                
+                if (ghostMatches != null && !ghostMatches.isEmpty()) {
+                    handleGhostTableSuggestion(m, ghostMatches);
+                } else {
+                    showOptionDialog(m);
+                }
             });
         }
 
@@ -901,7 +994,53 @@ public class OrderPanel extends JPanel {
         JOptionPane.showMessageDialog(this, new JScrollPane(txtReceipt), "Mô phỏng Máy In Bếp", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    private void handleGhostTableSuggestion(Mon m, java.util.List<dto.CartItem> ghostMatches) {
+        StringBuilder msg = new StringBuilder();
+        msg.append("<html><b style='color:#d35400;'>KHO TẠM ĐANG CÓ SẴN MÓN NÀY</b><br><br>");
+        msg.append("Ở Bàn Ma (Khu vực nhân viên) đang có sẵn <b>").append(m.getTenMon()).append("</b>:<br>");
+        
+        int idx = 1;
+        for (dto.CartItem gi : ghostMatches) {
+            msg.append("<br><b>").append(idx++).append(". Size ").append(gi.getSize().getTenSize()).append("</b>");
+            if (!gi.getToppings().isEmpty()) {
+                msg.append("<br><i> + Topping: ");
+                for (dto.CartItem.CartTopping top : gi.getToppings()) {
+                    msg.append(top.topping.getTenTopping()).append(" (x").append(top.soLuong).append(") ");
+                }
+                msg.append("</i>");
+            }
+            if (gi.getGhiChu() != null && !gi.getGhiChu().isEmpty()) {
+                msg.append("<br><i> * Ghi chú: ").append(gi.getGhiChu()).append("</i>");
+            }
+            msg.append("<br><i>(Số lượng còn: ").append(gi.getSoLuong()).append(")</i>");
+        }
+        msg.append("<br><br><b>Bạn có muốn lấy 1 phần CÓ SẴN (đỡ phải làm lại) không?</b><br>");
+        msg.append("<i style='color:gray;'>(Ấn 'Lấy món có sẵn' để lấy loại số 1, 'Làm Mới' để gọi bếp làm ly mới)</i></html>");
+
+        int xn = JOptionPane.showOptionDialog(this, msg.toString(), "Gợi ý Bàn Ma",
+                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                new String[]{"Lấy món có sẵn", "Yêu cầu Làm mới", "Hủy"}, "Lấy món có sẵn");
+
+        if (xn == JOptionPane.YES_OPTION) {
+            dto.CartItem target = ghostMatches.get(0);
+            dto.CartItem taken = orderController.takeOneFromGhostTable(target);
+            if (taken != null) {
+                cartData.add(taken);
+                renderCartTable();
+                loadMenuToGrid(null); // Refresh lại màn hình để update badge
+            } else {
+                JOptionPane.showMessageDialog(this, "Không lấy được món, có thể đã bị lấy mất!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        } else if (xn == JOptionPane.NO_OPTION) {
+            showOptionDialog(m);
+        }
+    }
+
     private void moThanhToan() {
+        if (currentBan != null && "BAN_MA".equals(currentBan.getMaBan())) {
+            JOptionPane.showMessageDialog(this, "Kho Lưu Tạm chỉ dùng để bảo lưu đồ uống, KHÔNG THỂ THANH TOÁN!", "Từ chối", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if (!performSaveOrder()) return; 
 
         Window win = SwingUtilities.getWindowAncestor(this);
@@ -917,35 +1056,76 @@ public class OrderPanel extends JPanel {
 
     private void huyDonHangAction() {
         if (currentDonHang == null) {
-            JOptionPane.showMessageDialog(this, "Đơn hàng mới chưa được lưu, chỉ cần xóa đồ trong giỏ!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            int xn = JOptionPane.showConfirmDialog(this,
+                "Bạn có chắc chắn muốn hủy (xóa sạch) đơn hàng mới này không?",
+                "Xác nhận hủy đơn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (xn == JOptionPane.YES_OPTION) {
+                cartData.clear();
+                renderCartTable();
+            }
             return;
         }
 
-        // Kiểm tra xem đã có đồ ăn gọi chưa
-        for (CartItem item : cartData) {
-            if (item.isDaPhucVu()) {
-                JOptionPane.showMessageDialog(this, "Không thể hủy toàn bộ hóa đơn vì đã có món được chế biến (Đã báo bếp).\nVui lòng sử dụng tính năng Chuyển bàn hoặc Tách món nếu cần thiết.", "Lỗi Huỷ Đơn", JOptionPane.WARNING_MESSAGE);
-                return;
+        if (currentBan != null && "BAN_MA".equals(currentBan.getMaBan())) {
+            int xn = JOptionPane.showConfirmDialog(this,
+                    "Bạn đang thao tác trên KHO LƯU TẠM.\nBạn có CHẮC CHẮN muốn xóa bỏ vĩnh viễn toàn bộ đồ uống tồn trong kho này không?",
+                    "Xác nhận Dọn Kho", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (xn == JOptionPane.YES_OPTION) {
+                try {
+                    orderController.huyDonHang(currentDonHang.getMaDonHang());
+                    JOptionPane.showMessageDialog(this, "Đã dọn sạch Kho Lưu Tạm thành công!");
+                    if (onBackAction != null) onBackAction.run();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi hủy đơn", JOptionPane.ERROR_MESSAGE);
+                }
             }
+            return;
         }
 
-        int xn = JOptionPane.showConfirmDialog(this,
-                "Bạn có CHẮC CHẮN muốn hủy đơn hàng này không?",
-                "Xác nhận hủy đơn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        // Phân loại món chưa nấu và đã nấu
+        java.util.List<CartItem> cooked = new ArrayList<>();
+        for (CartItem item : cartData) {
+            if (item.isDaPhucVu()) cooked.add(item);
+        }
 
-        if (xn == JOptionPane.YES_OPTION) {
-            try {
-                orderController.huyDonHang(currentDonHang.getMaDonHang());
-                JOptionPane.showMessageDialog(this, "Đã hủy đơn hàng thành công!");
-                if (onBackAction != null) onBackAction.run();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi hủy đơn", JOptionPane.ERROR_MESSAGE);
+        if (cooked.isEmpty()) {
+            int xn = JOptionPane.showConfirmDialog(this,
+                    "Bạn có CHẮC CHẮN muốn hủy đơn hàng này không?",
+                    "Xác nhận hủy đơn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (xn == JOptionPane.YES_OPTION) {
+                try {
+                    orderController.huyDonHang(currentDonHang.getMaDonHang());
+                    JOptionPane.showMessageDialog(this, "Đã hủy đơn hàng thành công!");
+                    if (onBackAction != null) onBackAction.run();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi hủy đơn", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } else {
+            String msg = "Đơn hàng có " + cooked.size() + " món đã được Báo Bếp (không thể hủy).\n\n" +
+                         "Bạn có muốn Xóa các món chưa nấu, và CHUYỂN các món đã nấu sang Bàn Ma (Lưu tạm) để hủy đơn này không?";
+            int xn = JOptionPane.showConfirmDialog(this, msg, "Xác nhận Hủy Đơn & Chuyển Bàn Ma", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (xn == JOptionPane.YES_OPTION) {
+                try {
+                    orderController.moveToGhostTable(currentDonHang.getMaDonHang(), cooked);
+                    orderController.huyDonHang(currentDonHang.getMaDonHang());
+                    JOptionPane.showMessageDialog(this, "Đã chuyển các món đã nấu sang Bàn Ma và Hủy đơn thành công!");
+                    if (onBackAction != null) onBackAction.run();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi hủy đơn", JOptionPane.ERROR_MESSAGE);
+                }
             }
         }
     }
 
     private void handleMenuTuyChonBan(int actionType) {
+        if (currentBan != null && "BAN_MA".equals(currentBan.getMaBan())) {
+            JOptionPane.showMessageDialog(this, "Không thể thao tác Chuyển/Ghép/Tách món trực tiếp từ Kho Lưu Tạm. Xin hãy dùng gợi ý ở Bàn khách để rút món!", "Từ chối", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if (currentDonHang == null || !"DANG_PHUC_VU".equals(currentDonHang.getTrangThai().name())) {
             JOptionPane.showMessageDialog(this, "Chỉ có thể đổi/gộp bàn cho đơn hàng đã [Gửi Bếp]!", "Thông báo", JOptionPane.WARNING_MESSAGE);
             return;

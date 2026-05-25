@@ -251,8 +251,9 @@ public class TablePanel extends JPanel {
         this.currentKhuVuc = null;
         khuVucGrid.removeAll();
 
-        // Card "Mang về" luôn ở đầu tiên
+        // Card "Mang về" và "Bàn Ma" luôn ở đầu tiên
         khuVucGrid.add(createMangVeCard());
+        khuVucGrid.add(createBanMaCard());
 
         List<KhuVuc> dsKV = tableController.getDanhSachKhuVuc();
         for (KhuVuc kv : dsKV) {
@@ -429,6 +430,83 @@ public class TablePanel extends JPanel {
                         }
                         loadKhuVucView(); 
                     }
+                }
+            }
+        });
+        
+        card.add(pnlTop, BorderLayout.NORTH);
+        card.add(pnlMid, BorderLayout.CENTER);
+        
+        return card;
+    }
+
+    private JPanel createBanMaCard() {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setPreferredSize(new Dimension(300, 190));
+        setCardStyleWithPadding(card, 20, "#e8e8e8", 15, 20);
+
+        JPanel pnlTop = new JPanel(new BorderLayout());
+        pnlTop.setOpaque(false);
+        JLabel lblName = new JLabel("Kho Lưu Tạm");
+        lblName.setFont(new Font("Roboto", Font.BOLD, 22));
+        lblName.setForeground(new Color(26, 26, 26));
+
+        JLabel lblBadge = new JLabel("<html><div style='padding: 2px 8px; border-radius: 10px; background-color: #FFF3CD; color: #856404;'><b>Bàn Ma</b></div></html>");
+        pnlTop.add(lblName, BorderLayout.WEST);
+        pnlTop.add(lblBadge, BorderLayout.EAST);
+        
+        JPanel pnlMid = new JPanel(new BorderLayout());
+        pnlMid.setOpaque(false);
+        JLabel lblDesc = new JLabel("Khu vực ẩn lưu trữ đồ uống bị hủy");
+        lblDesc.setFont(new Font("Roboto", Font.PLAIN, 14));
+        lblDesc.setForeground(new Color(150, 150, 150));
+        lblDesc.setBorder(new EmptyBorder(10, 0, 15, 0));
+
+        JPanel pnlStats = new JPanel(new GridLayout(1, 2));
+        pnlStats.setOpaque(false);
+        
+        int countItems = 0;
+        for(dto.CartItem item : orderController.getGhostTableItems()) {
+            countItems += item.getSoLuong();
+        }
+        
+        JPanel pnlTotal = new JPanel(new BorderLayout());
+        pnlTotal.setOpaque(false);
+        JLabel lblTotalTitle = new JLabel("SỐ MÓN TỒN");
+        lblTotalTitle.setFont(new Font("Roboto", Font.BOLD, 11));
+        lblTotalTitle.setForeground(new Color(150, 150, 150));
+        JLabel lblTotalVal = new JLabel(String.valueOf(countItems));
+        lblTotalVal.setFont(new Font("Roboto", Font.BOLD, 22));
+        lblTotalVal.setForeground(countItems > 0 ? new Color(231, 76, 60) : new Color(26, 26, 26));
+        pnlTotal.add(lblTotalTitle, BorderLayout.NORTH);
+        pnlTotal.add(lblTotalVal, BorderLayout.CENTER);
+        
+        pnlStats.add(pnlTotal);
+        pnlStats.add(new JLabel()); // padding
+        
+        pnlMid.add(lblDesc, BorderLayout.NORTH);
+        pnlMid.add(pnlStats, BorderLayout.CENTER);
+        
+        card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        card.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                setCardStyleWithPadding(card, 20, "#e67e22", 15, 20);
+                card.setBackground(new Color(253, 246, 236));
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                setCardStyleWithPadding(card, 20, "#e8e8e8", 15, 20);
+                card.setBackground(Color.WHITE);
+            }
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (clickListener != null) {
+                    Ban banMa = new Ban("BAN_MA", "Bàn Ma", "KV_NV", 4, TrangThaiBan.CO_KHACH);
+                    DonHang ghostOrder = orderController.getGhostOrder();
+                    clickListener.onTableClicked(banMa, ghostOrder);
                 }
             }
         });

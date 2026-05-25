@@ -127,4 +127,72 @@ public class OrderController {
         }
         return sb.toString();
     }
+
+    // =========================================================================
+    // XỬ LÝ NGHIỆP VỤ BÀN MA (GHOST TABLE)
+    // =========================================================================
+
+    /**
+     * Lấy hoặc tạo mới Đơn hàng của Bàn Ma (Nơi chứa các món đã nấu nhưng bị hủy)
+     */
+    public DonHang getGhostOrder() {
+        DonHang ghost = orderManager.getOrderByBan("BAN_MA");
+        if (ghost == null) {
+            Ban banMa = new Ban("BAN_MA", "Bàn Ma", "KV_NV", 4, TrangThaiBan.CO_KHACH);
+            ghost = orderManager.createOrder(banMa, SessionManager.getCurrentCa().getMaCa(), SessionManager.getMaNVHienTai());
+        }
+        return ghost;
+    }
+
+    /**
+     * Chuyển danh sách các món Đã Nấu sang Bàn Ma.
+     */
+    public void moveToGhostTable(String maDonNguon, List<CartItem> cookedItems) {
+        if (cookedItems == null || cookedItems.isEmpty()) return;
+        DonHang ghost = getGhostOrder();
+        
+        java.util.Map<CartItem, Integer> transferData = new java.util.HashMap<>();
+        for (CartItem item : cookedItems) {
+            transferData.put(item, item.getSoLuong());
+        }
+        
+        orderManager.tachMon(maDonNguon, ghost.getMaDonHang(), transferData);
+    }
+
+    /**
+     * Lấy danh sách toàn bộ món đang nằm ở Bàn Ma.
+     */
+    public List<CartItem> getGhostTableItems() {
+        DonHang ghost = orderManager.getOrderByBan("BAN_MA");
+        if (ghost == null) return new ArrayList<>();
+        return loadCart(ghost.getMaDonHang());
+    }
+
+    /**
+     * Rút 1 phần của món có sẵn từ Bàn Ma, để thêm vào đơn hiện tại.
+     * Trả về item đã được clone (số lượng 1, isDaPhucVu = true).
+     */
+    public CartItem takeOneFromGhostTable(CartItem ghostItem) {
+        DonHang ghost = getGhostOrder();
+        List<CartItem> ghostCart = loadCart(ghost.getMaDonHang());
+        for (CartItem gi : ghostCart) {
+            if (gi.isIdentical(ghostItem)) {
+                gi.setSoLuong(gi.getSoLuong() - 1);
+                if (gi.getSoLuong() <= 0) ghostCart.remove(gi);
+                
+                // Lưu lại
+                orderManager.setCart(ghost.getMaDonHang(), ghostCart);
+                ghost.setTongTienTamTinh(orderManager.tinhTongTien(ghost.getMaDonHang()));
+                
+                // Trả về item copy (SL = 1)
+                CartItem taken = new CartItem(gi.getMon(), gi.getSize(), 1, gi.getDonGiaSize(), gi.getGhiChu());
+                taken.setDaPhucVu(true); // Đã nấu rồi
+                for (dto.CartItem.CartTopping ct : gi.getToppings()) {
+                    taken.addTopping(ct.topping, ct.soLuong);
+                }
+                return taken;
+            }
+        }
+        return null;
+    }
 }
