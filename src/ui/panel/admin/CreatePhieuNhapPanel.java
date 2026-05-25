@@ -15,15 +15,23 @@ import com.toedter.calendar.JDateChooser;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CreatePhieuNhapPanel extends JPanel {
 
@@ -196,6 +204,7 @@ public class CreatePhieuNhapPanel extends JPanel {
         dateChooser.setMinSelectableDate(new Date());
         formPanel.add(dateChooser, gbc);
 
+        // === Nút "Thêm vào phiếu" ===
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         gbc.insets = new Insets(15, 5, 5, 5);
         JButton btnAdd = new JButton("Thêm vào phiếu \u2794");
@@ -205,6 +214,18 @@ public class CreatePhieuNhapPanel extends JPanel {
         btnAdd.setPreferredSize(new Dimension(0, 40));
         btnAdd.addActionListener(e -> addToCart());
         formPanel.add(btnAdd, gbc);
+
+        // === Nút "Nhập từ file CSV" ===
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        JButton btnCSV = new JButton("\uD83D\uDCC2 Nhập từ file CSV");
+        btnCSV.setBackground(new Color(52, 152, 219));
+        btnCSV.setForeground(Color.WHITE);
+        btnCSV.setFont(new Font("Roboto", Font.BOLD, 14));
+        btnCSV.setPreferredSize(new Dimension(0, 40));
+        btnCSV.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCSV.addActionListener(e -> importFromCSV());
+        formPanel.add(btnCSV, gbc);
 
         panel.add(formPanel, BorderLayout.SOUTH);
         return panel;
@@ -378,6 +399,184 @@ public class CreatePhieuNhapPanel extends JPanel {
         clearForm();
     }
 
+    // ====================================================================
+    // CHỨC NĂNG NHẬP TỪ FILE CSV
+    // ====================================================================
+
+    /**
+     * Mở hộp thoại chọn file CSV, đọc và parse dữ liệu,
+     * validate từng dòng rồi đẩy vào danh sách chi tiết phiếu nhập.
+     *
+     * Cấu trúc file CSV yêu cầu (có header):
+     *   MaNguyenLieu, TenNguyenLieu, DonViDongGoi, KLDongGoi, DonGia, NgayHetHan
+     *
+     * Quy tắc:
+     *  - Mã NL phải tồn tại trong hệ thống.
+     *  - KLDongGoi (= Số lượng nhập) và DonGia phải > 0.
+     *  - NgayHetHan phải đúng định dạng dd/MM/yyyy.
+     */
+    private void importFromCSV() {
+        // 1. Mở JFileChooser – chỉ cho phép chọn file .csv
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Chọn file CSV nguyên liệu nhập kho");
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV Files (*.csv)", "csv"));
+        chooser.setAcceptAllFileFilterUsed(false);
+
+        int result = chooser.showOpenDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return; // Người dùng huỷ
+        }
+
+        File csvFile = chooser.getSelectedFile();
+
+        // 2. Đọc và parse file CSV
+        List<Object[]> validItems = new ArrayList<>();
+        StringBuilder errors = new StringBuilder();
+        int lineNum = 0;
+
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(new FileInputStream(csvFile), StandardCharsets.UTF_8))) {
+
+            String line;
+            boolean isHeader = true;
+
+            while ((line = br.readLine()) != null) {
+                lineNum++;
+                line = line.trim();
+
+                // Bỏ qua BOM nếu có ở dòng đầu
+                if (lineNum == 1 && line.startsWith("\uFEFF")) {
+                    line = line.substring(1);
+                }
+
+                // Bỏ qua dòng trống
+                if (line.isEmpty()) continue;
+
+                // Bỏ qua dòng header (dòng đầu tiên không trống)
+                if (isHeader) {
+                    isHeader = false;
+                    continue;
+                }
+
+                // 3. Tách các cột bằng dấu phẩy (hỗ trợ trường có dấu ngoặc kép)
+                String[] cols = parseCSVLine(line);
+                if (cols.length < 6) {
+                    errors.append("Dòng ").append(lineNum).append(": Thiếu cột (cần 6 cột).\n");
+                    continue;
+                }
+
+                String maNL       = cols[0].trim();
+                // cols[1] = TenNguyenLieu (chỉ để tham khảo, không dùng để lưu)
+                // cols[2] = DonViDongGoi  (tham khảo)
+                String klStr      = cols[3].trim();
+                String donGiaStr  = cols[4].trim();
+                String ngayHHStr  = cols[5].trim();
+
+                // 4. Validate: Mã NL phải tồn tại trong danh mục hệ thống
+                NguyenLieu nlFound = null;
+                for (NguyenLieu nl : listNL) {
+                    if (nl.getMaNL().equalsIgnoreCase(maNL)) {
+                        nlFound = nl;
+                        break;
+                    }
+                }
+                if (nlFound == null) {
+                    errors.append("Dòng ").append(lineNum)
+                          .append(": Mã NL '").append(maNL)
+                          .append("' không tồn tại trong hệ thống.\n");
+                    continue;
+                }
+
+                // 5. Validate: Số lượng và Đơn giá phải là số > 0
+                double soLuong, donGia;
+                try {
+                    soLuong = Double.parseDouble(klStr);
+                    if (soLuong <= 0) throw new NumberFormatException();
+                } catch (NumberFormatException ex) {
+                    errors.append("Dòng ").append(lineNum)
+                          .append(": Số lượng '").append(klStr)
+                          .append("' không hợp lệ (phải > 0).\n");
+                    continue;
+                }
+                try {
+                    donGia = Double.parseDouble(donGiaStr);
+                    if (donGia <= 0) throw new NumberFormatException();
+                } catch (NumberFormatException ex) {
+                    errors.append("Dòng ").append(lineNum)
+                          .append(": Đơn giá '").append(donGiaStr)
+                          .append("' không hợp lệ (phải > 0).\n");
+                    continue;
+                }
+                
+                LocalDate ngayHetHan;
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    ngayHetHan = LocalDate.parse(ngayHHStr, formatter);
+                } catch (Exception ex) {
+                    errors.append("Dòng ").append(lineNum)
+                          .append(": Ngày hết hạn '").append(ngayHHStr)
+                          .append("' không hợp lệ (định dạng dd/MM/yyyy).\n");
+                    continue;
+                }
+
+                // Đã hợp lệ, đưa vào danh sách chờ
+                validItems.add(new Object[]{nlFound.getMaNL(), soLuong, donGia, ngayHetHan});
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khi đọc file CSV:\n" + ex.getMessage(),
+                "Lỗi đọc file", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // 6. Hiển thị cảnh báo lỗi (nếu có) nhưng vẫn tiếp tục với các dòng hợp lệ
+        if (errors.length() > 0) {
+            JTextArea ta = new JTextArea(errors.toString());
+            ta.setEditable(false);
+            ta.setRows(10);
+            ta.setColumns(50);
+            JScrollPane sp = new JScrollPane(ta);
+            JOptionPane.showMessageDialog(this, sp,
+                "\u26A0 Cảnh báo: Một số dòng bị lỗi", JOptionPane.WARNING_MESSAGE);
+        }
+
+        if (validItems.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Không có dòng hợp lệ nào trong file CSV.",
+                "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // 7. Đẩy dữ liệu vào danh sách chi tiết phiếu nhập (chiTietList)
+        int addedCount = 0;
+        for (Object[] item : validItems) {
+            String maNL = (String) item[0];
+            double sl   = (Double) item[1];
+            double dg   = (Double) item[2];
+            LocalDate ngayHH = (LocalDate) item[3];
+
+            tempCounter++;
+            ChiTietPhieuNhap ct = new ChiTietPhieuNhap();
+            ct.setMaCTPN("TEMP_" + tempCounter);
+            ct.setSoLuong(sl);
+            ct.setDonGia(dg);
+            ct.setThanhTien(sl * dg);
+            ct.setMaNL(maNL);
+
+            chiTietList.add(ct);
+            ngayHetHanList.add(ngayHH);
+            addedCount++;
+        }
+
+        // 8. Cập nhật bảng giỏ hàng
+        refreshCartTable();
+        clearForm();
+
+        // 9. Thông báo kết quả
+        String msg = String.format("\u2705 Nhập CSV thành công!\n- Đã thêm mới: %d dòng", addedCount);
+        JOptionPane.showMessageDialog(this, msg, "Kết quả nhập CSV", JOptionPane.INFORMATION_MESSAGE);
+    }
+
     private void refreshCartTable() {
         cartModel.setRowCount(0);
         double tongTien = 0;
@@ -394,6 +593,44 @@ public class CreatePhieuNhapPanel extends JPanel {
             tongTien += ct.getThanhTien();
         }
         lblTotal.setText("Tổng tiền: " + CurrencyUtils.formatNoUnit(tongTien) + " đ");
+    }
+
+    /**
+     * Parse một dòng CSV, hỗ trợ trường có dấu ngoặc kép (quoted fields).
+     * Ví dụ: NL001,"Cà phê hạt",Bao/Bịch,10,200 → ["NL001", "Cà phê hạt", "Bao/Bịch", "10", "200"]
+     */
+    private String[] parseCSVLine(String line) {
+        List<String> fields = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (inQuotes) {
+                if (c == '"') {
+                    // Kiểm tra escaped quote ("")
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        current.append('"');
+                        i++; // bỏ qua ký tự quote tiếp theo
+                    } else {
+                        inQuotes = false; // kết thúc quoted field
+                    }
+                } else {
+                    current.append(c);
+                }
+            } else {
+                if (c == '"') {
+                    inQuotes = true; // bắt đầu quoted field
+                } else if (c == ',') {
+                    fields.add(current.toString());
+                    current.setLength(0); // reset buffer
+                } else {
+                    current.append(c);
+                }
+            }
+        }
+        fields.add(current.toString()); // thêm cột cuối cùng
+        return fields.toArray(new String[0]);
     }
 
     private void savePhieuNhap() {
