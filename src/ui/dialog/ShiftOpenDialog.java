@@ -58,10 +58,10 @@ public class ShiftOpenDialog extends JDialog {
         lblTitle.setAlignmentX(CENTER_ALIGNMENT);
 
         // Info
-        String tenNV = SessionManager.getCurrentUser().getTenNV();
+        String maNV = SessionManager.getCurrentUser().getMaNV();
         String ngay = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-        JLabel lblInfo = new JLabel("Nhân viên: " + tenNV + "  |  Ngày: " + ngay);
+        JLabel lblInfo = new JLabel("Mã NV: " + maNV + "  |  Ngày: " + ngay);
         lblInfo.setFont(new Font("Roboto", Font.PLAIN, 13));
         lblInfo.setForeground(new Color(120, 120, 120));
         lblInfo.setAlignmentX(CENTER_ALIGNMENT);

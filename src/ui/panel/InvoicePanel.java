@@ -80,7 +80,7 @@ public class InvoicePanel extends JPanel {
         // ── TABLE ──
         String[] cols = {
             "Mã Hóa Đơn", "Bàn", "Loại đơn", "Tổng Tiền",
-            "T.Gian Th.Toán", "Hình Thức", "Trạng thái", "Thu Ngân"
+            "T.Gian Th.Toán", "Hình Thức", "Trạng thái", "Mã NV"
         };
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
@@ -206,9 +206,9 @@ public class InvoicePanel extends JPanel {
         txtNhanVien = new JTextField();
         txtNhanVien.setFont(new Font("Roboto", Font.PLAIN, 13));
         txtNhanVien.setPreferredSize(new Dimension(0, 36));
-        txtNhanVien.putClientProperty("JTextField.placeholderText", "Tên NV...");
+        txtNhanVien.putClientProperty("JTextField.placeholderText", "Mã NV...");
         txtNhanVien.getDocument().addDocumentListener(docListener);
-        outer.add(buildCol("Thu ngân", txtNhanVien), g);
+        outer.add(buildCol("Mã NV", txtNhanVien), g);
 
         // 6. Khu vực Nút bấm (nằm góc phải)
         g.gridx = 5; g.weightx = 0; 
@@ -277,7 +277,7 @@ public class InvoicePanel extends JPanel {
                 time,
                 hinhThucLabel,
                 hd.getTrangThai().getLabel(),
-                hd.getTenNV() != null ? hd.getTenNV() : (hd.getMaNV() != null ? hd.getMaNV() : "")
+                hd.getMaNV() != null ? hd.getMaNV() : ""
             });
         }
     }

@@ -72,8 +72,8 @@ public class PDFPrinter {
 
         addInfoCell(infoTable, "M\u00E3 HD:", hoaDon.getMaHD(), fontSmall);
         addInfoCell(infoTable, "Ng\u00E0y:", time, fontSmall);
-        String thuNgan = hoaDon.getTenNV() != null ? hoaDon.getTenNV() : (hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "Admin");
-        addInfoCell(infoTable, "Thu ng\u00E2n:", thuNgan, fontSmall);
+        String thuNgan = hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "Admin";
+        addInfoCell(infoTable, "M\u00E3 NV:", thuNgan, fontSmall);
 
         document.add(infoTable);
         document.add(pDashes);

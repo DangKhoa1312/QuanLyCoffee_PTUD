@@ -136,20 +136,6 @@ public class LoginForm extends JFrame {
         sep.setForeground(new Color(210, 140, 50, 120));
         sep.setMaximumSize(new Dimension(100, 1));
 
-        // Feature bullets
-        String[] features = { "☑  Quản lý bàn & đặt chỗ", "☑  Quản lý đơn hàng", "☑  Báo cáo doanh thu" };
-        JPanel featuresPanel = new JPanel();
-        featuresPanel.setLayout(new BoxLayout(featuresPanel, BoxLayout.Y_AXIS));
-        featuresPanel.setOpaque(false);
-        for (String f : features) {
-            JLabel lbl = new JLabel(f);
-            lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            lbl.setForeground(new Color(170, 145, 110));
-            lbl.setAlignmentX(CENTER_ALIGNMENT);
-            lbl.setBorder(new EmptyBorder(4, 0, 4, 0));
-            featuresPanel.add(lbl);
-        }
-
         // Assemble left content
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -165,7 +151,6 @@ public class LoginForm extends JFrame {
         content.add(Box.createVerticalStrut(24));
         content.add(sep);
         content.add(Box.createVerticalStrut(20));
-        content.add(featuresPanel);
 
         left.setLayout(new BorderLayout());
         left.add(content, BorderLayout.CENTER);
@@ -212,7 +197,7 @@ public class LoginForm extends JFrame {
         txtPassword = new JPasswordField();
         styleField(txtPassword);
         txtPassword.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Nhập mật khẩu...");
-        txtPassword.putClientProperty(FlatClientProperties.STYLE, "showRevealButton: true");
+        txtPassword.putClientProperty(FlatClientProperties.STYLE, "showRevealButton: true; arc: 10; borderColor: #DCC8AF; focusedBorderColor: #BC783C;");
 
         // Login button
         JButton btnLogin = makeLoginButton();

@@ -62,7 +62,7 @@ public class InvoiceDetailDialog extends JDialog {
         pnlHeader.add(createDetailRow("Bàn:", hoaDon.getSoBan() != null ? hoaDon.getSoBan() : (hoaDon.getMaBan() != null ? hoaDon.getMaBan() : "Mang về")));
         pnlHeader.add(createDetailRow("Loại đơn:", hoaDon.getLoaiDon() != null ? hoaDon.getLoaiDon().getLabel() : "N/A"));
         pnlHeader.add(createDetailRow("Thời gian:", time));
-        pnlHeader.add(createDetailRow("Thu ngân:", hoaDon.getTenNV() != null ? hoaDon.getTenNV() : (hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "N/A")));
+        pnlHeader.add(createDetailRow("Mã NV:", hoaDon.getMaNV() != null ? hoaDon.getMaNV() : "N/A"));
         
         main.add(pnlHeader, BorderLayout.NORTH);
 

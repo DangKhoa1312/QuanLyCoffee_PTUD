@@ -660,10 +660,22 @@ public class DatBanDialog extends JDialog {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn bàn!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
             return false;
         }
-        // Kiểm tra trùng giờ lần cuối
+        // Ràng buộc số người với sức chứa của bàn
         BanItem bi = lstBan.getSelectedValue();
+        if (bi != null) {
+            int soNguoi = (Integer) spnSoNguoi.getValue();
+            if (soNguoi > bi.ban.getSucChua()) {
+                JOptionPane.showMessageDialog(this,
+                        "<html>⚠ Số người (<b>" + soNguoi + "</b>) vượt quá sức chứa của bàn (<b>" + bi.ban.getSucChua() + "</b>).<br>" +
+                        "Vui lòng chọn bàn lớn hơn hoặc giảm số người!</html>",
+                        "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return false;
+            }
+        }
+
+        // Kiểm tra trùng giờ lần cuối
         String excludeId = mode == Mode.EDIT ? datBan.getMaDatBan() : null;
-        if (controller.isTrungGio(bi.ban.getMaBan(), thoiGianDen, excludeId)) {
+        if (bi != null && controller.isTrungGio(bi.ban.getMaBan(), thoiGianDen, excludeId)) {
             JOptionPane.showMessageDialog(this,
                     "<html>⚠ Bàn <b>" + bi.ban.getSoBan() + "</b> đã có đặt trong khoảng ±1 giờ.<br>" +
                             "Vui lòng chọn giờ hoặc bàn khác!</html>",
@@ -796,7 +808,8 @@ public class DatBanDialog extends JDialog {
             }
             if (value instanceof BanItem) {
                 BanItem bi = (BanItem) value;
-                lbl.setText("🪑 " + bi.ban.getSoBan() + "   —   👥 " + bi.ban.getSucChua() + " người");
+                String checkIcon = isSelected ? "☑" : "☐";
+                lbl.setText(checkIcon + "  " + bi.ban.getSoBan() + "   —   👥 " + bi.ban.getSucChua() + " người");
             }
             return lbl;
         }

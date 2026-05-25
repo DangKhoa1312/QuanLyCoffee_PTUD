@@ -187,7 +187,7 @@ public class HoaDonDAOImpl implements HoaDonDAO {
         if (denNgay != null) sql.append(" AND CAST(hd.thoiGianXuat AS DATE) <= ?");
         if (hinhThuc != null && !hinhThuc.isEmpty()) sql.append(" AND hd.hinhThucThanhToan = ?");
         if (maBan    != null && !maBan.isEmpty())    sql.append(" AND b.soBan LIKE ?");
-        if (maNV     != null && !maNV.isEmpty())     sql.append(" AND nv.tenNV LIKE ?");
+        if (maNV     != null && !maNV.isEmpty())     sql.append(" AND hd.maNV LIKE ?");
         sql.append(" ORDER BY hd.thoiGianXuat DESC");
         try (PreparedStatement ps = getConn().prepareStatement(sql.toString())) {
             int idx = 1;

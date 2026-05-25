@@ -85,7 +85,7 @@ public class ShiftCloseDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(6, 0, 6, 0);
 
-        addReportRow(reportPanel, gbc, 0, "Nhân viên:", SessionManager.getCurrentUser().getTenNV(), false);
+        addReportRow(reportPanel, gbc, 0, "Mã NV:", SessionManager.getCurrentUser().getMaNV(), false);
         addReportRow(reportPanel, gbc, 1, "Tổng số đơn:", String.valueOf(tongDon), false);
         addReportRow(reportPanel, gbc, 2, "Đơn hoàn thành:", String.valueOf(donHoanThanh), false);
         addReportRow(reportPanel, gbc, 3, "Doanh thu trong ca:", nf.format(doanhThu) + " đ", false);

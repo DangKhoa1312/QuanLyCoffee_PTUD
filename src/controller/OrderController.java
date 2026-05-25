@@ -91,6 +91,10 @@ public class OrderController {
             // Kiểm tra trạng thái bàn và đưa về đúng trạng thái
             String maBan = dh.getMaBan();
             if (maBan != null && !maBan.isEmpty() && !"MANG_VE".equals(maBan)) {
+                entity.DatBan datBan = reservationController.findDatBanHienTaiCuaBan(maBan);
+                if (datBan != null) {
+                    reservationController.daDen(datBan.getMaDatBan(), null);
+                }
                 reservationController.resetTrangThaiBan(maBan);
             }
 
