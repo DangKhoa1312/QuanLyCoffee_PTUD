@@ -113,11 +113,11 @@ public class StaffManagementPanel extends JPanel {
 
     private void initTable() {
         String[] cols = { "ID", "Họ và tên", "Số điện thoại", "Vai trò",
-                "Trạng thái", "Object" };
+                "Trạng thái", "Thao tác", "Object" };
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return column == 5; // Chỉ cho phép edit cột Thao tác (để click button)
             }
         };
 
@@ -133,8 +133,13 @@ public class StaffManagementPanel extends JPanel {
         table.setDefaultRenderer(Object.class, new ZebraRenderer());
         table.getColumnModel().getColumn(4).setCellRenderer(new StatusRenderer());
 
-        // Hide the 6th column (index 5) which holds the NhanVien object
-        table.removeColumn(table.getColumnModel().getColumn(5));
+        // Cột Thao tác
+        table.getColumnModel().getColumn(5).setCellRenderer(new ActionRenderer());
+        table.getColumnModel().getColumn(5).setCellEditor(new ActionEditor());
+        table.getColumnModel().getColumn(5).setPreferredWidth(120);
+
+        // Hide the 7th column (index 6) which holds the NhanVien object
+        table.removeColumn(table.getColumnModel().getColumn(6));
 
         // Double-click row event
         table.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -143,8 +148,10 @@ public class StaffManagementPanel extends JPanel {
                 if (e.getClickCount() == 2) {
                     int row = table.getSelectedRow();
                     if (row != -1) {
-                        // The NhanVien object is stored in the 6th column (index 5)
-                        NhanVien nv = (NhanVien) tableModel.getValueAt(row, 5);
+                        // The NhanVien object is stored in the 7th column (index 6 originally, now 5
+                        // after removing)
+                        // Actually, table.getModel() gives access to original columns
+                        NhanVien nv = (NhanVien) tableModel.getValueAt(row, 6);
                         handleEdit(nv);
                     }
                 }
@@ -162,15 +169,12 @@ public class StaffManagementPanel extends JPanel {
         List<NhanVien> list = controller.getAllEmployees();
         boolean isAdmin = utils.SessionManager.isAdmin();
         for (NhanVien nv : list) {
-            if (!isAdmin && enums.VaiTro.ADMIN.equals(nv.getVaiTro())) continue;
+            if (!isAdmin && enums.VaiTro.ADMIN.equals(nv.getVaiTro()))
+                continue;
+
             tableModel.addRow(new Object[] { nv.getMaNV(), nv.getTenNV(), nv.getSoDienThoai(), nv.getVaiTro(),
-                    nv.getTrangThai(), nv });
+                    nv.getTrangThai(), "", nv });
         }
-        // Since I removed "Thao tác" column from 'cols' array, but I still want to keep
-        // the NhanVien object
-        // in the model for easy access on double click, I'll keep the object in column
-        // 5 (last column).
-        // I need to adjust the column count or hide the last column.
 
     }
 
@@ -181,13 +185,15 @@ public class StaffManagementPanel extends JPanel {
         tableModel.setRowCount(0);
         boolean isAdmin = utils.SessionManager.isAdmin();
         for (NhanVien nv : list) {
-            if (!isAdmin && enums.VaiTro.ADMIN.equals(nv.getVaiTro())) continue;
+            if (!isAdmin && enums.VaiTro.ADMIN.equals(nv.getVaiTro()))
+                continue;
             if (filterIdx == 1 && !nv.getTrangThai().equals(TrangThaiNhanVien.DANG_LAM_VIEC))
                 continue;
             if (filterIdx == 2 && !nv.getTrangThai().equals(TrangThaiNhanVien.DA_NGHI))
                 continue;
+
             tableModel.addRow(new Object[] { nv.getMaNV(), nv.getTenNV(), nv.getSoDienThoai(), nv.getVaiTro(),
-                    nv.getTrangThai(), nv });
+                    nv.getTrangThai(), "", nv });
         }
     }
 
@@ -244,6 +250,140 @@ public class StaffManagementPanel extends JPanel {
                 loadData();
                 JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
             }
+        }
+    }
+
+    private void handleDeleteEmployee(NhanVien nv) {
+        if (nv.getMaNV().equals(utils.SessionManager.getMaNVHienTai())) {
+            JOptionPane.showMessageDialog(this, "Không thể tự xóa tài khoản đang đăng nhập!", "Lỗi",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (enums.VaiTro.ADMIN.equals(nv.getVaiTro())) {
+            JOptionPane.showMessageDialog(this, "Không thể xóa tài khoản Quản trị viên (ADMIN)!", "Lỗi",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "<html>Bạn có chắc muốn <b>xóa</b> nhân viên <b>" + nv.getTenNV() + "</b> khỏi danh sách?<br>"
+                        + "Thông tin nhân viên vẫn được lưu lại trong cơ sở dữ liệu.</html>",
+                "Xác nhận xóa nhân viên", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                if (controller.permanentlyDeleteEmployee(nv.getMaNV())) {
+                    JOptionPane.showMessageDialog(this,
+                            "Đã xóa nhân viên " + nv.getTenNV() + " khỏi danh sách!\n"
+                                    + "Thông tin vẫn được lưu lại trong cơ sở dữ liệu.",
+                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                    loadData();
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    class ActionPanel extends JPanel {
+        JButton btnEdit = new JButton();
+        JButton btnDelete = new JButton();
+
+        public ActionPanel() {
+            setLayout(new GridBagLayout()); // Căn giữa theo cả 2 chiều
+            setOpaque(true);
+
+            btnEdit = new JButton() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(getBackground());
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8); // Bo tròn
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
+            btnEdit.setIcon(IconFontSwing.buildIcon(FontAwesome.PENCIL, 16, Color.WHITE));
+            btnEdit.setBackground(new Color(41, 128, 185)); // Màu xanh dương
+            btnEdit.setContentAreaFilled(false);
+            btnEdit.setBorderPainted(false);
+            btnEdit.setOpaque(false);
+            btnEdit.setBorder(new EmptyBorder(5, 8, 5, 8));
+            btnEdit.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            btnDelete = new JButton() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(getBackground());
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8); // Bo tròn
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
+            btnDelete.setIcon(IconFontSwing.buildIcon(FontAwesome.TRASH, 16, Color.WHITE));
+            btnDelete.setBackground(new Color(231, 76, 60)); // Màu đỏ
+            btnDelete.setContentAreaFilled(false);
+            btnDelete.setBorderPainted(false);
+            btnDelete.setOpaque(false);
+            btnDelete.setBorder(new EmptyBorder(5, 8, 5, 8));
+            btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 5, 0, 5); // Khoảng cách giữa 2 nút
+            add(btnEdit, gbc);
+            add(btnDelete, gbc);
+        }
+    }
+
+    class ActionRenderer extends DefaultTableCellRenderer {
+        private ActionPanel actionPanel = new ActionPanel();
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                int row, int column) {
+            actionPanel.setBackground(isSelected ? table.getSelectionBackground()
+                    : (row % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
+            return actionPanel;
+        }
+    }
+
+    class ActionEditor extends DefaultCellEditor {
+        private ActionPanel actionPanel;
+        private NhanVien currentNV;
+
+        public ActionEditor() {
+            super(new JCheckBox());
+            actionPanel = new ActionPanel();
+
+            actionPanel.btnEdit.addActionListener(e -> {
+                fireEditingStopped();
+                if (currentNV != null) {
+                    handleEdit(currentNV);
+                }
+            });
+
+            actionPanel.btnDelete.addActionListener(e -> {
+                fireEditingStopped();
+                if (currentNV != null) {
+                    handleDeleteEmployee(currentNV);
+                }
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row,
+                int column) {
+            currentNV = (NhanVien) tableModel.getValueAt(row, 6); // Lấy object từ cột ẩn cuối cùng
+            actionPanel.setBackground(table.getSelectionBackground());
+            return actionPanel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return currentNV;
         }
     }
 }

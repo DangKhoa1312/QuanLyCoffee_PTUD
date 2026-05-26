@@ -14,6 +14,7 @@ public class NhanVien {
     private String            passwordHash;
     private TrangThaiNhanVien trangThai;
     private VaiTro            vaiTro;
+    private boolean           isDeleted;
 
     public NhanVien() {}
 
@@ -30,6 +31,7 @@ public class NhanVien {
         this.passwordHash = passwordHash;
         this.trangThai    = trangThai;
         this.vaiTro       = vaiTro;
+        this.isDeleted    = false;
     }
 
     public String getMaNV()               { return maNV; }
@@ -58,6 +60,9 @@ public class NhanVien {
 
     public VaiTro getVaiTro()          { return vaiTro; }
     public void   setVaiTro(VaiTro v)  { this.vaiTro = v; }
+
+    public boolean isDeleted()           { return isDeleted; }
+    public void    setDeleted(boolean v) { this.isDeleted = v; }
 
     @Override
     public String toString() {

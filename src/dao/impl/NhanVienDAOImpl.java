@@ -52,6 +52,12 @@ public class NhanVienDAOImpl implements NhanVienDAO {
         } catch (IllegalArgumentException e) {
             nv.setVaiTro(VaiTro.NHAN_VIEN); // Default
         }
+
+        try {
+            nv.setDeleted(rs.getBoolean("isDeleted"));
+        } catch (SQLException e) {
+            // Ignored if column doesn't exist
+        }
         
         return nv;
     }
@@ -59,7 +65,7 @@ public class NhanVienDAOImpl implements NhanVienDAO {
     @Override
     public boolean insert(NhanVien nv) {
         String sql = "INSERT INTO NhanVien(maNV,tenNV,ngaySinh,soDienThoai,diaChi," +
-                     "username,passwordHash,trangThai,vaiTro) VALUES(?,?,?,?,?,?,?,?,?)";
+                     "username,passwordHash,trangThai,vaiTro,isDeleted) VALUES(?,?,?,?,?,?,?,?,?,?)";
         Connection conn = getConn();
         if (conn == null) return false;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -72,6 +78,7 @@ public class NhanVienDAOImpl implements NhanVienDAO {
             ps.setString(7, nv.getPasswordHash());
             ps.setString(8, nv.getTrangThai() != null ? nv.getTrangThai().name() : TrangThaiNhanVien.DANG_LAM_VIEC.name());
             ps.setString(9, nv.getVaiTro() != null ? nv.getVaiTro().name() : VaiTro.NHAN_VIEN.name());
+            ps.setBoolean(10, nv.isDeleted());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("NhanVienDAO.insert: " + e.getMessage());
@@ -82,7 +89,7 @@ public class NhanVienDAOImpl implements NhanVienDAO {
     @Override
     public boolean update(NhanVien nv) {
         String sql = "UPDATE NhanVien SET tenNV=?,ngaySinh=?,soDienThoai=?,diaChi=?," +
-                     "username=?,passwordHash=?,trangThai=?,vaiTro=? WHERE maNV=?";
+                     "username=?,passwordHash=?,trangThai=?,vaiTro=?,isDeleted=? WHERE maNV=?";
         Connection conn = getConn();
         if (conn == null) return false;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -94,7 +101,8 @@ public class NhanVienDAOImpl implements NhanVienDAO {
             ps.setString(6, nv.getPasswordHash());
             ps.setString(7, nv.getTrangThai() != null ? nv.getTrangThai().name() : TrangThaiNhanVien.DANG_LAM_VIEC.name());
             ps.setString(8, nv.getVaiTro() != null ? nv.getVaiTro().name() : VaiTro.NHAN_VIEN.name());
-            ps.setString(9, nv.getMaNV());
+            ps.setBoolean(9, nv.isDeleted());
+            ps.setString(10, nv.getMaNV());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("NhanVienDAO.update: " + e.getMessage());
@@ -117,8 +125,22 @@ public class NhanVienDAOImpl implements NhanVienDAO {
     }
 
     @Override
+    public boolean softDelete(String maNV) {
+        String sql = "UPDATE NhanVien SET isDeleted=1 WHERE maNV=?";
+        Connection conn = getConn();
+        if (conn == null) return false;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("NhanVienDAO.softDelete: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
     public NhanVien findById(String maNV) {
-        String sql = "SELECT * FROM NhanVien WHERE maNV=?";
+        String sql = "SELECT * FROM NhanVien WHERE maNV=? AND isDeleted=0";
         Connection conn = getConn();
         if (conn == null) return null;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -134,7 +156,7 @@ public class NhanVienDAOImpl implements NhanVienDAO {
     @Override
     public List<NhanVien> findAll() {
         List<NhanVien> list = new ArrayList<>();
-        String sql = "SELECT * FROM NhanVien ORDER BY maNV";
+        String sql = "SELECT * FROM NhanVien WHERE isDeleted=0 ORDER BY maNV";
         Connection conn = getConn();
         if (conn == null) return list;
         try (PreparedStatement ps = conn.prepareStatement(sql);
@@ -148,7 +170,7 @@ public class NhanVienDAOImpl implements NhanVienDAO {
 
     @Override
     public NhanVien findByUsername(String username) {
-        String sql = "SELECT * FROM NhanVien WHERE username=?";
+        String sql = "SELECT * FROM NhanVien WHERE username=? AND isDeleted=0";
         Connection conn = getConn();
         if (conn == null) return null;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -162,9 +184,24 @@ public class NhanVienDAOImpl implements NhanVienDAO {
     }
 
     @Override
+    public NhanVien findBySoDienThoai(String soDienThoai) {
+        String sql = "SELECT * FROM NhanVien WHERE soDienThoai=? AND isDeleted=0";
+        Connection conn = getConn();
+        if (conn == null) return null;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, soDienThoai);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return mapRow(rs);
+        } catch (SQLException e) {
+            System.err.println("NhanVienDAO.findBySoDienThoai: " + e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
     public List<NhanVien> findByTrangThai(TrangThaiNhanVien trangThai) {
         List<NhanVien> list = new ArrayList<>();
-        String sql = "SELECT * FROM NhanVien WHERE trangThai=? ORDER BY tenNV";
+        String sql = "SELECT * FROM NhanVien WHERE trangThai=? AND isDeleted=0 ORDER BY tenNV";
         Connection conn = getConn();
         if (conn == null) return list;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -195,7 +232,7 @@ public class NhanVienDAOImpl implements NhanVienDAO {
     @Override
     public List<NhanVien> search(String keyword) {
         List<NhanVien> list = new ArrayList<>();
-        String sql = "SELECT * FROM NhanVien WHERE maNV LIKE ? OR tenNV LIKE ? OR soDienThoai LIKE ? ORDER BY maNV";
+        String sql = "SELECT * FROM NhanVien WHERE (maNV LIKE ? OR tenNV LIKE ? OR soDienThoai LIKE ?) AND isDeleted=0 ORDER BY maNV";
         Connection conn = getConn();
         if (conn == null) return list;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
