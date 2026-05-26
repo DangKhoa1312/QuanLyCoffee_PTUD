@@ -100,7 +100,7 @@ public class UserProfileDialog extends JDialog {
 
         // Chức vụ (Read-only)
         gbcL.insets = new Insets(0, 0, smallGap, 0);
-        gbcL.gridy++; leftPanel.add(createLabel("Chức vụ"), gbcL);
+        gbcL.gridy++; leftPanel.add(createLabel("Vai trò"), gbcL);
         gbcL.insets = new Insets(0, 0, largeGap, 0);
         txtRole = createReadOnlyField();
         gbcL.gridy++; leftPanel.add(txtRole, gbcL);

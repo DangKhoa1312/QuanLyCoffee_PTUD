@@ -237,6 +237,7 @@ public class MainFrame extends JFrame {
 
         contentPanel.add(new ui.panel.admin.ToppingManagementPanel(), "ADMIN_TOPPING");
         contentPanel.add(new ui.panel.admin.RecipeManagementPanel(), "ADMIN_CONG_THUC");
+        contentPanel.add(new ui.panel.HelpPanel(), "TRO_GIUP");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
