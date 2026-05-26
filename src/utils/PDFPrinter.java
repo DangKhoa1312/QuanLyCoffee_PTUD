@@ -17,7 +17,7 @@ public class PDFPrinter {
 
     private static final String FONT_PATH = "C:\\Windows\\Fonts\\arial.ttf";
 
-    public static String exportBill(HoaDon hoaDon, List<CartItem> cartItems) throws Exception {
+    public static String exportBill(HoaDon hoaDon, List<CartItem> cartItems, double tienKhachDua) throws Exception {
         // Create exports dir if not exists
         File exportDir = new File("exports");
         if (!exportDir.exists()) {
@@ -141,28 +141,57 @@ public class PDFPrinter {
         addTotalRow(totalTable, "T\u1ED5ng ti\u1EC1n m\u00F3n:", nf.format(tongTienMon) + " \u0111", fontNormal);
 
         // 2. Thuế VAT
-        addTotalRow(totalTable, "Thu\u1EBF VAT:", nf.format(hoaDon.getTienThueVAT()) + " \u0111", fontNormal);
+        double vatRate = utils.AppConfig.getInstance().getDouble("THUE_VAT", 8);
+        int vatPercent = (int) Math.round(vatRate);
+        addTotalRow(totalTable, "Thu\u1EBF VAT (" + vatPercent + "%):", nf.format(hoaDon.getTienThueVAT()) + " \u0111", fontNormal);
 
-        // 3. Giảm giá Khuyến Mãi
-        if (hoaDon.getTienGiamGia() > 0) {
-            addTotalRow(totalTable, "Gi\u1EA3m gi\u00E1 (KM):", "-" + nf.format(hoaDon.getTienGiamGia()) + " \u0111", fontNormal);
+        // 3. Khuyến Mãi và Dùng điểm
+        double tongGiam = hoaDon.getTienGiamGia();
+        double tienDiem = 0;
+        double giaTriDiem = utils.AppConfig.getInstance().getDouble("GIA_TRI_DIEM", 1000);
+        
+        if (hoaDon.getKhachHang() != null && hoaDon.getDiemSuDung() > 0) {
+            tienDiem = hoaDon.getDiemSuDung() * giaTriDiem;
+        }
+        double tienKM = tongGiam - tienDiem;
+
+        if (tienKM > 0) {
+            addTotalRow(totalTable, "Khuy\u1EBFn m\u00E3i:", "-" + nf.format(tienKM) + " \u0111", fontNormal);
         }
 
-        // 4. Khách hàng & Dùng điểm
+        // 4. Khách hàng
         if (hoaDon.getKhachHang() != null) {
             addTotalRow(totalTable, "Kh\u00E1ch h\u00E0ng:", hoaDon.getKhachHang().getTenKhachHang(), fontNormal);
-            if (hoaDon.getDiemSuDung() > 0) {
-                double giaTriDiem = utils.AppConfig.getInstance().getDouble("GIA_TRI_DIEM", 1000);
-                addTotalRow(totalTable, "D\u00F9ng \u0111i\u1EC3m:", "-" + nf.format(hoaDon.getDiemSuDung() * giaTriDiem) + " \u0111", fontNormal);
+            if (tienDiem > 0) {
+                addTotalRow(totalTable, "D\u00F9ng \u0111i\u1EC3m:", "-" + nf.format(tienDiem) + " \u0111", fontNormal);
             }
-            addTotalRow(totalTable, "\u0110i\u1EC3m t\u00EDch l\u0169y:", hoaDon.getKhachHang().getDiemTichLuy() + " \u0111i\u1EC3m", fontSmall);
+            
+            // Tính toán điểm sau thanh toán
+            int diemBanDau = hoaDon.getKhachHang().getDiemTichLuy();
+            int diemDung = hoaDon.getDiemSuDung();
+            double tyLe = utils.AppConfig.getInstance().getDouble("TY_LE_TICH_DIEM", 10000);
+            int diemCong = tyLe > 0 ? (int) (hoaDon.getTongTienPhaiTra() / tyLe) : 0;
+            int diemCuoi = diemBanDau - diemDung + diemCong;
+            
+            if (diemCong > 0) {
+                addTotalRow(totalTable, "\u0110\u01B0\u1EE3c c\u1ED9ng:", "+" + diemCong + " \u0111i\u1EC3m", fontSmall);
+            }
+            addTotalRow(totalTable, "\u0110i\u1EC3m hi\u1EC7n t\u1EA1i:", diemCuoi + " \u0111i\u1EC3m", fontSmall);
         }
 
         // 5. Hình thức TT & TỔNG CỘNG
         String hinhThuc = hoaDon.getHinhThucThanhToan() != null ? hoaDon.getHinhThucThanhToan().getLabel()
                 : "Ti\u1EC1n M\u1EB7t";
-        addTotalRow(totalTable, "H\u00ECnh th\u1EE9c TT:", hinhThuc, fontNormal);
+        addTotalRow(totalTable, "H\u00ECnh th\u1EE9c thanh to\u00E1n:", hinhThuc, fontNormal);
         addTotalRow(totalTable, "T\u1ED4NG C\u1ED8NG:", nf.format(hoaDon.getTongTienPhaiTra()) + " \u0111", fontBold);
+
+        // 6. Tiền khách đưa & Tiền thừa (chỉ áp dụng cho Tiền Mặt)
+        if ("Ti\u1EC1n M\u1EB7t".equals(hinhThuc) && tienKhachDua > 0) {
+            addTotalRow(totalTable, "Ti\u1EC1n kh\u00E1ch tr\u1EA3:", nf.format(tienKhachDua) + " \u0111", fontNormal);
+            double tienThua = tienKhachDua - hoaDon.getTongTienPhaiTra();
+            if (tienThua < 0) tienThua = 0;
+            addTotalRow(totalTable, "Ti\u1EC1n th\u1EEBa:", nf.format(tienThua) + " \u0111", fontNormal);
+        }
 
         document.add(totalTable);
 

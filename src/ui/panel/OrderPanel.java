@@ -1025,7 +1025,21 @@ public class OrderPanel extends JPanel {
             dto.CartItem target = ghostMatches.get(0);
             dto.CartItem taken = orderController.takeOneFromGhostTable(target);
             if (taken != null) {
-                cartData.add(taken);
+                taken.setDaPhucVu(true); // Đảm bảo chắc chắn trạng thái là Đã báo
+                
+                boolean merged = false;
+                for (CartItem item : cartData) {
+                    if (item.isIdentical(taken)) {
+                        item.setSoLuong(item.getSoLuong() + taken.getSoLuong());
+                        merged = true;
+                        break;
+                    }
+                }
+                if (!merged) {
+                    cartData.add(taken);
+                }
+                
+                performSaveOrder(); // Lưu luôn để đảm bảo đơn được giữ lại
                 renderCartTable();
                 loadMenuToGrid(null); // Refresh lại màn hình để update badge
             } else {

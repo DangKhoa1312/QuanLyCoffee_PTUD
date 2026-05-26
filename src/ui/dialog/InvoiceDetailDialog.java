@@ -192,7 +192,7 @@ public class InvoiceDetailDialog extends JDialog {
         btnPrint.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnPrint.addActionListener(e -> {
             try {
-                String pdfPath = PDFPrinter.exportBill(hoaDon, items);
+                String pdfPath = PDFPrinter.exportBill(hoaDon, items, 0);
                 
                 int ans = JOptionPane.showConfirmDialog(this,
                     "Xuất PDF thành công tại thư mục exports/\nBạn có muốn mở file lên xem không?",
