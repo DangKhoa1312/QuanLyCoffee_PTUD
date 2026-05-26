@@ -298,7 +298,7 @@ public class DashboardPanel extends JPanel {
         if (SessionManager.isQuanLy()) {
             row.add(quickBtn("Thống Kê", FontAwesome.PIE_CHART, "THONG_KE"));
             row.add(quickBtn("Thực Đơn", FontAwesome.COFFEE, "ADMIN_MON"));
-            row.add(quickBtn("Quản Lý Kho", FontAwesome.ARCHIVE, "ADMIN_KHO"));
+            row.add(quickBtn("Kho Hàng", FontAwesome.ARCHIVE, "ADMIN_KHO"));
             row.add(quickBtn("Công Thức", FontAwesome.FLASK, "ADMIN_CONG_THUC"));
         }
 

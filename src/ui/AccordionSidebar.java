@@ -104,6 +104,7 @@ public class AccordionSidebar extends JPanel {
         itmDatBan.attachBadge(pnlBadgeDatBan);
         gVH.addItem(itmDatBan);
         gVH.addItem(makeItem("Hoá Đơn", FontAwesome.FILE_TEXT_O, "HOA_DON", 1));
+        gVH.addItem(makeItem("Trợ Giúp", FontAwesome.QUESTION_CIRCLE, "TRO_GIUP", 1));
         pnlMenu.add(gVH);
 
         if (isQL) {
@@ -125,7 +126,7 @@ public class AccordionSidebar extends JPanel {
             gQT.addItem(makeItem("Nhân Viên",   FontAwesome.USERS,     "ADMIN_NHAN_VIEN", 1));
             gQT.addItem(makeItem("Khách Hàng",  FontAwesome.ID_CARD_O, "KHACH_HANG", 1));
             gQT.addItem(makeItem("Khuyến Mãi",  FontAwesome.GIFT,      "ADMIN_KHUYEN_MAI", 1));
-            gQT.addItem(makeItem("Quản Lý Kho", FontAwesome.ARCHIVE,   "ADMIN_KHO", 1));
+            gQT.addItem(makeItem("Kho Hàng", FontAwesome.ARCHIVE,   "ADMIN_KHO", 1));
             gQT.addItem(makeItem("Thống Kê",    FontAwesome.PIE_CHART, "THONG_KE", 1));
             pnlMenu.add(gQT);
         }
