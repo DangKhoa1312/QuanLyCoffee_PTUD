@@ -81,7 +81,7 @@ public class KhuVucDAOImpl implements KhuVucDAO {
     @Override
     public List<KhuVuc> findAll() {
         List<KhuVuc> list = new ArrayList<>();
-        String sql = "SELECT * FROM KhuVuc WHERE trangThai=1 ORDER BY maKhuVuc";
+        String sql = "SELECT * FROM KhuVuc ORDER BY maKhuVuc";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));

@@ -54,6 +54,8 @@ public class PaymentDialog extends JDialog {
     private JLabel lblTienGiamDiem;
     private JLabel lblTienThueVAT;
     private JLabel lblTongPhaiTra;
+    private JLabel lblDiemCong;
+    private JLabel lblDiemConLai;
 
     private double tongTienDon; // Từ đơn hàng gốc
     private double tongPhaiTra; // Số tiền cuối cùng
@@ -196,7 +198,8 @@ public class PaymentDialog extends JDialog {
         pnlLeft.add(scroll, BorderLayout.CENTER);
 
         // -- 3. Tóm tắt & Khuyến mãi --
-        JPanel pnlSummary = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel pnlSummary = new JPanel();
+        pnlSummary.setLayout(new BoxLayout(pnlSummary, BoxLayout.Y_AXIS));
         pnlSummary.setBackground(Color.WHITE);
         pnlSummary.setBorder(new EmptyBorder(10, 0, 0, 0));
         
@@ -236,6 +239,26 @@ public class PaymentDialog extends JDialog {
         
         pnlSummary.add(pnlKM);
         pnlSummary.add(pnlLabels);
+        
+        JPanel pnlDiemDetails = new JPanel(new GridLayout(2, 1));
+        pnlDiemDetails.setOpaque(false);
+        lblDiemCong = new JLabel("Sẽ cộng: +0 điểm");
+        lblDiemCong.setFont(new Font("Roboto", Font.ITALIC, 13));
+        lblDiemCong.setForeground(new Color(39, 174, 96));
+        lblDiemCong.setHorizontalAlignment(SwingConstants.RIGHT);
+        
+        lblDiemConLai = new JLabel("Dư nợ điểm: 0");
+        lblDiemConLai.setFont(new Font("Roboto", Font.BOLD, 13));
+        lblDiemConLai.setForeground(new Color(41, 128, 185));
+        lblDiemConLai.setHorizontalAlignment(SwingConstants.RIGHT);
+        
+        pnlDiemDetails.add(lblDiemCong);
+        pnlDiemDetails.add(lblDiemConLai);
+        
+        lblDiemCong.setVisible(false);
+        lblDiemConLai.setVisible(false);
+        
+        pnlSummary.add(pnlDiemDetails);
         
         pnlLeft.add(pnlSummary, BorderLayout.SOUTH);
         split.setLeftComponent(pnlLeft);
@@ -523,6 +546,23 @@ public class PaymentDialog extends JDialog {
         lblTienGiamDiem.setText("Dùng điểm: -" + nf.format(tienGiamGiaDiem) + " đ");
         lblTienThueVAT.setText("Thuế VAT: +" + nf.format(tienThueVAT) + " đ");
         lblTongPhaiTra.setText("Cần TT: " + nf.format(tongPhaiTra) + " đ");
+        
+        double tyLe = AppConfig.getInstance().getDouble("TY_LE_TICH_DIEM", 10000);
+        int diemCong = 0;
+        if (tyLe > 0) {
+            diemCong = (int) (tongPhaiTra / tyLe);
+        }
+        
+        if (currentKhachHang != null) {
+            lblDiemCong.setText("Sẽ được cộng: +" + diemCong + " điểm");
+            int diemCuoi = currentKhachHang.getDiemTichLuy() - diemSuDung + diemCong;
+            lblDiemConLai.setText("Điểm sau TT: " + diemCuoi);
+            lblDiemCong.setVisible(true);
+            lblDiemConLai.setVisible(true);
+        } else {
+            lblDiemCong.setVisible(false);
+            lblDiemConLai.setVisible(false);
+        }
         
         if (rbChuyenKhoan.isSelected()) {
             txtKhachDua.setText(nf.format(tongPhaiTra));

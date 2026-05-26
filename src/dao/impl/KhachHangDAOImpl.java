@@ -11,12 +11,15 @@ import java.util.List;
 
 public class KhachHangDAOImpl implements KhachHangDAO {
 
+    private Connection getConn() {
+        return DatabaseConnection.getInstance().getConnection();
+    }
+
     @Override
     public List<KhachHang> findAll() {
         List<KhachHang> list = new ArrayList<>();
         String sql = "SELECT * FROM KhachHang WHERE hienThi = 1 ORDER BY ngayThamGia DESC";
-        try (Connection con = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -31,8 +34,7 @@ public class KhachHangDAOImpl implements KhachHangDAO {
     @Override
     public KhachHang findById(String soDienThoai) {
         String sql = "SELECT * FROM KhachHang WHERE soDienThoai = ? AND hienThi = 1";
-        try (Connection con = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
 
             ps.setString(1, soDienThoai);
             try (ResultSet rs = ps.executeQuery()) {
@@ -49,8 +51,7 @@ public class KhachHangDAOImpl implements KhachHangDAO {
     @Override
     public boolean insert(KhachHang khachHang) {
         String sql = "INSERT INTO KhachHang (soDienThoai, tenKhachHang, diemTichLuy, ngayThamGia, hienThi) VALUES (?, ?, ?, ?, ?)";
-        try (Connection con = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
 
             ps.setString(1, khachHang.getSoDienThoai());
             ps.setString(2, khachHang.getTenKhachHang());
@@ -68,8 +69,7 @@ public class KhachHangDAOImpl implements KhachHangDAO {
     @Override
     public boolean update(KhachHang khachHang) {
         String sql = "UPDATE KhachHang SET tenKhachHang = ?, diemTichLuy = ?, hienThi = ? WHERE soDienThoai = ?";
-        try (Connection con = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
 
             ps.setString(1, khachHang.getTenKhachHang());
             ps.setInt(2, khachHang.getDiemTichLuy());
@@ -86,8 +86,7 @@ public class KhachHangDAOImpl implements KhachHangDAO {
     @Override
     public boolean updateDiem(String soDienThoai, int diemThayDoi) {
         String sql = "UPDATE KhachHang SET diemTichLuy = diemTichLuy + ? WHERE soDienThoai = ?";
-        try (Connection con = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
 
             ps.setInt(1, diemThayDoi);
             ps.setString(2, soDienThoai);
@@ -102,8 +101,7 @@ public class KhachHangDAOImpl implements KhachHangDAO {
     @Override
     public boolean delete(String soDienThoai) {
         String sql = "UPDATE KhachHang SET hienThi = 0 WHERE soDienThoai = ?";
-        try (Connection con = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
 
             ps.setString(1, soDienThoai);
             return ps.executeUpdate() > 0;
