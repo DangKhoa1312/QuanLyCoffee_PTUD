@@ -292,6 +292,11 @@ public class TableManagementPanel extends JPanel {
         banTable.getColumnModel().getColumn(0).setMaxWidth(0);
         banTable.getColumnModel().getColumn(0).setPreferredWidth(0);
 
+        // Ẩn cột Sức Chứa (Column 2)
+        banTable.getColumnModel().getColumn(2).setMinWidth(0);
+        banTable.getColumnModel().getColumn(2).setMaxWidth(0);
+        banTable.getColumnModel().getColumn(2).setPreferredWidth(0);
+
         JScrollPane scrollBan = new JScrollPane(banTable);
         scrollBan.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         pnlBan.add(scrollBan, BorderLayout.CENTER);
@@ -539,8 +544,8 @@ public class TableManagementPanel extends JPanel {
         JPanel form = new JPanel(new GridLayout(0, 2, 10, 8));
         form.add(new JLabel("Số bàn:"));
         form.add(txtSoBan);
-        form.add(new JLabel("Sức chứa (người):"));
-        form.add(spnSucChua);
+        // form.add(new JLabel("Sức chứa (người):"));
+        // form.add(spnSucChua);
         form.add(new JLabel("Trạng thái mới:"));
         form.add(cbStatus);
 
@@ -603,8 +608,8 @@ public class TableManagementPanel extends JPanel {
         form.add(new JLabel(maBan));
         form.add(new JLabel("Số bàn:"));
         form.add(txtSoBan);
-        form.add(new JLabel("Sức chứa (người):"));
-        form.add(spnSucChua);
+        // form.add(new JLabel("Sức chứa (người):"));
+        // form.add(spnSucChua);
         form.add(new JLabel("Đổi khu vực:"));
         form.add(cbKV);
         form.add(new JLabel("Trạng thái:"));

@@ -652,8 +652,8 @@ public class TablePanel extends JPanel {
         JLabel lblArea = new JLabel("📍 " + (currentKhuVuc != null ? currentKhuVuc.getTenKhuVuc() : "Khu vực"));
         lblArea.setFont(new Font("Roboto", Font.PLAIN, 12));
         lblArea.setForeground(new Color(120, 120, 120));
-
-        pnlBot.add(lblSeats);
+        
+        // pnlBot.add(lblSeats);
         pnlBot.add(lblArea);
 
         card.add(pnlTop, BorderLayout.NORTH);
