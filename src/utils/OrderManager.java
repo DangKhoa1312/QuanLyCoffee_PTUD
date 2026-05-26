@@ -228,7 +228,7 @@ public class OrderManager {
             CartItem itemMoi = new CartItem(itemNguon.getMon(), itemNguon.getSize(), slChuyen, itemNguon.getDonGiaSize(), itemNguon.getGhiChu());
             itemMoi.setDaPhucVu(itemNguon.isDaPhucVu()); 
             for (CartItem.CartTopping ct : itemNguon.getToppings()) {
-                itemMoi.addTopping(ct.topping, ct.soLuong);
+                itemMoi.addTopping(ct.topping, ct.soLuong, ct.giaTopping);
             }
 
             // Gộp vào đơn đích nếu đã có

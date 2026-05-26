@@ -17,13 +17,12 @@ public class MonDAOImpl implements MonDAO {
 
     private Mon mapRow(ResultSet rs) throws SQLException {
         return new Mon(
-            rs.getString("maMon"),
-            rs.getString("tenMon"),
-            rs.getString("moTa"),
-            rs.getString("hinhAnh"),
-            LoaiMon.valueOf(rs.getString("loaiMon")),
-            rs.getBoolean("trangThai")
-        );
+                rs.getString("maMon"),
+                rs.getString("tenMon"),
+                rs.getString("moTa"),
+                rs.getString("hinhAnh"),
+                LoaiMon.valueOf(rs.getString("loaiMon")),
+                rs.getBoolean("trangThai"));
     }
 
     @Override
@@ -78,7 +77,8 @@ public class MonDAOImpl implements MonDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maMon);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return mapRow(rs);
+            if (rs.next())
+                return mapRow(rs);
         } catch (SQLException e) {
             System.err.println("MonDAOImpl.findById: " + e.getMessage());
         }
@@ -88,10 +88,11 @@ public class MonDAOImpl implements MonDAO {
     @Override
     public List<Mon> findAll() {
         List<Mon> list = new ArrayList<>();
-        String sql = "SELECT * FROM Mon WHERE trangThai=1 ORDER BY maMon";
+        String sql = "SELECT * FROM Mon ORDER BY maMon";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("MonDAOImpl.findAll: " + e.getMessage());
         }
@@ -105,7 +106,8 @@ public class MonDAOImpl implements MonDAO {
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, loaiMon.name());
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) list.add(mapRow(rs));
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("MonDAOImpl.findByLoai: " + e.getMessage());
         }
@@ -117,8 +119,9 @@ public class MonDAOImpl implements MonDAO {
         List<Mon> list = new ArrayList<>();
         String sql = "SELECT * FROM Mon WHERE trangThai=1 ORDER BY loaiMon, tenMon";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("MonDAOImpl.findDangBan: " + e.getMessage());
         }

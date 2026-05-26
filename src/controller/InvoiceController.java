@@ -62,9 +62,7 @@ public class InvoiceController {
             // Load toppings
             List<ChiTietHoaDonTopping> topList = ctToppingDAO.findByCTHD(ct.getMaCTHD());
             for (ChiTietHoaDonTopping top : topList) {
-                item.addTopping(menuController.getToppingById(top.getMaTopping()), top.getSoLuong());
-                // Cập nhật giá topping theo snapshot lưu trong DB
-                item.getToppings().get(item.getToppings().size() - 1).giaTopping = top.getGiaTopping();
+                item.addTopping(menuController.getToppingById(top.getMaTopping()), top.getSoLuong(), top.getGiaTopping());
             }
             cart.add(item);
         }

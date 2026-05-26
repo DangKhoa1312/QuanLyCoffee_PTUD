@@ -577,8 +577,8 @@ public class OrderPanel extends JPanel {
                 List<CartItem> simulatedCart = new ArrayList<>();
                 for (CartItem item : cartData) {
                     CartItem clonedItem = new CartItem(item.getMon(), item.getSize(), item.getSoLuong(), item.getDonGiaSize(), item.getGhiChu());
-                    for (dto.CartItem.CartTopping ct : item.getToppings()) {
-                        clonedItem.addTopping(ct.topping, ct.soLuong);
+                    for (CartItem.CartTopping ct : item.getToppings()) {
+                        clonedItem.addTopping(ct.topping, ct.soLuong, ct.giaTopping);
                     }
                     simulatedCart.add(clonedItem);
                 }

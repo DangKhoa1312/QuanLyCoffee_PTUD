@@ -191,8 +191,8 @@ public class OrderController {
                 // Trả về item copy (SL = 1)
                 CartItem taken = new CartItem(gi.getMon(), gi.getSize(), 1, gi.getDonGiaSize(), gi.getGhiChu());
                 taken.setDaPhucVu(true); // Đã nấu rồi
-                for (dto.CartItem.CartTopping ct : gi.getToppings()) {
-                    taken.addTopping(ct.topping, ct.soLuong);
+                for (CartItem.CartTopping ct : gi.getToppings()) {
+                    taken.addTopping(ct.topping, ct.soLuong, ct.giaTopping);
                 }
                 return taken;
             }

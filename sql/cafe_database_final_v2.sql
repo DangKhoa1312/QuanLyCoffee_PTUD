@@ -158,16 +158,22 @@ GO
 CREATE TABLE BangGiaChiTiet (
     maBGCT     VARCHAR(20)   NOT NULL,
     giaBan     DECIMAL(10,2) NOT NULL,
-    maSize     VARCHAR(20)   NOT NULL,
+    maSize     VARCHAR(20)   NULL,
     maBangGia  VARCHAR(20)   NOT NULL,
+    maTopping  VARCHAR(20)   NULL,
 
     CONSTRAINT PK_BangGiaChiTiet   PRIMARY KEY (maBGCT),
     CONSTRAINT FK_BGCT_Size        FOREIGN KEY (maSize)    REFERENCES Size(maSize),
+    CONSTRAINT FK_BGCT_Topping     FOREIGN KEY (maTopping) REFERENCES Topping(maTopping),
     CONSTRAINT FK_BGCT_BangGia     FOREIGN KEY (maBangGia) REFERENCES BangGia(maBangGia),
     CONSTRAINT CHK_BGCT_Gia        CHECK (giaBan >= 0),
-    CONSTRAINT UQ_BGCT_Size_BangGia UNIQUE (maSize, maBangGia)
+    CONSTRAINT CHK_BGCT_ThucThe    CHECK (maSize IS NOT NULL OR maTopping IS NOT NULL)
 );
 GO
+
+-- Tạo UNIQUE INDEX có điều kiện thay cho UNIQUE CONSTRAINT để tránh lỗi trùng lặp NULL trong SQL Server
+CREATE UNIQUE INDEX UQ_BGCT_Size_BangGia ON BangGiaChiTiet (maSize, maBangGia) WHERE maSize IS NOT NULL;
+CREATE UNIQUE INDEX UQ_BGCT_Topping_BangGia ON BangGiaChiTiet (maTopping, maBangGia) WHERE maTopping IS NOT NULL;
 
 -- 9. NguyenLieu
 CREATE TABLE NguyenLieu (
@@ -457,17 +463,18 @@ CREATE TABLE DatBan (
 GO
 
 -- ================================================================
+-- ================================================================
 -- INDEXES
 -- ================================================================
-CREATE INDEX IX_HoaDon_ThoiGian       ON HoaDon (thoiGianXuat, maNV);
-CREATE INDEX IX_HoaDon_Ca             ON HoaDon (maCa, trangThai);
-CREATE INDEX IX_HoaDon_Ban            ON HoaDon (maBan, trangThai);
-CREATE INDEX IX_CaLamViec_NhanVien    ON CaLamViec (maNV, trangThai);
-CREATE INDEX IX_TonKho_SapHet         ON TonKho (soLuongTon, mucToiThieu, maKho);
-CREATE INDEX IX_DatBan_ThoiGian       ON DatBan (trangThai, thoiGianDen);
-CREATE INDEX IX_BangGia_HieuLuc       ON BangGia (trangThai, ngayBatDau, ngayKetThuc);
-CREATE INDEX IX_CTHD_Mon              ON ChiTietHoaDon (maMon);
-CREATE INDEX IX_Ban_KhuVuc            ON Ban (maKhuVuc, trangThai);
+CREATE INDEX IX_HoaDon_ThoiGian ON HoaDon (thoiGianXuat, maNV);
+CREATE INDEX IX_HoaDon_Ca ON HoaDon (maCa, trangThai);
+CREATE INDEX IX_HoaDon_Ban ON HoaDon (maBan, trangThai);
+CREATE INDEX IX_CaLamViec_NhanVien ON CaLamViec (maNV, trangThai);
+CREATE INDEX IX_TonKho_SapHet ON TonKho (soLuongTon, mucToiThieu, maKho);
+CREATE INDEX IX_DatBan_ThoiGian ON DatBan (trangThai, thoiGianDen);
+CREATE INDEX IX_BangGia_HieuLuc ON BangGia (trangThai, ngayBatDau, ngayKetThuc);
+CREATE INDEX IX_CTHD_Mon ON ChiTietHoaDon (maMon);
+CREATE INDEX IX_Ban_KhuVuc ON Ban (maKhuVuc, trangThai);
 GO
 
 PRINT N'Thiết lập Database v12 Thành Công!';

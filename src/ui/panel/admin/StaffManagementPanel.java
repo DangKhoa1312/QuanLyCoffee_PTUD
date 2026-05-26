@@ -285,9 +285,36 @@ public class StaffManagementPanel extends JPanel {
         }
     }
 
+    private void handleResetPassword(NhanVien nv) {
+        boolean isManager = utils.SessionManager.isQuanLy() && !utils.SessionManager.isAdmin();
+        if (isManager && enums.VaiTro.QUAN_LY.equals(nv.getVaiTro())) {
+            JOptionPane.showMessageDialog(this, "Bạn không có quyền đặt lại mật khẩu cho tài khoản Quản lý!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (enums.VaiTro.ADMIN.equals(nv.getVaiTro()) && !utils.SessionManager.isAdmin()) {
+            JOptionPane.showMessageDialog(this, "Không thể đặt lại mật khẩu tài khoản Quản trị viên (ADMIN)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "<html>Bạn có chắc muốn đặt lại mật khẩu của nhân viên <b>" + nv.getTenNV() + "</b> về mặc định (<b>123456</b>)?</html>",
+                "Xác nhận đặt lại mật khẩu", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                if (controller.changePassword(nv.getMaNV(), "123456")) {
+                    JOptionPane.showMessageDialog(this, "Đã đặt lại mật khẩu về 123456 thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     class ActionPanel extends JPanel {
         JButton btnEdit = new JButton();
         JButton btnDelete = new JButton();
+        JButton btnResetPass = new JButton();
 
         public ActionPanel() {
             setLayout(new GridBagLayout()); // Căn giữa theo cả 2 chiều
@@ -331,10 +358,31 @@ public class StaffManagementPanel extends JPanel {
             btnDelete.setBorder(new EmptyBorder(5, 8, 5, 8));
             btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
+            btnResetPass = new JButton() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(getBackground());
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8); // Bo tròn
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
+            btnResetPass.setIcon(IconFontSwing.buildIcon(FontAwesome.KEY, 16, Color.WHITE));
+            btnResetPass.setBackground(new Color(243, 156, 18)); // Màu vàng cam
+            btnResetPass.setContentAreaFilled(false);
+            btnResetPass.setBorderPainted(false);
+            btnResetPass.setOpaque(false);
+            btnResetPass.setBorder(new EmptyBorder(5, 8, 5, 8));
+            btnResetPass.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnResetPass.setToolTipText("Đặt lại mật khẩu (Mặc định: 123456)");
+
             GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(0, 5, 0, 5); // Khoảng cách giữa 2 nút
+            gbc.insets = new Insets(0, 5, 0, 5); // Khoảng cách giữa các nút
             add(btnEdit, gbc);
             add(btnDelete, gbc);
+            add(btnResetPass, gbc);
         }
     }
 
@@ -344,8 +392,22 @@ public class StaffManagementPanel extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                 int row, int column) {
+            NhanVien currentNV = (NhanVien) tableModel.getValueAt(row, 6);
             actionPanel.setBackground(isSelected ? table.getSelectionBackground()
                     : (row % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
+
+            boolean isManager = utils.SessionManager.isQuanLy() && !utils.SessionManager.isAdmin();
+            boolean isTargetManager = currentNV != null && enums.VaiTro.QUAN_LY.equals(currentNV.getVaiTro());
+            
+            if (isManager && isTargetManager && currentNV != null && !currentNV.getMaNV().equals(utils.SessionManager.getMaNVHienTai())) {
+                actionPanel.btnEdit.setEnabled(false);
+                actionPanel.btnDelete.setEnabled(false);
+                actionPanel.btnResetPass.setEnabled(false);
+            } else {
+                actionPanel.btnEdit.setEnabled(true);
+                actionPanel.btnDelete.setEnabled(true);
+                actionPanel.btnResetPass.setEnabled(true);
+            }
             return actionPanel;
         }
     }
@@ -371,6 +433,13 @@ public class StaffManagementPanel extends JPanel {
                     handleDeleteEmployee(currentNV);
                 }
             });
+
+            actionPanel.btnResetPass.addActionListener(e -> {
+                fireEditingStopped();
+                if (currentNV != null) {
+                    handleResetPassword(currentNV);
+                }
+            });
         }
 
         @Override
@@ -378,6 +447,20 @@ public class StaffManagementPanel extends JPanel {
                 int column) {
             currentNV = (NhanVien) tableModel.getValueAt(row, 6); // Lấy object từ cột ẩn cuối cùng
             actionPanel.setBackground(table.getSelectionBackground());
+
+            boolean isManager = utils.SessionManager.isQuanLy() && !utils.SessionManager.isAdmin();
+            boolean isTargetManager = currentNV != null && enums.VaiTro.QUAN_LY.equals(currentNV.getVaiTro());
+            
+            if (isManager && isTargetManager && currentNV != null && !currentNV.getMaNV().equals(utils.SessionManager.getMaNVHienTai())) {
+                actionPanel.btnEdit.setEnabled(false);
+                actionPanel.btnDelete.setEnabled(false);
+                actionPanel.btnResetPass.setEnabled(false);
+            } else {
+                actionPanel.btnEdit.setEnabled(true);
+                actionPanel.btnDelete.setEnabled(true);
+                actionPanel.btnResetPass.setEnabled(true);
+            }
+
             return actionPanel;
         }
 

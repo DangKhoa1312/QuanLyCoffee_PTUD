@@ -119,7 +119,8 @@ public class ItemOptionDialog extends JDialog {
             toppPanel.add(new JLabel("  Không có Topping"));
         } else {
             for (Topping top : toppingList) {
-                String text = top.getTenTopping() + " (+" + nf.format(top.getGiaTopping()) + "đ)";
+                double topPrice = menuController.getGiaTopping(top.getMaTopping());
+                String text = top.getTenTopping() + " (+" + nf.format(topPrice) + "đ)";
                 JCheckBox cb = new JCheckBox(text);
                 cb.setFont(new Font("Roboto", Font.PLAIN, 13));
                 cb.setBackground(Color.WHITE);
@@ -222,7 +223,7 @@ public class ItemOptionDialog extends JDialog {
         double toppingPrice = 0;
         for (JCheckBox cb : toppingBtnMap.keySet()) {
             if (cb.isSelected()) {
-                toppingPrice += toppingBtnMap.get(cb).getGiaTopping();
+                toppingPrice += menuController.getGiaTopping(toppingBtnMap.get(cb).getMaTopping());
             }
         }
 
@@ -254,7 +255,9 @@ public class ItemOptionDialog extends JDialog {
 
         for (JCheckBox cb : toppingBtnMap.keySet()) {
             if (cb.isSelected()) {
-                result.addTopping(toppingBtnMap.get(cb), 1); // fixed sl topping = 1 per drink
+                Topping top = toppingBtnMap.get(cb);
+                double giaTop = menuController.getGiaTopping(top.getMaTopping());
+                result.addTopping(top, 1, giaTop); // fixed sl topping = 1 per drink
             }
         }
 

@@ -143,6 +143,11 @@ public class StaffDialog extends JDialog {
         cbVaiTro = new JComboBox<>(VaiTro.values());
         cbVaiTro.removeItem(VaiTro.ADMIN); // Xóa khỏi danh sách chọn mặc định
 
+        if (SessionManager.isQuanLy() && !SessionManager.isAdmin()) {
+            cbVaiTro.removeItem(VaiTro.QUAN_LY);
+            cbVaiTro.setToolTipText("Quản lý chỉ được phép tạo tài khoản Nhân viên");
+        }
+
         if (employee != null && VaiTro.ADMIN.equals(employee.getVaiTro())) {
             cbVaiTro.addItem(VaiTro.ADMIN);
             cbVaiTro.setEnabled(false); // Tài khoản có quyền admin thì không cho đổi role

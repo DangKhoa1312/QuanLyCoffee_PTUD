@@ -31,7 +31,7 @@ public class CustomerDialog extends JDialog {
         this.currentKhachHang = kh;
         this.isEditMode = isEditMode;
 
-        setSize(450, 500);
+        setSize(450, 400);
         setLocationRelativeTo(parent);
         setResizable(false);
 
@@ -62,8 +62,7 @@ public class CustomerDialog extends JDialog {
         pnlForm.setBackground(Color.WHITE);
         pnlForm.setBorder(BorderFactory.createCompoundBorder(
                 new EmptyBorder(15, 20, 15, 20),
-                new LineBorder(new Color(230, 230, 230), 1, true)
-        ));
+                new LineBorder(new Color(230, 230, 230), 1, true)));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 15, 10, 15);
@@ -72,27 +71,46 @@ public class CustomerDialog extends JDialog {
         gbc.weightx = 1.0;
 
         // Số điện thoại
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
         pnlForm.add(new JLabel("Số điện thoại (*):"), gbc);
-        gbc.gridy = 1; gbc.weightx = 1.0;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
         txtSdt = new JTextField();
         txtSdt.setPreferredSize(new Dimension(150, 35));
         pnlForm.add(txtSdt, gbc);
 
         // Tên khách hàng
-        gbc.gridy = 2; gbc.weightx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
         pnlForm.add(new JLabel("Tên khách hàng (*):"), gbc);
-        gbc.gridy = 3; gbc.weightx = 1.0;
+        gbc.gridy = 3;
+        gbc.weightx = 1.0;
         txtTenKH = new JTextField();
         txtTenKH.setPreferredSize(new Dimension(150, 35));
         pnlForm.add(txtTenKH, gbc);
 
-        // Điểm tích lũy
-        gbc.gridy = 4; gbc.weightx = 0;
-        pnlForm.add(new JLabel("Điểm tích luỹ:"), gbc);
-        gbc.gridy = 5; gbc.weightx = 1.0;
+        // Điểm tích lũy (Ẩn khi tạo mới)
+        JLabel lblDiem = new JLabel("Điểm tích luỹ:");
+        gbc.gridy = 4;
+        gbc.weightx = 0;
+        pnlForm.add(lblDiem, gbc);
+        gbc.gridy = 5;
+        gbc.weightx = 1.0;
         txtDiem = new JTextField("0");
         txtDiem.setPreferredSize(new Dimension(150, 35));
+
+        // Khóa không cho phép sửa điểm thủ công
+        txtDiem.setEditable(false);
+        txtDiem.setBackground(new Color(240, 240, 240));
+        txtDiem.setToolTipText("Điểm tích lũy tự động cộng khi mua hàng, không được tự nhập");
+
+        if (!isEditMode) {
+            lblDiem.setVisible(false);
+            txtDiem.setVisible(false);
+        }
+
         pnlForm.add(txtDiem, gbc);
 
         mainPanel.add(pnlForm, BorderLayout.CENTER);
@@ -142,21 +160,21 @@ public class CustomerDialog extends JDialog {
         String diemStr = txtDiem.getText().trim();
 
         if (sdt.isEmpty() || ten.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập SĐT và Tên khách hàng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập SĐT và Tên khách hàng!", "Cảnh báo",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
+        // Lấy lại điểm hiện tại, tránh bị ghi đè bằng thao tác nhập bậy
         int diem = 0;
-        try {
-            if (!diemStr.isEmpty()) diem = Integer.parseInt(diemStr);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Điểm tích lũy phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
+        if (isEditMode && currentKhachHang != null) {
+            diem = currentKhachHang.getDiemTichLuy();
         }
 
         if (!isEditMode) {
             if (khachHangDAO.findById(sdt) != null) {
-                JOptionPane.showMessageDialog(this, "Số điện thoại đã tồn tại trong hệ thống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Số điện thoại đã tồn tại trong hệ thống!", "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
             KhachHang newKH = new KhachHang(sdt, ten, diem, LocalDateTime.now(), true);

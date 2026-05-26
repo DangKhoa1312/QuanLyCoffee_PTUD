@@ -19,18 +19,20 @@ public class BangGiaChiTietDAOImpl implements BangGiaChiTietDAO {
             rs.getString("maBGCT"),
             rs.getDouble("giaBan"),
             rs.getString("maSize"),
-            rs.getString("maBangGia")
+            rs.getString("maBangGia"),
+            rs.getString("maTopping")
         );
     }
 
     @Override
     public boolean insert(BangGiaChiTiet bgct) {
-        String sql = "INSERT INTO BangGiaChiTiet(maBGCT, giaBan, maSize, maBangGia) VALUES(?,?,?,?)";
+        String sql = "INSERT INTO BangGiaChiTiet(maBGCT, giaBan, maSize, maBangGia, maTopping) VALUES(?,?,?,?,?)";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, bgct.getMaBGCT());
             ps.setDouble(2, bgct.getGiaBan());
             ps.setString(3, bgct.getMaSize());
             ps.setString(4, bgct.getMaBangGia());
+            ps.setString(5, bgct.getMaTopping());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("BangGiaChiTietDAOImpl.insert: " + e.getMessage());
@@ -40,12 +42,13 @@ public class BangGiaChiTietDAOImpl implements BangGiaChiTietDAO {
 
     @Override
     public boolean update(BangGiaChiTiet bgct) {
-        String sql = "UPDATE BangGiaChiTiet SET giaBan=?, maSize=?, maBangGia=? WHERE maBGCT=?";
+        String sql = "UPDATE BangGiaChiTiet SET giaBan=?, maSize=?, maBangGia=?, maTopping=? WHERE maBGCT=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDouble(1, bgct.getGiaBan());
             ps.setString(2, bgct.getMaSize());
             ps.setString(3, bgct.getMaBangGia());
-            ps.setString(4, bgct.getMaBGCT());
+            ps.setString(4, bgct.getMaTopping());
+            ps.setString(5, bgct.getMaBGCT());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("BangGiaChiTietDAOImpl.update: " + e.getMessage());
@@ -101,6 +104,20 @@ public class BangGiaChiTietDAOImpl implements BangGiaChiTietDAO {
             if (rs.next()) return mapRow(rs);
         } catch (SQLException e) {
             System.err.println("BangGiaChiTietDAOImpl.findGia: " + e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public BangGiaChiTiet findGiaTopping(String maTopping, String maBangGia) {
+        String sql = "SELECT * FROM BangGiaChiTiet WHERE maTopping=? AND maBangGia=?";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setString(1, maTopping);
+            ps.setString(2, maBangGia);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return mapRow(rs);
+        } catch (SQLException e) {
+            System.err.println("BangGiaChiTietDAOImpl.findGiaTopping: " + e.getMessage());
         }
         return null;
     }

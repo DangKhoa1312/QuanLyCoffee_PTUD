@@ -77,6 +77,7 @@ public class AccordionSidebar extends JPanel {
 
     private void build() {
         boolean isQL = SessionManager.isQuanLy();
+        boolean isAdmin = SessionManager.isAdmin();
 
         // 1. NORTH: Brand & Avatar (Ghim đỉnh)
         JPanel pnlNorth = new JPanel();
@@ -115,7 +116,9 @@ public class AccordionSidebar extends JPanel {
             gTD.addItem(makeItem("Công Thức",  FontAwesome.FLASK,        "ADMIN_CONG_THUC", 2));
             gTL.addNestedGroup(gTD);
 
-            gTL.addItem(makeItem("Bảng Giá",  FontAwesome.MONEY,    "ADMIN_GIA", 1));
+            if (isAdmin) {
+                gTL.addItem(makeItem("Bảng Giá",  FontAwesome.MONEY,    "ADMIN_GIA", 1));
+            }
             gTL.addItem(makeItem("Sơ Đồ Bàn", FontAwesome.TH_LARGE, "ADMIN_BAN", 1));
             gTL.addItem(makeItem("Cấu Hình", FontAwesome.COGS, "ADMIN_CAU_HINH", 1));
             pnlMenu.add(gTL);
@@ -124,7 +127,9 @@ public class AccordionSidebar extends JPanel {
             AccordionGroup gQT = new AccordionGroup("Quản Trị", true, 0);
             gQT.addItem(makeItem("Nhân Viên",   FontAwesome.USERS,     "ADMIN_NHAN_VIEN", 1));
             gQT.addItem(makeItem("Khách Hàng",  FontAwesome.ID_CARD_O, "KHACH_HANG", 1));
-            gQT.addItem(makeItem("Khuyến Mãi",  FontAwesome.GIFT,      "ADMIN_KHUYEN_MAI", 1));
+            if (isAdmin) {
+                gQT.addItem(makeItem("Khuyến Mãi",  FontAwesome.GIFT,      "ADMIN_KHUYEN_MAI", 1));
+            }
             gQT.addItem(makeItem("Quản Lý Kho", FontAwesome.ARCHIVE,   "ADMIN_KHO", 1));
             gQT.addItem(makeItem("Thống Kê",    FontAwesome.PIE_CHART, "THONG_KE", 1));
             pnlMenu.add(gQT);

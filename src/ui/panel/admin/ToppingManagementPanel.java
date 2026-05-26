@@ -136,7 +136,7 @@ public class ToppingManagementPanel extends JPanel {
     //  TABLE
     // ══════════════════════════════════════════════════════════════════
     private void initTable() {
-        String[] cols = {"Mã Topping", "Tên Topping", "Giá (VNĐ)", "Trạng thái", "Object"};
+        String[] cols = {"Mã Topping", "Tên Topping", "Trạng thái", "Object"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -155,31 +155,16 @@ public class ToppingManagementPanel extends JPanel {
 
         // Zebra renderer
         table.setDefaultRenderer(Object.class, new ZebraRenderer());
-        // Status renderer cho cột 3
-        table.getColumnModel().getColumn(3).setCellRenderer(new StatusRenderer());
+        // Status renderer cho cột 2
+        table.getColumnModel().getColumn(2).setCellRenderer(new StatusRenderer());
 
-        // Ẩn cột Object (index 4)
-        table.removeColumn(table.getColumnModel().getColumn(4));
-
-        // Căn cột Giá sang phải
-        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                setHorizontalAlignment(SwingConstants.RIGHT);
-                if (!isSelected) {
-                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(252, 253, 255));
-                }
-                return c;
-            }
-        };
-        table.getColumnModel().getColumn(2).setCellRenderer(rightRenderer);
+        // Ẩn cột Object (index 3)
+        table.removeColumn(table.getColumnModel().getColumn(3));
 
         // Độ rộng cột
         table.getColumnModel().getColumn(0).setPreferredWidth(120);
-        table.getColumnModel().getColumn(1).setPreferredWidth(300);
+        table.getColumnModel().getColumn(1).setPreferredWidth(450);
         table.getColumnModel().getColumn(2).setPreferredWidth(150);
-        table.getColumnModel().getColumn(3).setPreferredWidth(150);
 
         // Double-click để sửa
         table.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -188,7 +173,7 @@ public class ToppingManagementPanel extends JPanel {
                 if (e.getClickCount() == 2) {
                     int row = table.getSelectedRow();
                     if (row != -1) {
-                        Topping t = (Topping) tableModel.getValueAt(table.convertRowIndexToModel(row), 4);
+                        Topping t = (Topping) tableModel.getValueAt(table.convertRowIndexToModel(row), 3);
                         handleEdit(t);
                     }
                 }
@@ -203,7 +188,7 @@ public class ToppingManagementPanel extends JPanel {
         miEdit.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row != -1) {
-                Topping t = (Topping) tableModel.getValueAt(table.convertRowIndexToModel(row), 4);
+                Topping t = (Topping) tableModel.getValueAt(table.convertRowIndexToModel(row), 3);
                 handleEdit(t);
             }
         });
@@ -213,7 +198,7 @@ public class ToppingManagementPanel extends JPanel {
         miToggle.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row != -1) {
-                Topping t = (Topping) tableModel.getValueAt(table.convertRowIndexToModel(row), 4);
+                Topping t = (Topping) tableModel.getValueAt(table.convertRowIndexToModel(row), 3);
                 handleToggle(t);
             }
         });
@@ -240,7 +225,6 @@ public class ToppingManagementPanel extends JPanel {
             tableModel.addRow(new Object[]{
                 t.getMaTopping(),
                 t.getTenTopping(),
-                nf.format(t.getGiaTopping()) + " đ",
                 t.isTrangThai(),
                 t
             });
@@ -259,7 +243,6 @@ public class ToppingManagementPanel extends JPanel {
             tableModel.addRow(new Object[]{
                 t.getMaTopping(),
                 t.getTenTopping(),
-                nf.format(t.getGiaTopping()) + " đ",
                 t.isTrangThai(),
                 t
             });

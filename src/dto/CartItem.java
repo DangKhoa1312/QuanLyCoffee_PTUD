@@ -53,8 +53,8 @@ public class CartItem implements java.io.Serializable {
     
     public List<CartTopping> getToppings() { return toppings; }
 
-    public void addTopping(Topping topping, int soLuong) {
-        toppings.add(new CartTopping(topping, soLuong, topping.getGiaTopping()));
+    public void addTopping(Topping topping, int soLuong, double giaTopping) {
+        toppings.add(new CartTopping(topping, soLuong, giaTopping));
     }
 
     /** Giá của 1 đơn vị món (đã bao gồm các topping trong đó) */

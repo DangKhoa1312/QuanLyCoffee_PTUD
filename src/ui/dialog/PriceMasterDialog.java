@@ -45,11 +45,19 @@ public class PriceMasterDialog extends JDialog {
     // UI Components - Detail Table
     private JTable table;
     private DefaultTableModel model;
+    private JTable toppingTable;
+    private DefaultTableModel toppingModel;
     private TableRowSorter<DefaultTableModel> sorter;
     private JTextField txtSearchDish;
     private JCheckBox chkShowInactive;
     private JCheckBox chkMissingPrice;
     private Runnable updateFilter; // [BUG-07 FIX] Field để syncNewMenuItems có thể gọi refresh filter
+
+    private TableRowSorter<DefaultTableModel> toppingSorter;
+    private JTextField txtSearchTopping;
+    private JCheckBox chkShowInactiveTopping;
+    private JCheckBox chkMissingPriceTopping;
+    private Runnable updateFilterTopping;
 
     // UI Components - Batch Actions
     private JComboBox<BangGia> cbCloneSource;
@@ -133,7 +141,11 @@ public class PriceMasterDialog extends JDialog {
 
         body.add(topWrapper, BorderLayout.NORTH);
 
-        body.add(createTablePanel(), BorderLayout.CENTER);
+                JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Roboto", Font.BOLD, 14));
+        tabbedPane.addTab("Giá Món", createTablePanel());
+        tabbedPane.addTab("Giá Topping", createToppingPanel());
+        body.add(tabbedPane, BorderLayout.CENTER);
         add(body, BorderLayout.CENTER);
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
@@ -220,7 +232,7 @@ public class PriceMasterDialog extends JDialog {
                         new Font("Roboto", Font.BOLD, 13), PRIMARY_COLOR)));
 
         // Cột ẩn: col 3=maSize, col 4=isDishActive, col 5=isSizeActive
-        String[] cols = { "Tên món ăn", "Kích thước", "Giá bán (VNĐ)", "maSize", "isDishActive", "isSizeActive" };
+        String[] cols = { "Tên món", "Kích thước", "Giá bán (VNĐ)", "maSize", "isDishActive", "isSizeActive" };
         model = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
@@ -353,6 +365,138 @@ public class PriceMasterDialog extends JDialog {
         table.getColumnModel().getColumn(1).setPreferredWidth(100);
         table.getColumnModel().getColumn(2).setPreferredWidth(150);
         pnlTable.add(new JScrollPane(table), BorderLayout.CENTER);
+        return pnlTable;
+    }
+
+    
+    private JPanel createToppingPanel() {
+        JPanel pnlTable = new JPanel(new BorderLayout());
+        pnlTable.setBackground(Color.WHITE);
+        pnlTable.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(230, 230, 230)),
+                BorderFactory.createTitledBorder(
+                        new EmptyBorder(5, 5, 5, 5),
+                        "CHI TIẾT GIÁ TOPPING",
+                        TitledBorder.LEFT, TitledBorder.TOP,
+                        new Font("Roboto", Font.BOLD, 13), PRIMARY_COLOR)));
+
+        String[] cols = { "Tên Topping", "Giá bán (VNĐ)", "maTopping", "isToppingActive" };
+        toppingModel = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return bangGia.isHoatDong() && c == 1;
+            }
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 3) return Boolean.class;
+                return super.getColumnClass(columnIndex);
+            }
+            @Override
+            public void setValueAt(Object aValue, int row, int column) {
+                if (column == 1) {
+                    if (aValue instanceof String) {
+                        String s = ((String) aValue).trim().replace(",", "").replace(".", "");
+                        if (s.isEmpty()) {
+                            aValue = null;
+                        } else {
+                            try {
+                                double p = Double.parseDouble(s);
+                                aValue = p < 0 ? 0.0 : p;
+                            } catch (NumberFormatException ex) {
+                                aValue = null;
+                            }
+                        }
+                    }
+                }
+                super.setValueAt(aValue, row, column);
+            }
+        };
+
+        toppingTable = new JTable(toppingModel);
+        toppingSorter = new TableRowSorter<>(toppingModel);
+        toppingTable.setRowSorter(toppingSorter);
+        toppingTable.setRowHeight(35);
+        toppingTable.setFont(new Font("Roboto", Font.PLAIN, 14));
+        toppingTable.getTableHeader().setFont(new Font("Roboto", Font.BOLD, 13));
+        toppingTable.getTableHeader().setBackground(new Color(245, 245, 245));
+        
+        toppingTable.getColumnModel().removeColumn(toppingTable.getColumnModel().getColumn(3)); // isToppingActive
+        toppingTable.getColumnModel().removeColumn(toppingTable.getColumnModel().getColumn(2)); // maTopping
+        
+        ToppingPriceRowRenderer topRenderer = new ToppingPriceRowRenderer();
+        for (int i = 0; i < toppingTable.getColumnCount(); i++) {
+            toppingTable.getColumnModel().getColumn(i).setCellRenderer(topRenderer);
+        }
+
+        toppingModel.addTableModelListener(e -> isDirty = true);
+
+        JPanel hdr = new JPanel(new BorderLayout());
+        hdr.setOpaque(false);
+        hdr.setBorder(new EmptyBorder(0, 5, 10, 5));
+
+        txtSearchTopping = new JTextField();
+        txtSearchTopping.setPreferredSize(new Dimension(200, 32));
+
+        chkShowInactiveTopping = new JCheckBox("Hiện topping đã ẩn");
+        chkShowInactiveTopping.setSelected(true);
+        chkShowInactiveTopping.setOpaque(false);
+        chkShowInactiveTopping.setFont(new Font("Roboto", Font.PLAIN, 12));
+        chkShowInactiveTopping.setForeground(new Color(120, 130, 140));
+
+        chkMissingPriceTopping = new JCheckBox("Lọc topping chưa có giá");
+        chkMissingPriceTopping.setOpaque(false);
+        chkMissingPriceTopping.setFont(new Font("Roboto", Font.BOLD, 12));
+        chkMissingPriceTopping.setForeground(new Color(231, 76, 60));
+
+        JPanel leftTool = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftTool.setOpaque(false);
+        leftTool.add(new JLabel(" Tìm kiếm: "));
+        leftTool.add(txtSearchTopping);
+        leftTool.add(chkShowInactiveTopping);
+        leftTool.add(chkMissingPriceTopping);
+        hdr.add(leftTool, BorderLayout.WEST);
+
+        updateFilterTopping = () -> {
+            String kw = txtSearchTopping.getText().trim().toLowerCase();
+            boolean showHidden = chkShowInactiveTopping.isSelected();
+            boolean showMissingOnly = chkMissingPriceTopping.isSelected();
+
+            toppingSorter.setRowFilter(new RowFilter<DefaultTableModel, Integer>() {
+                @Override
+                public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                    String name = entry.getStringValue(0).toLowerCase();
+                    if (!kw.isEmpty() && !name.contains(kw))
+                        return false;
+
+                    if (!showHidden) {
+                        Boolean isActive = (Boolean) entry.getModel().getValueAt(entry.getIdentifier(), 3);
+                        if (isActive != null && !isActive)
+                            return false;
+                    }
+
+                    if (showMissingOnly) {
+                        Object priceObj = entry.getModel().getValueAt(entry.getIdentifier(), 1);
+                        if (parsePrice(priceObj) != null)
+                            return false;
+                    }
+
+                    return true;
+                }
+            });
+        };
+
+        txtSearchTopping.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e) {
+                updateFilterTopping.run();
+            }
+        });
+        chkShowInactiveTopping.addActionListener(e -> updateFilterTopping.run());
+        chkMissingPriceTopping.addActionListener(e -> updateFilterTopping.run());
+        updateFilterTopping.run();
+
+        pnlTable.add(hdr, BorderLayout.NORTH);
+        pnlTable.add(new JScrollPane(toppingTable), BorderLayout.CENTER);
         return pnlTable;
     }
 
@@ -497,6 +641,9 @@ public class PriceMasterDialog extends JDialog {
         // Chi tiết giá hiện tại (nếu edit)
         List<BangGiaChiTiet> currentDetails = priceController.getDetailsOf(bangGia.getMaBangGia());
 
+        toppingModel.setRowCount(0);
+        List<entity.Topping> toppings = menuController.getToppingDangCungCap();
+
         // Chi tiết giá nguồn (nếu tạo mới theo kiểu clone)
         List<BangGiaChiTiet> sourceDetails = null;
         if (!isEditMode && sourceMaBG != null) {
@@ -510,7 +657,7 @@ public class PriceMasterDialog extends JDialog {
 
                 // Ưu tiên 1: giá thật của chính bảng này (edit mode)
                 for (BangGiaChiTiet d : currentDetails) {
-                    if (d.getMaSize().equals(s.getMaSize())) {
+                    if (d.getMaSize() != null && d.getMaSize().equals(s.getMaSize())) {
                         price = d.getGiaBan();
                         break;
                     }
@@ -519,7 +666,7 @@ public class PriceMasterDialog extends JDialog {
                 // Ưu tiên 2: giá nguồn (clone khi tạo mới)
                 if (price == null && sourceDetails != null) {
                     for (BangGiaChiTiet sd : sourceDetails) {
-                        if (sd.getMaSize().equals(s.getMaSize())) {
+                        if (sd.getMaSize() != null && sd.getMaSize().equals(s.getMaSize())) {
                             if (sd.getGiaBan() > 0)
                                 price = sd.getGiaBan();
                             break;
@@ -531,6 +678,26 @@ public class PriceMasterDialog extends JDialog {
                 model.addRow(new Object[] { m.getTenMon(), s.getTenSize(), price, s.getMaSize(), m.isTrangThai(),
                         s.isTrangThai() });
             }
+        }
+        
+        for (entity.Topping top : toppings) {
+            Double price = null;
+            for (BangGiaChiTiet d : currentDetails) {
+                if (d.getMaTopping() != null && d.getMaTopping().equals(top.getMaTopping())) {
+                    price = d.getGiaBan();
+                    break;
+                }
+            }
+            if (price == null && sourceDetails != null) {
+                for (BangGiaChiTiet sd : sourceDetails) {
+                    if (sd.getMaTopping() != null && sd.getMaTopping().equals(top.getMaTopping())) {
+                        if (sd.getGiaBan() > 0)
+                            price = sd.getGiaBan();
+                        break;
+                    }
+                }
+            }
+            toppingModel.addRow(new Object[] { top.getTenTopping(), price, top.getMaTopping(), true });
         }
     }
 
@@ -550,8 +717,17 @@ public class PriceMasterDialog extends JDialog {
             for (int i = 0; i < model.getRowCount(); i++) {
                 String tbSize = (String) model.getValueAt(i, 3);
                 for (BangGiaChiTiet s : srcData) {
-                    if (s.getMaSize().equals(tbSize)) {
+                    if (s.getMaSize() != null && s.getMaSize().equals(tbSize)) {
                         model.setValueAt(s.getGiaBan(), i, 2);
+                        break;
+                    }
+                }
+            }
+            for (int i = 0; i < toppingModel.getRowCount(); i++) {
+                String tbTopping = (String) toppingModel.getValueAt(i, 2);
+                for (BangGiaChiTiet s : srcData) {
+                    if (s.getMaTopping() != null && s.getMaTopping().equals(tbTopping)) {
+                        toppingModel.setValueAt(s.getGiaBan(), i, 1);
                         break;
                     }
                 }
@@ -580,6 +756,17 @@ public class PriceMasterDialog extends JDialog {
                     if (newPrice < 0)
                         newPrice = 0.0; // KHÔNG CHO PHÉP GIÁ ÂM
                     model.setValueAt(newPrice, i, 2);
+                }
+            }
+            for (int i = 0; i < toppingModel.getRowCount(); i++) {
+                Object val = toppingModel.getValueAt(i, 1);
+                if (val == null) continue;
+                double currentPrice = Double.parseDouble(val.toString());
+                if (currentPrice >= 0) {
+                    double newPrice = currentPrice * (1 + p) + f;
+                    newPrice = Math.round(newPrice / 1000.0) * 1000.0;
+                    if (newPrice < 0) newPrice = 0.0;
+                    toppingModel.setValueAt(newPrice, i, 1);
                 }
             }
             JOptionPane.showMessageDialog(this,
@@ -685,6 +872,19 @@ public class PriceMasterDialog extends JDialog {
                     return; // Chặn lưu
                 }
             }
+            for (int i = 0; i < toppingModel.getRowCount(); i++) {
+                Object val = toppingModel.getValueAt(i, 1);
+                if (parsePrice(val) == null) {
+                    String tenTop = (String) toppingModel.getValueAt(i, 0);
+                    JOptionPane.showMessageDialog(this,
+                            "<html><b style='color:red'>LỖI DỮ LIỆU: TỒN TẠI TOPPING CHƯA ĐỊNH GIÁ!</b><br><br>"
+                                    + "Topping <b>[" + tenTop
+                                    + "]</b> chưa được thiết lập giá bán.<br>"
+                                    + "Hệ thống sẽ <b>không lưu</b>.</html>",
+                            "Stop - Yêu cầu nhập giá", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
             for (int i = 0; i < model.getRowCount(); i++) {
                 Object val = model.getValueAt(i, 2);
                 Boolean dishActive = (Boolean) model.getValueAt(i, 4);
@@ -757,7 +957,7 @@ public class PriceMasterDialog extends JDialog {
                 // Tìm xem đã có trong DB chưa
                 BangGiaChiTiet existing = null;
                 for (BangGiaChiTiet dbD : currentDbDetails) {
-                    if (dbD.getMaSize().equals(maSize)) {
+                    if (dbD.getMaSize() != null && dbD.getMaSize().equals(maSize)) {
                         existing = dbD;
                         break;
                     }
@@ -773,6 +973,32 @@ public class PriceMasterDialog extends JDialog {
                     BangGiaChiTiet nw = new BangGiaChiTiet(
                             priceController.generateNextMaBGCT(),
                             guiPrice, maSize, bangGia.getMaBangGia());
+                    priceController.saveDetail(nw, false);
+                }
+            }
+            for (int i = 0; i < toppingModel.getRowCount(); i++) {
+                String maTopping = (String) toppingModel.getValueAt(i, 2);
+                Object val = toppingModel.getValueAt(i, 1);
+                Double parsedPrice = parsePrice(val);
+                double guiPrice = parsedPrice != null ? parsedPrice : 0.0;
+
+                BangGiaChiTiet existing = null;
+                for (BangGiaChiTiet dbD : currentDbDetails) {
+                    if (dbD.getMaTopping() != null && dbD.getMaTopping().equals(maTopping)) {
+                        existing = dbD;
+                        break;
+                    }
+                }
+
+                if (existing != null) {
+                    if (Math.abs(existing.getGiaBan() - guiPrice) > 0.01) {
+                        existing.setGiaBan(guiPrice);
+                        priceController.saveDetail(existing, true);
+                    }
+                } else {
+                    BangGiaChiTiet nw = new BangGiaChiTiet(
+                            priceController.generateNextMaBGCT(),
+                            guiPrice, null, bangGia.getMaBangGia(), maTopping);
                     priceController.saveDetail(nw, false);
                 }
             }
@@ -884,6 +1110,61 @@ public class PriceMasterDialog extends JDialog {
             return s.isEmpty() ? null : Double.parseDouble(s);
         } catch (NumberFormatException ex) {
             return null;
+        }
+    }
+
+    private class ToppingPriceRowRenderer extends DefaultTableCellRenderer {
+        private final Color COLOR_FG_WARN = new Color(192, 57, 43);
+        private final Color COLOR_BG_WARN = new Color(255, 235, 238);
+        private final Font FONT_NORMAL = new Font("Roboto", Font.PLAIN, 14);
+        private final Font FONT_BOLD = new Font("Roboto", Font.BOLD, 14);
+        private final Color COLOR_INACTIVE = new Color(150, 160, 170);
+        private final Color COLOR_BG_INACTIVE = new Color(242, 242, 242);
+        private final Font FONT_ITALIC = new Font("Roboto", Font.ITALIC, 14);
+
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object v, boolean isS, boolean hasF, int r, int c) {
+            Component comp = super.getTableCellRendererComponent(t, v, isS, hasF, r, c);
+            comp.setFont(FONT_NORMAL);
+            comp.setForeground(isS ? t.getSelectionForeground() : t.getForeground());
+            comp.setBackground(isS ? t.getSelectionBackground() : t.getBackground());
+            setHorizontalAlignment(c == 1 ? RIGHT : LEFT);
+
+            int modelRow = t.convertRowIndexToModel(r);
+            Boolean isToppingActive = (Boolean) t.getModel().getValueAt(modelRow, 3);
+            boolean isInactive = (isToppingActive != null && !isToppingActive);
+
+            Object priceObject = t.getModel().getValueAt(modelRow, 1);
+            boolean isMissingPrice = parsePrice(priceObject) == null;
+
+            if (isInactive) {
+                comp.setFont(FONT_ITALIC);
+                if (!isS) {
+                    comp.setForeground(COLOR_INACTIVE);
+                    comp.setBackground(COLOR_BG_INACTIVE);
+                }
+            } else if (isMissingPrice) {
+                comp.setFont(FONT_BOLD);
+                if (!isS) {
+                    comp.setForeground(COLOR_FG_WARN);
+                    comp.setBackground(COLOR_BG_WARN);
+                }
+            }
+
+            if (c == 1) {
+                if (isMissingPrice && !isInactive) {
+                    setText(" ⚠ Chưa có giá ");
+                } else if (v instanceof Double) {
+                    Double dVal = (Double) v;
+                    if (dVal == 0.0)
+                        setText("Miễn phí (0đ)");
+                    else
+                        setText(String.format("%,.0f", dVal));
+                } else if (v instanceof String) {
+                    setText((String) v);
+                }
+            }
+            return comp;
         }
     }
 }

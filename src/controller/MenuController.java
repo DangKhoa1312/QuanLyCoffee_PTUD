@@ -49,10 +49,29 @@ public class MenuController {
 
     /** Lấy danh sách món đang bán theo loại, hoặc tất cả nếu loaiMon null */
     public List<Mon> getMon(LoaiMon loaiMon) {
-        if (loaiMon == null) {
-            return monDAO.findDangBan();
+        List<Mon> list = (loaiMon == null) ? monDAO.findDangBan() : monDAO.findByLoai(loaiMon);
+        
+        // Lọc bỏ những món chưa được cấu hình giá (hoặc bảng giá không có hiệu lực)
+        java.util.Iterator<Mon> iterator = list.iterator();
+        while (iterator.hasNext()) {
+            Mon m = iterator.next();
+            boolean hasValidPrice = false;
+            List<Size> sizes = getSizeOfMon(m.getMaMon());
+            if (sizes != null) {
+                for (Size s : sizes) {
+                    if (getGiaBan(s.getMaSize()) > 0) {
+                        hasValidPrice = true;
+                        break;
+                    }
+                }
+            }
+            // Nếu món ăn không có size nào có giá > 0, xóa khỏi danh sách hiển thị
+            if (!hasValidPrice) {
+                iterator.remove();
+            }
         }
-        return monDAO.findByLoai(loaiMon);
+        
+        return list;
     }
     
     /** Lấy tất cả món để quán lý */
@@ -99,6 +118,20 @@ public class MenuController {
         
         for (BangGia bg : activeLists) {
             BangGiaChiTiet chiTiet = bgctDAO.findGia(maSize, bg.getMaBangGia());
+            if (chiTiet != null && chiTiet.getGiaBan() > 0) {
+                return chiTiet.getGiaBan();
+            }
+        }
+        return 0.0; // Nếu không tìm thấy ở bất kỳ bảng giá nào
+    }
+
+    /** Lấy giá bán của Topping trong bảng giá hiện hành */
+    public double getGiaTopping(String maTopping) {
+        List<BangGia> activeLists = bangGiaDAO.findTatCaHienHanh(LocalDate.now());
+        if (activeLists == null || activeLists.isEmpty()) return 0.0;
+        
+        for (BangGia bg : activeLists) {
+            BangGiaChiTiet chiTiet = bgctDAO.findGiaTopping(maTopping, bg.getMaBangGia());
             if (chiTiet != null && chiTiet.getGiaBan() > 0) {
                 return chiTiet.getGiaBan();
             }

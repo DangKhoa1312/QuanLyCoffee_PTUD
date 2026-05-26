@@ -30,7 +30,6 @@ public class ToppingDialog extends JDialog {
 
     private JTextField txtMaTopping;
     private JTextField txtTenTopping;
-    private JTextField txtGiaTopping;
     private JCheckBox  chkTrangThai;
 
     private boolean confirmed = false;
@@ -86,15 +85,8 @@ public class ToppingDialog extends JDialog {
         txtTenTopping = createTextField();
         form.add(txtTenTopping, gbc);
 
-        // Row 2: Giá Topping
+        // Row 2: Trạng thái
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        form.add(createLabel("Giá (VNĐ):"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        txtGiaTopping = createTextField();
-        form.add(txtGiaTopping, gbc);
-
-        // Row 3: Trạng thái
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
         form.add(createLabel("Trạng thái:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         chkTrangThai = new JCheckBox("Đang cung cấp");
@@ -102,6 +94,8 @@ public class ToppingDialog extends JDialog {
         chkTrangThai.setOpaque(false);
         chkTrangThai.setSelected(true);
         form.add(chkTrangThai, gbc);
+
+
 
         main.add(form, BorderLayout.CENTER);
 
@@ -149,10 +143,8 @@ public class ToppingDialog extends JDialog {
         txtMaTopping.setText(topping.getMaTopping() != null ? topping.getMaTopping() : "");
         txtTenTopping.setText(topping.getTenTopping() != null ? topping.getTenTopping() : "");
         if (isEdit) {
-            txtGiaTopping.setText(nf.format(topping.getGiaTopping()));
             chkTrangThai.setSelected(topping.isTrangThai());
         } else {
-            txtGiaTopping.setText("");
             chkTrangThai.setSelected(true);
         }
     }
@@ -166,21 +158,9 @@ public class ToppingDialog extends JDialog {
             return;
         }
 
-        // Validate giá
-        String giaStr = txtGiaTopping.getText().trim().replace(".", "").replace(",", "");
-        double gia;
-        try {
-            gia = Double.parseDouble(giaStr);
-            if (gia < 0) throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Giá phải là số lớn hơn 0", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            txtGiaTopping.requestFocus();
-            return;
-        }
-
         // Gán giá trị vào entity
         topping.setTenTopping(ten);
-        topping.setGiaTopping(gia);
+        topping.setGiaTopping(0.0); // Mặc định là 0 vì quản lý qua Bảng Giá
         topping.setTrangThai(chkTrangThai.isSelected());
 
         confirmed = true;
