@@ -139,6 +139,26 @@ public class NhanVienController {
     }
 
     /**
+     * Xóa vĩnh viễn nhân viên (Soft delete).
+     */
+    public boolean permanentlyDeleteEmployee(String maNV) {
+        if (!utils.SessionManager.isQuanLy()) {
+            throw new AppException("Chỉ có Quản lý hoặc Quản trị viên mới có quyền xóa nhân viên!");
+        }
+
+        NhanVien current = nhanVienDAO.findById(maNV);
+        if (current != null && "admin".equals(current.getUsername())) {
+            throw new AppException("Tài khoản 'admin' là tài khoản tối cao (Root), không thể bị xóa!");
+        }
+
+        if (current != null && enums.VaiTro.ADMIN.equals(current.getVaiTro())) {
+            throw new AppException("Không thể xóa tài khoản Quản trị viên (ADMIN)!");
+        }
+
+        return nhanVienDAO.softDelete(maNV);
+    }
+
+    /**
      * Tìm kiếm nhân viên linh hoạt.
      */
     public List<NhanVien> searchEmployees(String keyword) {
@@ -190,8 +210,15 @@ public class NhanVienController {
         if (nv.getUsername() == null || nv.getUsername().trim().isEmpty()) {
             throw new AppException("Tên đăng nhập không được để trống!");
         }
-        if (nv.getSoDienThoai() != null && !nv.getSoDienThoai().matches("^[0-9]{10,11}$")) {
-            throw new AppException("Số điện thoại không hợp lệ (10-11 chữ số)!");
+        if (nv.getSoDienThoai() != null && !nv.getSoDienThoai().trim().isEmpty()) {
+            if (!nv.getSoDienThoai().trim().matches("^[0-9]{10,11}$")) {
+                throw new AppException("Số điện thoại không hợp lệ (10-11 chữ số)!");
+            }
+            // Kiểm tra trùng SĐT
+            NhanVien existing = nhanVienDAO.findBySoDienThoai(nv.getSoDienThoai().trim());
+            if (existing != null && (nv.getMaNV() == null || !existing.getMaNV().equals(nv.getMaNV()))) {
+                throw new AppException("Số điện thoại " + nv.getSoDienThoai() + " đã được sử dụng bởi nhân viên khác!");
+            }
         }
     }
 }
