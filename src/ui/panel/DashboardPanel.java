@@ -178,9 +178,8 @@ public class DashboardPanel extends JPanel {
     }
 
     private JPanel buildKpiRow() {
-        JPanel row = new JPanel(new GridLayout(1, 4, 20, 0));
+        JPanel row = new JPanel(new utils.WrapLayout(FlowLayout.LEFT, 20, 20));
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
 
         lblRevenue = kpiValueLabel();
         lblInvoices = kpiValueLabel();
@@ -255,15 +254,18 @@ public class DashboardPanel extends JPanel {
         };
         card.setOpaque(false);
         card.setBorder(new EmptyBorder(20, 24, 20, 24));
+        card.setPreferredSize(new Dimension(240, 110));
 
-        // Icon circle mềm mại Pastel
         JPanel iconPnl = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(bgIcn);
-                g2.fillOval(0, 0, getWidth(), getHeight());
+                int size = Math.min(getWidth(), getHeight());
+                int x = (getWidth() - size) / 2;
+                int y = (getHeight() - size) / 2;
+                g2.fillOval(x, y, size, size);
                 g2.dispose();
             }
         };
@@ -288,9 +290,8 @@ public class DashboardPanel extends JPanel {
 
     // ─── Quick access
     private JPanel buildQuickAccess() {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
+        JPanel row = new JPanel(new utils.WrapLayout(FlowLayout.LEFT, 16, 16));
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
         row.add(quickBtn("Bán Hàng", FontAwesome.SHOPPING_BAG, "BAN_HANG"));
         row.add(quickBtn("Đặt Bàn", FontAwesome.CALENDAR, "DAT_BAN"));
@@ -367,9 +368,8 @@ public class DashboardPanel extends JPanel {
     }
 
     private JPanel buildBottomRow() {
-        JPanel row = new JPanel(new GridLayout(1, 2, 24, 0));
+        JPanel row = new JPanel(new GridLayout(1, 2, 24, 24));
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 400)); // Cao rộng thoải mái
         row.add(buildTableCard("Hóa đơn gần đây",
                 () -> recentModel = new DefaultTableModel(new String[] { "Mã HD", "Giờ", "Bàn", "Tiền" }, 0) {
                     @Override
