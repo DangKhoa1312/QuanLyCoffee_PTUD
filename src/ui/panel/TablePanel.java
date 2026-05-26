@@ -38,7 +38,7 @@ public class TablePanel extends JPanel {
     private JPanel banGrid;
     private JComboBox<KhuVucItem> cbKhuVucFilter;
     private boolean isUpdatingCombo = false;
-    
+
     // Khu vực đang chọn
     private KhuVuc currentKhuVuc;
 
@@ -116,25 +116,25 @@ public class TablePanel extends JPanel {
         JPanel pnlTitle = new JPanel();
         pnlTitle.setLayout(new BoxLayout(pnlTitle, BoxLayout.Y_AXIS));
         pnlTitle.setOpaque(false);
-        
+
         JLabel lblTitle = new JLabel("Quản Lý Khu Vực");
         lblTitle.setFont(new Font("Roboto", Font.BOLD, 28));
         lblTitle.setForeground(new Color(113, 76, 52)); // Nâu
-        
+
         JLabel lblSub = new JLabel("Quản lý các khu vực phục vụ trong quán.");
         lblSub.setFont(new Font("Roboto", Font.PLAIN, 14));
         lblSub.setForeground(new Color(150, 150, 150));
-        
+
         pnlTitle.add(lblTitle);
         pnlTitle.add(Box.createVerticalStrut(5));
         pnlTitle.add(lblSub);
-        
+
         JButton btnRefresh = new JButton(" ↻ Làm mới");
         btnRefresh.setFont(new Font("Roboto", Font.BOLD, 14));
         btnRefresh.putClientProperty("JButton.buttonArc", 10);
         btnRefresh.putClientProperty("JButton.margin", new java.awt.Insets(8, 15, 8, 15));
         btnRefresh.addActionListener(e -> loadKhuVucView());
-        
+
         // Group refresh button on right side
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
         rightPanel.setOpaque(false);
@@ -161,23 +161,23 @@ public class TablePanel extends JPanel {
         JLabel lblSub = new JLabel("Xem trạng thái bàn theo từng khu vực.");
         lblSub.setFont(new Font("Roboto", Font.PLAIN, 14));
         lblSub.setForeground(new Color(150, 150, 150));
-        
+
         JPanel pnlTitleText = new JPanel();
         pnlTitleText.setLayout(new BoxLayout(pnlTitleText, BoxLayout.Y_AXIS));
         pnlTitleText.setOpaque(false);
         pnlTitleText.add(lblTitle);
         pnlTitleText.add(Box.createVerticalStrut(5));
         pnlTitleText.add(lblSub);
-        
+
         JPanel legendRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
         legendRow.setOpaque(false);
         legendRow.add(createLegend("Trống", new Color(39, 174, 96))); // Xanh lá
         legendRow.add(createLegend("Có khách", new Color(231, 76, 60))); // Đỏ
         legendRow.add(createLegend("Đã đặt trước", new Color(243, 156, 18))); // Vàng
-        
+
         pnlTitleArea.add(pnlTitleText, BorderLayout.NORTH);
         pnlTitleArea.add(legendRow, BorderLayout.SOUTH);
-        
+
         // Part Controls
         JPanel pnlControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         pnlControls.setOpaque(false);
@@ -190,25 +190,27 @@ public class TablePanel extends JPanel {
             loadKhuVucView();
             cardLayout.show(cardContainer, "KHU_VUC");
         });
-        
+
         cbKhuVucFilter = new JComboBox<>();
         cbKhuVucFilter.setFont(new Font("Roboto", Font.PLAIN, 14));
         cbKhuVucFilter.setPreferredSize(new Dimension(150, 40));
         cbKhuVucFilter.addActionListener(e -> {
-            if (isUpdatingCombo) return;
+            if (isUpdatingCombo)
+                return;
             KhuVucItem item = (KhuVucItem) cbKhuVucFilter.getSelectedItem();
             if (item != null && item.khuVuc != null) {
                 loadBanViewInternal(item.khuVuc);
             }
         });
-        
+
         JButton btnRefresh = new JButton(" ↻ Làm mới");
         btnRefresh.setFont(new Font("Roboto", Font.BOLD, 14));
         btnRefresh.putClientProperty("JButton.buttonArc", 10);
         btnRefresh.putClientProperty("JButton.margin", new java.awt.Insets(8, 15, 8, 15));
         btnRefresh.setBackground(new Color(238, 242, 251)); // #eef2fb
         btnRefresh.addActionListener(e -> {
-            if(currentKhuVuc != null) loadBanViewInternal(currentKhuVuc);
+            if (currentKhuVuc != null)
+                loadBanViewInternal(currentKhuVuc);
         });
 
         pnlControls.add(btnBack);
@@ -225,7 +227,8 @@ public class TablePanel extends JPanel {
         p.setOpaque(false);
 
         JPanel dot = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -282,24 +285,25 @@ public class TablePanel extends JPanel {
         lblName.setForeground(new Color(26, 26, 26));
 
         // Format Badge HTML
-        JLabel lblBadge = new JLabel("<html><div style='padding: 2px 8px; border-radius: 10px; background-color: #E3FCEF; color: #108043;'><b>Hoạt động</b></div></html>");
-        
+        JLabel lblBadge = new JLabel(
+                "<html><div style='padding: 2px 8px; border-radius: 10px; background-color: #E3FCEF; color: #108043;'><b>Hoạt động</b></div></html>");
+
         pnlTop.add(lblName, BorderLayout.WEST);
         pnlTop.add(lblBadge, BorderLayout.EAST);
 
         // Middle
         JPanel pnlMid = new JPanel(new BorderLayout());
         pnlMid.setOpaque(false);
-        
+
         String moTa = (kv.getMoTa() != null && !kv.getMoTa().isEmpty()) ? kv.getMoTa() : "Khu vực phục vụ khách";
         JLabel lblDesc = new JLabel("<html><div style='width: 250px;'>" + moTa + "</div></html>");
         lblDesc.setFont(new Font("Roboto", Font.PLAIN, 14));
         lblDesc.setForeground(new Color(150, 150, 150));
         lblDesc.setBorder(new EmptyBorder(10, 0, 15, 0));
-        
+
         JPanel pnlStats = new JPanel(new GridLayout(1, 2));
         pnlStats.setOpaque(false);
-        
+
         JPanel pnlTotal = new JPanel(new BorderLayout());
         pnlTotal.setOpaque(false);
         JLabel lblTotalTitle = new JLabel("TỔNG BÀN");
@@ -310,7 +314,7 @@ public class TablePanel extends JPanel {
         lblTotalVal.setForeground(new Color(26, 26, 26));
         pnlTotal.add(lblTotalTitle, BorderLayout.NORTH);
         pnlTotal.add(lblTotalVal, BorderLayout.CENTER);
-        
+
         JPanel pnlOccupied = new JPanel(new BorderLayout());
         pnlOccupied.setOpaque(false);
         JLabel lblOccuTitle = new JLabel("CÓ KHÁCH");
@@ -321,7 +325,7 @@ public class TablePanel extends JPanel {
         lblOccuVal.setForeground(banCoKhach > 0 ? new Color(231, 76, 60) : new Color(26, 26, 26));
         pnlOccupied.add(lblOccuTitle, BorderLayout.NORTH);
         pnlOccupied.add(lblOccuVal, BorderLayout.CENTER);
-        
+
         pnlStats.add(pnlTotal);
         pnlStats.add(pnlOccupied);
 
@@ -329,18 +333,20 @@ public class TablePanel extends JPanel {
         pnlMid.add(pnlStats, BorderLayout.CENTER);
 
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
         card.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 20, "#714c34", 15, 20);
                 card.setBackground(new Color(252, 250, 248));
             }
+
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 20, "#e8e8e8", 15, 20);
                 card.setBackground(Color.WHITE);
             }
+
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 loadBanView(kv);
@@ -350,7 +356,7 @@ public class TablePanel extends JPanel {
 
         card.add(pnlTop, BorderLayout.NORTH);
         card.add(pnlMid, BorderLayout.CENTER);
-        
+
         return card;
     }
 
@@ -366,10 +372,11 @@ public class TablePanel extends JPanel {
         lblName.setFont(new Font("Roboto", Font.BOLD, 22));
         lblName.setForeground(new Color(26, 26, 26));
 
-        JLabel lblBadge = new JLabel("<html><div style='padding: 2px 8px; border-radius: 10px; background-color: #E3FCEF; color: #108043;'><b>Hoạt động</b></div></html>");
+        JLabel lblBadge = new JLabel(
+                "<html><div style='padding: 2px 8px; border-radius: 10px; background-color: #E3FCEF; color: #108043;'><b>Hoạt động</b></div></html>");
         pnlTop.add(lblName, BorderLayout.WEST);
         pnlTop.add(lblBadge, BorderLayout.EAST);
-        
+
         JPanel pnlMid = new JPanel(new BorderLayout());
         pnlMid.setOpaque(false);
         JLabel lblDesc = new JLabel("Khu vực phục vụ đơn mang về");
@@ -379,9 +386,9 @@ public class TablePanel extends JPanel {
 
         JPanel pnlStats = new JPanel(new GridLayout(1, 2));
         pnlStats.setOpaque(false);
-        
+
         int countTakeaway = orderController.getOpenTakeawayOrders().size();
-        
+
         JPanel pnlTotal = new JPanel(new BorderLayout());
         pnlTotal.setOpaque(false);
         JLabel lblTotalTitle = new JLabel("ĐƠN CHỜ");
@@ -392,27 +399,29 @@ public class TablePanel extends JPanel {
         lblTotalVal.setForeground(countTakeaway > 0 ? new Color(231, 76, 60) : new Color(26, 26, 26));
         pnlTotal.add(lblTotalTitle, BorderLayout.NORTH);
         pnlTotal.add(lblTotalVal, BorderLayout.CENTER);
-        
+
         pnlStats.add(pnlTotal);
         pnlStats.add(new JLabel()); // padding
-        
+
         pnlMid.add(lblDesc, BorderLayout.NORTH);
         pnlMid.add(pnlStats, BorderLayout.CENTER);
-        
+
         // Make the whole card clickable
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
         card.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 20, "#714c34", 15, 20);
                 card.setBackground(new Color(252, 250, 248));
             }
+
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 20, "#e8e8e8", 15, 20);
                 card.setBackground(Color.WHITE);
             }
+
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (clickListener != null) {
@@ -428,15 +437,15 @@ public class TablePanel extends JPanel {
                         } else if (dlg.getSelectedOrder() != null) {
                             clickListener.onTableClicked(banMangVe, dlg.getSelectedOrder());
                         }
-                        loadKhuVucView(); 
+                        loadKhuVucView();
                     }
                 }
             }
         });
-        
+
         card.add(pnlTop, BorderLayout.NORTH);
         card.add(pnlMid, BorderLayout.CENTER);
-        
+
         return card;
     }
 
@@ -452,10 +461,11 @@ public class TablePanel extends JPanel {
         lblName.setFont(new Font("Roboto", Font.BOLD, 22));
         lblName.setForeground(new Color(26, 26, 26));
 
-        JLabel lblBadge = new JLabel("<html><div style='padding: 2px 8px; border-radius: 10px; background-color: #FFF3CD; color: #856404;'><b>Bàn Ma</b></div></html>");
+        JLabel lblBadge = new JLabel(
+                "<html><div style='padding: 2px 8px; border-radius: 10px; background-color: #FFF3CD; color: #856404;'><b>Bàn Ma</b></div></html>");
         pnlTop.add(lblName, BorderLayout.WEST);
         pnlTop.add(lblBadge, BorderLayout.EAST);
-        
+
         JPanel pnlMid = new JPanel(new BorderLayout());
         pnlMid.setOpaque(false);
         JLabel lblDesc = new JLabel("Khu vực ẩn lưu trữ đồ uống bị hủy");
@@ -465,12 +475,12 @@ public class TablePanel extends JPanel {
 
         JPanel pnlStats = new JPanel(new GridLayout(1, 2));
         pnlStats.setOpaque(false);
-        
+
         int countItems = 0;
-        for(dto.CartItem item : orderController.getGhostTableItems()) {
+        for (dto.CartItem item : orderController.getGhostTableItems()) {
             countItems += item.getSoLuong();
         }
-        
+
         JPanel pnlTotal = new JPanel(new BorderLayout());
         pnlTotal.setOpaque(false);
         JLabel lblTotalTitle = new JLabel("SỐ MÓN TỒN");
@@ -481,26 +491,28 @@ public class TablePanel extends JPanel {
         lblTotalVal.setForeground(countItems > 0 ? new Color(231, 76, 60) : new Color(26, 26, 26));
         pnlTotal.add(lblTotalTitle, BorderLayout.NORTH);
         pnlTotal.add(lblTotalVal, BorderLayout.CENTER);
-        
+
         pnlStats.add(pnlTotal);
         pnlStats.add(new JLabel()); // padding
-        
+
         pnlMid.add(lblDesc, BorderLayout.NORTH);
         pnlMid.add(pnlStats, BorderLayout.CENTER);
-        
+
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
         card.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 20, "#e67e22", 15, 20);
                 card.setBackground(new Color(253, 246, 236));
             }
+
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 20, "#e8e8e8", 15, 20);
                 card.setBackground(Color.WHITE);
             }
+
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (clickListener != null) {
@@ -510,10 +522,10 @@ public class TablePanel extends JPanel {
                 }
             }
         });
-        
+
         card.add(pnlTop, BorderLayout.NORTH);
         card.add(pnlMid, BorderLayout.CENTER);
-        
+
         return card;
     }
 
@@ -521,8 +533,15 @@ public class TablePanel extends JPanel {
 
     class KhuVucItem {
         KhuVuc khuVuc;
-        KhuVucItem(KhuVuc k) { this.khuVuc = k; }
-        @Override public String toString() { return khuVuc.getTenKhuVuc(); }
+
+        KhuVucItem(KhuVuc k) {
+            this.khuVuc = k;
+        }
+
+        @Override
+        public String toString() {
+            return khuVuc.getTenKhuVuc();
+        }
     }
 
     private void loadBanView(KhuVuc kv) {
@@ -540,14 +559,14 @@ public class TablePanel extends JPanel {
             }
         }
         isUpdatingCombo = false;
-        
+
         loadBanViewInternal(kv);
     }
-    
+
     private void loadBanViewInternal(KhuVuc kv) {
         this.currentKhuVuc = kv;
         banGrid.removeAll();
-        
+
         List<Ban> dsBan = tableController.getBanByKhuVuc(kv.getMaKhuVuc());
         for (Ban b : dsBan) {
             if (TrangThaiBan.TAM_NGUNG.equals(b.getTrangThai())) {
@@ -563,7 +582,7 @@ public class TablePanel extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setPreferredSize(new Dimension(190, 140));
         card.setBackground(new Color(250, 255, 253));
-        
+
         Color dotColor;
         String statusText;
         Color borderColor;
@@ -590,15 +609,17 @@ public class TablePanel extends JPanel {
                 statusText = "Khác";
                 borderColor = Color.LIGHT_GRAY;
         }
-        
-        String hexColor = String.format("#%02x%02x%02x", borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue());
+
+        String hexColor = String.format("#%02x%02x%02x", borderColor.getRed(), borderColor.getGreen(),
+                borderColor.getBlue());
         setCardStyleWithPadding(card, 16, hexColor, 15, 15);
 
         JPanel pnlTop = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlTop.setOpaque(false);
-        
+
         JPanel dot = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -608,47 +629,53 @@ public class TablePanel extends JPanel {
         };
         dot.setPreferredSize(new Dimension(12, 20));
         dot.setOpaque(false);
-        
+
         JLabel lblName = new JLabel(ban.getSoBan());
         lblName.setFont(new Font("Roboto", Font.BOLD, 18));
         lblName.setForeground(new Color(26, 26, 26));
-        
+
         pnlTop.add(dot);
         pnlTop.add(lblName);
-        
+
         JLabel lblStatus = new JLabel(statusText);
         lblStatus.setFont(new Font("Roboto", Font.BOLD, 13));
         lblStatus.setForeground(dotColor);
         lblStatus.setBorder(new EmptyBorder(5, 0, 10, 0));
-        
+
         JPanel pnlBot = new JPanel(new GridLayout(2, 1, 0, 5));
         pnlBot.setOpaque(false);
-        
+
         JLabel lblSeats = new JLabel("👥 " + (ban.getSucChua() > 0 ? ban.getSucChua() : 4) + " người");
         lblSeats.setFont(new Font("Roboto", Font.PLAIN, 12));
         lblSeats.setForeground(new Color(120, 120, 120));
-        
+
         JLabel lblArea = new JLabel("📍 " + (currentKhuVuc != null ? currentKhuVuc.getTenKhuVuc() : "Khu vực"));
         lblArea.setFont(new Font("Roboto", Font.PLAIN, 12));
         lblArea.setForeground(new Color(120, 120, 120));
-        
+
         pnlBot.add(lblSeats);
         pnlBot.add(lblArea);
 
         card.add(pnlTop, BorderLayout.NORTH);
         card.add(lblStatus, BorderLayout.CENTER);
         card.add(pnlBot, BorderLayout.SOUTH);
-        
+
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         card.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 16, "#714c34", 15, 15);
             }
-            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
                 setCardStyleWithPadding(card, 16, hexColor, 15, 15);
             }
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (clickListener == null) return;
+
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (clickListener == null)
+                    return;
 
                 if (ban.getTrangThai() == TrangThaiBan.CO_KHACH) {
                     // Tiếp tục phục vụ (lấy đơn hàng đang mở)
@@ -658,9 +685,9 @@ public class TablePanel extends JPanel {
                     } else {
                         // Không tìm được đơn trên RAM (có thể app restart) -> tạo mới
                         int xn = JOptionPane.showConfirmDialog(
-                            SwingUtilities.getWindowAncestor(card),
-                            "Bàn đang có khách nhưng không tìm thấy đơn hàng đang mở.\nBạn có muốn tạo đơn mới cho bàn này không?",
-                            "Xác nhận", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                                SwingUtilities.getWindowAncestor(card),
+                                "Bàn đang có khách nhưng không tìm thấy đơn hàng đang mở.\nBạn có muốn tạo đơn mới cho bàn này không?",
+                                "Xác nhận", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                         if (xn == JOptionPane.YES_OPTION) {
                             clickListener.onTableClicked(ban, null);
                         }
@@ -671,25 +698,30 @@ public class TablePanel extends JPanel {
                     DatBan db = reservationController.findDatBanHienTaiCuaBan(ban.getMaBan());
                     if (db != null) {
                         String thoiGian = db.getThoiGianDen() != null
-                            ? java.time.format.DateTimeFormatter.ofPattern("HH:mm  dd/MM/yyyy").format(db.getThoiGianDen()) : "?";
+                                ? java.time.format.DateTimeFormatter.ofPattern("HH:mm  dd/MM/yyyy")
+                                        .format(db.getThoiGianDen())
+                                : "?";
                         String trangThaiTen = db.getTrangThai() != null ? db.getTrangThai().displayName() : "?";
                         String msg = "<html>"
-                            + "<b style='color:#E74C3C;font-size:13px;'>⚠️ BÀN CÓ ĐẶT TRƯỚC (" + trangThaiTen + ")</b>"
-                            + "<hr style='border:1px solid #ddd;'/>"
-                            + "<table style='font-size:12px;'>"
-                            + "<tr><td><b>Khách:&nbsp;</b></td><td>" + db.getTenKhach() + "</td></tr>"
-                            + "<tr><td><b>SĐT:&nbsp;</b></td><td>" + (db.getSoDienThoai() != null ? db.getSoDienThoai() : "—") + "</td></tr>"
-                            + "<tr><td><b>Số người:&nbsp;</b></td><td>" + db.getSoLuongNguoi() + " người</td></tr>"
-                            + "<tr><td><b>Giờ đến:&nbsp;</b></td><td>" + thoiGian + "</td></tr>"
-                            + "</table>"
-                            + "<hr style='border:1px solid #ddd;'/>"
-                            + "Bạn có muốn <b>mở phục vụ khách vãng lai</b> không?<br/>"
-                            + "<small style='color:#888;'>(Khách đặt bàn chưa đến - sẽ xác nhận riêng trong trang Đặt Bàn)</small>"
-                            + "</html>";
+                                + "<b style='color:#E74C3C;font-size:13px;'>⚠️ BÀN CÓ ĐẶT TRƯỚC (" + trangThaiTen
+                                + ")</b>"
+                                + "<hr style='border:1px solid #ddd;'/>"
+                                + "<table style='font-size:12px;'>"
+                                + "<tr><td><b>Khách:&nbsp;</b></td><td>" + db.getTenKhach() + "</td></tr>"
+                                + "<tr><td><b>SĐT:&nbsp;</b></td><td>"
+                                + (db.getSoDienThoai() != null ? db.getSoDienThoai() : "—") + "</td></tr>"
+                                + "<tr><td><b>Số người:&nbsp;</b></td><td>" + db.getSoLuongNguoi() + " người</td></tr>"
+                                + "<tr><td><b>Giờ đến:&nbsp;</b></td><td>" + thoiGian + "</td></tr>"
+                                + "</table>"
+                                + "<hr style='border:1px solid #ddd;'/>"
+                                + "Bạn có muốn <b>mở phục vụ khách vãng lai</b> không?<br/>"
+                                + "<small style='color:#888;'>(Khách đặt bàn chưa đến - sẽ xác nhận riêng trong trang Đặt Bàn)</small>"
+                                + "</html>";
                         int xn = JOptionPane.showConfirmDialog(
-                            SwingUtilities.getWindowAncestor(card), msg,
-                            "Bàn có đặt trước", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-                        if (xn != JOptionPane.YES_OPTION) return;
+                                SwingUtilities.getWindowAncestor(card), msg,
+                                "Bàn có đặt trước", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                        if (xn != JOptionPane.YES_OPTION)
+                            return;
                     }
                     // Mở gọi món bình thường (bàn sẽ chuyển CO_KHACH qua OrderPanel)
                     DonHang dhMoi = tableController.getDonHangDangMo(ban.getMaBan());
@@ -706,8 +738,9 @@ public class TablePanel extends JPanel {
     }
 
     public void simulateTableClick(String maBan) {
-        if (clickListener == null || maBan == null) return;
-        
+        if (clickListener == null || maBan == null)
+            return;
+
         Ban targetBan = null;
         for (Ban b : tableController.getAllBan()) {
             if (b.getMaBan().equals(maBan)) {
@@ -715,7 +748,7 @@ public class TablePanel extends JPanel {
                 break;
             }
         }
-        
+
         if (targetBan != null) {
             DonHang dh = tableController.getDonHangDangMo(maBan);
             // Chuyển sang màn hình đơn hàng (không hiện thông báo đặt bàn)
@@ -734,15 +767,16 @@ public class TablePanel extends JPanel {
     }
 
     /**
-     * Helper cực kỳ quan trọng: FlatLaf style 'border:' sẽ ghi đè hoàn toàn setBorder().
-     * Phải dùng CompoundBorder để duy trì khoảng cách nội dung (padding) không bị nhảy khi hover.
+     * Helper cực kỳ quan trọng: FlatLaf style 'border:' sẽ ghi đè hoàn toàn
+     * setBorder().
+     * Phải dùng CompoundBorder để duy trì khoảng cách nội dung (padding) không bị
+     * nhảy khi hover.
      */
     private void setCardStyleWithPadding(JPanel p, int arc, String hexColor, int padV, int padH) {
         p.putClientProperty("JComponent.arc", arc);
         p.setBorder(BorderFactory.createLineBorder(Color.decode(hexColor), 1));
         p.setBorder(BorderFactory.createCompoundBorder(
-            p.getBorder(), // Đây là FlatRoundBorder do FlatLaf vừa tạo ra
-            new EmptyBorder(padV, padH, padV, padH)
-        ));
+                p.getBorder(), // Đây là FlatRoundBorder do FlatLaf vừa tạo ra
+                new EmptyBorder(padV, padH, padV, padH)));
     }
 }

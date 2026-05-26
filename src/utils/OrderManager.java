@@ -275,7 +275,13 @@ public class OrderManager {
     public int countOpenOrdersByEmployee(String maNV) {
         int count = 0;
         for (DonHang dh : orders.values()) {
+            // Không tính Bàn Ma (kho tạm) vào số lượng bàn đang phục vụ
+            if ("BAN_MA".equals(dh.getMaBan())) {
+                continue;
+            }
+            
             if (maNV.equals(dh.getMaNV()) && TrangThaiDonHang.DANG_PHUC_VU.equals(dh.getTrangThai())) {
+                // Chỉ đếm các đơn có món hoặc là đơn mới tạo (thực tế nếu cần khắt khe có thể check thêm carts.get(dh.getMaDonHang()).size() > 0)
                 count++;
             }
         }

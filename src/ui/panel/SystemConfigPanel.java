@@ -48,6 +48,12 @@ public class SystemConfigPanel extends JPanel {
         btnSave.setBorder(new EmptyBorder(10, 20, 10, 20));
         btnSave.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSave.addActionListener(e -> saveConfig());
+        
+        // Chỉ ADMIN mới thấy nút lưu
+        if (!utils.SessionManager.isAdmin()) {
+            btnSave.setVisible(false);
+        }
+        
         header.add(btnSave, BorderLayout.EAST);
 
         add(header, BorderLayout.NORTH);
@@ -139,6 +145,14 @@ public class SystemConfigPanel extends JPanel {
             new LineBorder(new Color(200, 200, 200)),
             new EmptyBorder(5, 10, 5, 10)
         ));
+        
+        // Quản lý chỉ được xem, không được sửa
+        if (!utils.SessionManager.isAdmin()) {
+            txtInput.setEditable(false);
+            txtInput.setBackground(new Color(245, 245, 245));
+            txtInput.setToolTipText("Chỉ Quản Trị Viên mới có quyền chỉnh sửa cấu hình hệ thống");
+        }
+        
         inputMap.put(key, txtInput);
         
         p.add(txtInput, BorderLayout.CENTER);

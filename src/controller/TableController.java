@@ -66,13 +66,16 @@ public class TableController {
 
     /**
      * Kiểm tra tên khu vực đã tồn tại chưa (bỏ qua chính mình khi edit).
-     * @param tenKhuVuc tên cần kiểm tra
+     * 
+     * @param tenKhuVuc   tên cần kiểm tra
      * @param maKVHienTai mã khu vực đang edit (null nếu là thêm mới)
      */
     public boolean isTenKhuVucTrung(String tenKhuVuc, String maKVHienTai) {
         for (KhuVuc kv : khuVucDAO.findAll()) {
-            if (maKVHienTai != null && kv.getMaKhuVuc().equals(maKVHienTai)) continue;
-            if (kv.getTenKhuVuc().trim().equalsIgnoreCase(tenKhuVuc.trim())) return true;
+            if (maKVHienTai != null && kv.getMaKhuVuc().equals(maKVHienTai))
+                continue;
+            if (kv.getTenKhuVuc().trim().equalsIgnoreCase(tenKhuVuc.trim()))
+                return true;
         }
         return false;
     }
@@ -83,7 +86,8 @@ public class TableController {
     public int countBanCoKhachByKhuVuc(String maKV) {
         int count = 0;
         for (Ban ban : banDAO.findByKhuVuc(maKV)) {
-            if (ban.getTrangThai() == TrangThaiBan.CO_KHACH) count++;
+            if (ban.getTrangThai() == TrangThaiBan.CO_KHACH)
+                count++;
         }
         return count;
     }
@@ -111,7 +115,8 @@ public class TableController {
 
     public boolean deleteBan(String maBan) {
         Ban ban = banDAO.findById(maBan);
-        if (ban == null) return false;
+        if (ban == null)
+            return false;
         // Chỉ cho xóa bàn đang TRỐNG hoặc TẠM NGƯNG
         if (ban.getTrangThai() != TrangThaiBan.TRONG && ban.getTrangThai() != TrangThaiBan.TAM_NGUNG) {
             return false;
@@ -151,7 +156,8 @@ public class TableController {
      */
     public void chuyenBan(String maDonHang, String maBanNguon, String maBanDich) {
         DonHang dh = orderManager.getOrder(maDonHang);
-        if (dh == null) return;
+        if (dh == null)
+            return;
 
         // Cập nhật mã bàn cho đơn hàng trên RAM
         orderManager.chuyenBan(maDonHang, maBanDich);
@@ -175,7 +181,8 @@ public class TableController {
     /**
      * Tách món từ bàn nguồn sang bàn đích (tạo đơn mới nếu bàn đích trống).
      */
-    public void tachMon(String maDonNguon, String maBanNguon, String maBanDich, java.util.Map<dto.CartItem, Integer> transferData) {
+    public void tachMon(String maDonNguon, String maBanNguon, String maBanDich,
+            java.util.Map<dto.CartItem, Integer> transferData) {
         DonHang dhDich = orderManager.getOrderByBan(maBanDich);
         if (dhDich == null) {
             // Lưu ý: Bàn đích trống -> tạo đơn mới
@@ -186,13 +193,15 @@ public class TableController {
             dhDich = orderManager.createOrder(banDichObj, maCa, maNV);
             banDAO.updateTrangThai(maBanDich, TrangThaiBan.CO_KHACH);
         }
-        
+
         orderManager.tachMon(maDonNguon, dhDich.getMaDonHang(), transferData);
 
-        // Nếu bàn nguồn không còn món nào, hủy đơn nguồn và cập nhật bảng nguồn -> Trống
+        // Nếu bàn nguồn không còn món nào, hủy đơn nguồn và cập nhật bảng nguồn ->
+        // Trống
         if (orderManager.getCart(maDonNguon).isEmpty()) {
             DonHang dhNguon = orderManager.getOrder(maDonNguon);
-            if (dhNguon != null) dhNguon.setTrangThai(enums.TrangThaiDonHang.DA_HUY);
+            if (dhNguon != null)
+                dhNguon.setTrangThai(enums.TrangThaiDonHang.DA_HUY);
             orderManager.removeOrder(maDonNguon);
             reservationController.resetTrangThaiBan(maBanNguon);
         }

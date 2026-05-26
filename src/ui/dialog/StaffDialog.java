@@ -141,9 +141,13 @@ public class StaffDialog extends JDialog {
 
         addLabelRow(form, gbc, "Vai Trò:", FontAwesome.SHIELD);
         cbVaiTro = new JComboBox<>(VaiTro.values());
-        if (!SessionManager.isAdmin()) {
-            cbVaiTro.removeItem(VaiTro.ADMIN);
+        cbVaiTro.removeItem(VaiTro.ADMIN); // Xóa khỏi danh sách chọn mặc định
+
+        if (employee != null && VaiTro.ADMIN.equals(employee.getVaiTro())) {
+            cbVaiTro.addItem(VaiTro.ADMIN);
+            cbVaiTro.setEnabled(false); // Tài khoản có quyền admin thì không cho đổi role
         }
+
         form.add(cbVaiTro, gbc);
         gbc.gridy++;
 
@@ -176,20 +180,6 @@ public class StaffDialog extends JDialog {
         if (isEditMode)
             btnSave.setEnabled(false);
 
-        if (isEditMode) {
-            // Không cho phép tự xóa bản thân
-            if (!employee.getMaNV().equals(SessionManager.getMaNVHienTai())) {
-                JButton btnDelete = new JButton("XÓA ");
-                btnDelete.setPreferredSize(new Dimension(150, 40));
-                btnDelete.setBackground(new Color(231, 76, 60));
-                btnDelete.setForeground(Color.WHITE);
-                btnDelete.setFont(new Font("Roboto", Font.BOLD, 13));
-                btnDelete.setIcon(IconFontSwing.buildIcon(FontAwesome.TRASH, 16, Color.WHITE));
-                btnDelete.addActionListener(e -> handleDelete());
-                footer.add(btnDelete);
-            }
-        }
-
         JButton btnCancel = new JButton("HỦY BỎ");
         btnCancel.setPreferredSize(new Dimension(100, 40));
         btnCancel.setFont(new Font("Roboto", Font.PLAIN, 13));
@@ -203,16 +193,6 @@ public class StaffDialog extends JDialog {
         return footer;
     }
 
-    private void handleDelete() {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc muốn cho nhân viên " + employee.getTenNV() + " nghỉ việc?",
-                "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            employee.setTrangThai(TrangThaiNhanVien.DA_NGHI);
-            confirmed = true;
-            dispose();
-        }
-    }
 
     private void setupDirtyCheck() {
         java.awt.event.ActionListener checkListener = e -> checkDirty();
@@ -299,7 +279,7 @@ public class StaffDialog extends JDialog {
             boolean isPassword) {
         addLabelRow(p, gbc, labelText, icon);
 
-        JComponent field = isPassword ? new JPasswordField("123456") : new JTextField();
+        JComponent field = isPassword ? new JPasswordField() : new JTextField();
         field.setPreferredSize(new Dimension(0, 35));
         p.add(field, gbc);
         gbc.gridy++;
@@ -409,6 +389,12 @@ public class StaffDialog extends JDialog {
                 String pwd = new String(txtPassword.getPassword()).trim();
                 if (!isEditMode || !pwd.isEmpty()) {
                     employee.setPasswordHash(pwd);
+                } else {
+                    employee.setPasswordHash(""); // Đánh dấu không đổi mật khẩu
+                }
+            } else {
+                if (isEditMode) {
+                    employee.setPasswordHash(""); // Đánh dấu không đổi mật khẩu
                 }
             }
 

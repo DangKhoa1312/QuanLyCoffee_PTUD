@@ -71,6 +71,7 @@ CREATE TABLE NhanVien (
     passwordHash VARCHAR(255)  NOT NULL,
     trangThai    VARCHAR(20)   NOT NULL DEFAULT 'DANG_LAM_VIEC',
     vaiTro       VARCHAR(20)   NOT NULL DEFAULT 'NHAN_VIEN',
+    isDeleted    BIT           NOT NULL DEFAULT 0,
 
     CONSTRAINT PK_NhanVien      PRIMARY KEY (maNV),
     CONSTRAINT UQ_NV_Username   UNIQUE (username),
