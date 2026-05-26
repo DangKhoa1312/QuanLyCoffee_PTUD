@@ -303,10 +303,12 @@ public class PriceManagementPanel extends JPanel {
                 } else {
                     JButton btnToggle = (JButton) p.getComponent(2);
                     if (bg.isTrangThai()) {
-                        btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_ON, 20, new Color(46, 204, 113)));
+                        btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_ON, 16, Color.WHITE));
+                        btnToggle.setBackground(new Color(46, 204, 113));
                         btnToggle.setToolTipText("Bảng giá đang bật. Nhấn để Tạm ngưng");
                     } else {
-                        btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_OFF, 20, new Color(150, 150, 150)));
+                        btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_OFF, 16, Color.WHITE));
+                        btnToggle.setBackground(new Color(150, 150, 150));
                         btnToggle.setToolTipText("Bảng giá đang tắt. Nhấn để Kích hoạt");
                     }
                 }
@@ -316,11 +318,13 @@ public class PriceManagementPanel extends JPanel {
     }
 
     private JPanel createActionPanel() {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 10));
+        JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(true);
-        p.add(createBtn(FontAwesome.PENCIL, new Color(52, 152, 219)));
-        p.add(createBtn(FontAwesome.TRASH, new Color(231, 76, 60)));
-        p.add(createBtn(FontAwesome.TOGGLE_OFF, new Color(150, 150, 150))); // Nút Kích hoạt / Tạm ngưng
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 5, 0, 5);
+        p.add(createBtn(FontAwesome.PENCIL, new Color(41, 128, 185)), gbc);
+        p.add(createBtn(FontAwesome.TRASH, new Color(231, 76, 60)), gbc);
+        p.add(createBtn(FontAwesome.TOGGLE_OFF, new Color(150, 150, 150)), gbc); // Nút Kích hoạt / Tạm ngưng
         return p;
     }
 
@@ -351,10 +355,12 @@ public class PriceManagementPanel extends JPanel {
             btnToggle.setEnabled(active);
             if (active) {
                 if (current.isTrangThai()) {
-                    btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_ON, 20, new Color(46, 204, 113)));
+                    btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_ON, 16, Color.WHITE));
+                    btnToggle.setBackground(new Color(46, 204, 113));
                     btnToggle.setToolTipText("Bảng giá đang bật. Nhấn để Tạm ngưng");
                 } else {
-                    btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_OFF, 20, new Color(150, 150, 150)));
+                    btnToggle.setIcon(IconFontSwing.buildIcon(FontAwesome.TOGGLE_OFF, 16, Color.WHITE));
+                    btnToggle.setBackground(new Color(150, 150, 150));
                     btnToggle.setToolTipText("Bảng giá đang tắt. Nhấn để Kích hoạt");
                 }
             }
@@ -365,9 +371,24 @@ public class PriceManagementPanel extends JPanel {
     }
 
     private JButton createBtn(FontAwesome icon, Color color) {
-        JButton b = new JButton(IconFontSwing.buildIcon(icon, 18, color));
+        JButton b = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        b.setIcon(IconFontSwing.buildIcon(icon, 16, Color.WHITE));
+        b.setBackground(color);
         b.setBorderPainted(false);
         b.setContentAreaFilled(false);
+        b.setOpaque(false);
+        b.setBorder(new EmptyBorder(5, 8, 5, 8));
+        b.setFocusable(false);
         b.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return b;
     }

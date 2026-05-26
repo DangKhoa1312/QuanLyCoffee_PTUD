@@ -206,12 +206,7 @@ public class CustomerManagementPanel extends JPanel {
         if (dlg.isConfirmed()) loadData();
     }
 
-    private void handleDelete(KhachHang kh) {
-        int opt = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xoá (ẩn) khách hàng này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (opt == JOptionPane.YES_OPTION) {
-            if (dao.delete(kh.getSoDienThoai())) loadData();
-        }
-    }
+
 
     // --- RENDERERS & EDITORS ---
 
@@ -232,13 +227,15 @@ public class CustomerManagementPanel extends JPanel {
                 empty.setBackground(isS ? t.getSelectionBackground() : (r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
                 return empty;
             }
-            JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+            JPanel p = new JPanel(new GridBagLayout());
             p.setOpaque(true);
             p.setBackground(isS ? t.getSelectionBackground() : (r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
             
-            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(52, 152, 219), "Chỉnh sửa");
-            JButton btnDel = createBtn(FontAwesome.TRASH, new Color(231, 76, 60), "Xóa");
-            p.add(btnEdit); p.add(btnDel);
+            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(41, 128, 185), "Chỉnh sửa");
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 5, 0, 5);
+            p.add(btnEdit, gbc);
             return p;
         }
     }
@@ -248,14 +245,15 @@ public class CustomerManagementPanel extends JPanel {
         private KhachHang current;
 
         public ActionEditor() {
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+            panel = new JPanel(new GridBagLayout());
             panel.setOpaque(true);
-            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(52, 152, 219), "Chỉnh sửa");
-            JButton btnDel = createBtn(FontAwesome.TRASH, new Color(231, 76, 60), "Xóa");
-            panel.add(btnEdit); panel.add(btnDel);
+            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(41, 128, 185), "Chỉnh sửa");
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 5, 0, 5);
+            panel.add(btnEdit, gbc);
 
             btnEdit.addActionListener(e -> { stopCellEditing(); handleEdit(current); });
-            btnDel.addActionListener(e -> { stopCellEditing(); handleDelete(current); });
         }
 
         @Override
@@ -270,10 +268,24 @@ public class CustomerManagementPanel extends JPanel {
     }
 
     private JButton createBtn(FontAwesome icon, Color color, String tooltip) {
-        JButton b = new JButton(IconFontSwing.buildIcon(icon, 20, color));
+        JButton b = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        b.setIcon(IconFontSwing.buildIcon(icon, 16, Color.WHITE));
+        b.setBackground(color);
         b.setToolTipText(tooltip);
         b.setBorderPainted(false);
         b.setContentAreaFilled(false);
+        b.setOpaque(false);
+        b.setBorder(new EmptyBorder(5, 8, 5, 8));
         b.setFocusable(false);
         b.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return b;

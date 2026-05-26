@@ -295,15 +295,19 @@ public class PromotionManagementPanel extends JPanel {
             }
             KhuyenMai km = (KhuyenMai) v;
             boolean active = "DANG_HOAT_DONG".equals(km.getTrangThai());
-            JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+            JPanel p = new JPanel(new GridBagLayout());
             p.setOpaque(true);
             p.setBackground(isS ? t.getSelectionBackground() : (r % 2 == 0 ? Color.WHITE : new Color(252, 253, 255)));
             
-            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(52, 152, 219), "Chỉnh sửa");
+            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(41, 128, 185), "Chỉnh sửa");
             JButton btnToggle = createBtn(active ? FontAwesome.TOGGLE_ON : FontAwesome.TOGGLE_OFF,
                                           active ? new Color(39, 174, 96) : new Color(180, 185, 190),
                                           active ? "Tạm dừng" : "Bật lại");
-            p.add(btnEdit); p.add(btnToggle);
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 5, 0, 5);
+            p.add(btnEdit, gbc);
+            p.add(btnToggle, gbc);
             return p;
         }
     }
@@ -313,11 +317,15 @@ public class PromotionManagementPanel extends JPanel {
         private KhuyenMai current;
 
         public ActionEditor() {
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+            panel = new JPanel(new GridBagLayout());
             panel.setOpaque(true);
-            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(52, 152, 219), "Chỉnh sửa");
+            JButton btnEdit = createBtn(FontAwesome.PENCIL, new Color(41, 128, 185), "Chỉnh sửa");
             JButton btnToggle = createBtn(FontAwesome.TOGGLE_ON, Color.GRAY, "Đổi trạng thái");
-            panel.add(btnEdit); panel.add(btnToggle);
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 5, 0, 5);
+            panel.add(btnEdit, gbc);
+            panel.add(btnToggle, gbc);
 
             btnEdit.addActionListener(e -> { stopCellEditing(); handleEdit(current); });
             btnToggle.addActionListener(e -> { stopCellEditing(); handleToggle(current); });
@@ -335,10 +343,24 @@ public class PromotionManagementPanel extends JPanel {
     }
 
     private JButton createBtn(FontAwesome icon, Color color, String tooltip) {
-        JButton b = new JButton(IconFontSwing.buildIcon(icon, 20, color));
+        JButton b = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        b.setIcon(IconFontSwing.buildIcon(icon, 16, Color.WHITE));
+        b.setBackground(color);
         b.setToolTipText(tooltip);
         b.setBorderPainted(false);
         b.setContentAreaFilled(false);
+        b.setOpaque(false);
+        b.setBorder(new EmptyBorder(5, 8, 5, 8));
         b.setFocusable(false);
         b.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return b;

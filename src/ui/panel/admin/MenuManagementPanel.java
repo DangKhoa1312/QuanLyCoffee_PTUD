@@ -409,14 +409,16 @@ public class MenuManagementPanel extends JPanel {
 
         public ActionEditor() {
             // Khởi tạo panel rỗng, sẽ cập nhật màu ở getTableCellEditorComponent
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+            panel = new JPanel(new GridBagLayout());
             panel.setOpaque(true);
 
-            btnEdit = createBtn(FontAwesome.PENCIL, new Color(52, 152, 219), "Chỉnh sửa thông tin món");
+            btnEdit = createBtn(FontAwesome.PENCIL, new Color(41, 128, 185), "Chỉnh sửa thông tin món");
             btnToggle = createBtn(FontAwesome.TOGGLE_ON, Color.GRAY, "Bật / Tắt trạng thái bán");
 
-            panel.add(btnEdit);
-            panel.add(btnToggle);
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 5, 0, 5);
+            panel.add(btnEdit, gbc);
+            panel.add(btnToggle, gbc);
 
             btnEdit.addActionListener(e -> {
                 stopCellEditing();
@@ -448,36 +450,53 @@ public class MenuManagementPanel extends JPanel {
 
     // ── Tạo action panel có màu nút toggle theo trạng thái ───────────────────
     private JPanel createActionPanel(boolean isActive) {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+        JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(true);
 
         JButton btnEdit = createBtn(FontAwesome.PENCIL,
-                new Color(52, 152, 219), "Chỉnh sửa thông tin món");
+                new Color(41, 128, 185), "Chỉnh sửa thông tin món");
         JButton btnToggle = createBtn(
                 isActive ? FontAwesome.TOGGLE_ON : FontAwesome.TOGGLE_OFF,
                 isActive ? new Color(39, 174, 96) : new Color(180, 185, 190),
                 isActive ? "Đang bán — nhấn để ngưng" : "Đang ngưng bán — nhấn để bán lại");
 
-        p.add(btnEdit);
-        p.add(btnToggle);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 5, 0, 5);
+        p.add(btnEdit, gbc);
+        p.add(btnToggle, gbc);
         return p;
     }
 
     // ── Áp màu + icon cho nút toggle theo trạng thái ─────────────────────────
     private void applyToggleColor(JButton btn, boolean isActive) {
-        Color color = isActive ? new Color(39, 174, 96) : new Color(180, 185, 190);
+        Color bgColor = isActive ? new Color(39, 174, 96) : new Color(180, 185, 190);
         String tip = isActive ? "Đang bán — nhấn để ngưng" : "Đang ngưng bán — nhấn để bán lại";
         btn.setIcon(IconFontSwing.buildIcon(
-                isActive ? FontAwesome.TOGGLE_ON : FontAwesome.TOGGLE_OFF, 20, color));
+                isActive ? FontAwesome.TOGGLE_ON : FontAwesome.TOGGLE_OFF, 16, Color.WHITE));
+        btn.setBackground(bgColor);
         btn.setToolTipText(tip);
     }
 
     // ── Helper tạo nút icon ───────────────────────────────────────────────────
     private JButton createBtn(FontAwesome icon, Color color, String tooltip) {
-        JButton b = new JButton(IconFontSwing.buildIcon(icon, 20, color));
+        JButton b = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                super.paintComponent(g2);
+                g2.dispose();
+            }
+        };
+        b.setIcon(IconFontSwing.buildIcon(icon, 16, Color.WHITE));
+        b.setBackground(color);
         b.setToolTipText(tooltip);
         b.setBorderPainted(false);
         b.setContentAreaFilled(false);
+        b.setOpaque(false);
+        b.setBorder(new EmptyBorder(5, 8, 5, 8));
         b.setFocusable(false);
         b.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return b;

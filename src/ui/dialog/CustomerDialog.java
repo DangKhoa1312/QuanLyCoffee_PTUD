@@ -31,7 +31,7 @@ public class CustomerDialog extends JDialog {
         this.currentKhachHang = kh;
         this.isEditMode = isEditMode;
 
-        setSize(450, 400);
+        setSize(450, 450);
         setLocationRelativeTo(parent);
         setResizable(false);
 
