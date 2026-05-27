@@ -251,6 +251,7 @@ public class TablePanel extends JPanel {
     // ── KHU VỰC METHODS ──
 
     private void loadKhuVucView() {
+        reservationController.autoCheckExpired(); // Check lố giờ trước khi render
         this.currentKhuVuc = null;
         khuVucGrid.removeAll();
 
@@ -564,6 +565,7 @@ public class TablePanel extends JPanel {
     }
 
     private void loadBanViewInternal(KhuVuc kv) {
+        reservationController.autoCheckExpired(); // Check lố giờ
         this.currentKhuVuc = kv;
         banGrid.removeAll();
 

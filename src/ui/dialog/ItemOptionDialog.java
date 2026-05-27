@@ -72,10 +72,9 @@ public class ItemOptionDialog extends JDialog {
         JPanel sizePanel = new JPanel(new GridLayout(0, 2, 10, 10));
         sizePanel.setBackground(Color.WHITE);
         sizePanel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220)),
-            "Chọn Size", TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Roboto", Font.BOLD, 13), new Color(100, 100, 100)
-        ));
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                "Chọn Size", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Roboto", Font.BOLD, 13), new Color(100, 100, 100)));
 
         sizeGroup = new ButtonGroup();
         if (sizeList == null || sizeList.isEmpty()) {
@@ -110,10 +109,9 @@ public class ItemOptionDialog extends JDialog {
         JPanel toppPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         toppPanel.setBackground(Color.WHITE);
         toppPanel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220)),
-            "Topping (Có thể chọn nhiều)", TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Roboto", Font.BOLD, 13), new Color(100, 100, 100)
-        ));
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                "Topping (Có thể chọn nhiều)", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Roboto", Font.BOLD, 13), new Color(100, 100, 100)));
 
         if (toppingList == null || toppingList.isEmpty()) {
             toppPanel.add(new JLabel("  Không có Topping"));
@@ -141,13 +139,15 @@ public class ItemOptionDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         gbc.weightx = 0;
         JLabel lblSL = new JLabel("Số lượng:");
         lblSL.setFont(new Font("Roboto", Font.BOLD, 13));
         botPanel.add(lblSL, gbc);
 
-        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.gridx = 1;
+        gbc.gridy = 0;
         gbc.weightx = 0.3;
         spinSoLuong = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1));
         spinSoLuong.setFont(new Font("Roboto", Font.BOLD, 15));
@@ -155,13 +155,15 @@ public class ItemOptionDialog extends JDialog {
         spinSoLuong.addChangeListener(e -> updateTotal());
         botPanel.add(spinSoLuong, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         gbc.weightx = 0;
         JLabel lblGC = new JLabel("Ghi chú:");
         lblGC.setFont(new Font("Roboto", Font.BOLD, 13));
         botPanel.add(lblGC, gbc);
 
-        gbc.gridx = 1; gbc.gridy = 1;
+        gbc.gridx = 1;
+        gbc.gridy = 1;
         gbc.weightx = 1.0;
         txtGhiChu = new JTextField();
         txtGhiChu.setFont(new Font("Roboto", Font.PLAIN, 14));
@@ -192,7 +194,7 @@ public class ItemOptionDialog extends JDialog {
         btnCancel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCancel.addActionListener(e -> dispose());
 
-        JButton btnAdd = new JButton("THÊM VÀO GIỎ");
+        JButton btnAdd = new JButton("THÊM");
         btnAdd.setFont(new Font("Roboto", Font.BOLD, 13));
         btnAdd.setBackground(new Color(39, 174, 96));
         btnAdd.setForeground(Color.WHITE);
@@ -210,7 +212,8 @@ public class ItemOptionDialog extends JDialog {
     }
 
     private void updateTotal() {
-        if (sizeBtnMap.isEmpty()) return;
+        if (sizeBtnMap.isEmpty())
+            return;
 
         double sizePrice = 0;
         for (JRadioButton rb : sizeBtnMap.keySet()) {
