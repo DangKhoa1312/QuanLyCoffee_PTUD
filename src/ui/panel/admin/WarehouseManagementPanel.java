@@ -9,11 +9,17 @@ import utils.CurrencyUtils;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -343,11 +349,16 @@ public class WarehouseManagementPanel extends JPanel {
         JButton btnRefresh = createSmallBtn("Làm mới", FontAwesome.REFRESH, new Color(220, 220, 220));
         btnRefresh.addActionListener(e -> loadPhieuXuatData());
 
+        JButton btnExportCSV = createSmallBtn("  Xuất CSV", FontAwesome.FILE_TEXT, new Color(39, 174, 96));
+        btnExportCSV.setPreferredSize(new Dimension(160, 35));
+        btnExportCSV.addActionListener(e -> exportPhieuXuatToCSV());
+
         JButton btnXuatKho = createSmallBtn("  Tạo Phiếu Xuất", FontAwesome.UPLOAD, new Color(231, 76, 60));
         btnXuatKho.setPreferredSize(new Dimension(180, 35));
         btnXuatKho.addActionListener(e -> handleTaoPhieuXuat());
 
         rightPX.add(btnRefresh);
+        rightPX.add(btnExportCSV);
         rightPX.add(btnXuatKho);
         bar.add(rightPX, BorderLayout.EAST);
 
@@ -1093,9 +1104,21 @@ public class WarehouseManagementPanel extends JPanel {
         tableWrapper.add(scroll, BorderLayout.CENTER);
         dlg.add(tableWrapper, BorderLayout.CENTER);
 
-        // Nut dong
+        // Nut xuat CSV + dong
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         btnPanel.setOpaque(false);
+
+        JButton btnExportCSV = new JButton("  Xuất CSV");
+        btnExportCSV.setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_TEXT, 14, Color.WHITE));
+        btnExportCSV.setPreferredSize(new Dimension(140, 35));
+        btnExportCSV.setFont(new Font("Roboto", Font.BOLD, 13));
+        btnExportCSV.setBackground(new Color(39, 174, 96));
+        btnExportCSV.setForeground(Color.WHITE);
+        btnExportCSV.setFocusable(false);
+        btnExportCSV.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnExportCSV.addActionListener(e -> exportSinglePhieuXuatToCSV(maPX, ngayXuat, lyDo, maNV, chiTiet));
+        btnPanel.add(btnExportCSV);
+
         JButton btnClose = new JButton("Đóng");
         btnClose.setPreferredSize(new Dimension(100, 35));
         btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
@@ -1108,7 +1131,166 @@ public class WarehouseManagementPanel extends JPanel {
         dlg.setVisible(true);
     }
 
+    /**
+     * Xuất 1 phiếu xuất riêng lẻ ra file CSV.
+     */
+    private void exportSinglePhieuXuatToCSV(String maPX, String ngayXuat, String lyDo, String maNV,
+                                             List<ChiTietPhieuXuat> chiTiet) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Lưu file CSV Phiếu Xuất " + maPX);
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV Files (*.csv)", "csv"));
+        chooser.setSelectedFile(new File("phieu_xuat_" + maPX + ".csv"));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toLowerCase().endsWith(".csv")) {
+            file = new File(file.getAbsolutePath() + ".csv");
+        }
+
+        try (PrintWriter pw = new PrintWriter(
+                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+
+            // BOM cho Excel nhận diện UTF-8
+            pw.print("\uFEFF");
+
+            // Thông tin phiếu xuất (Dùng dấu chấm phẩy ; để tránh lỗi font)
+            pw.println("PHIẾU XUẤT KHO");
+            pw.println("Mã Phiếu;" + escapeCSV(maPX));
+            pw.println("Ngày Xuất;" + escapeCSV(ngayXuat));
+            pw.println("Lý Do;" + escapeCSV(lyDo));
+            pw.println("Nhân Viên;" + escapeCSV(maNV));
+            pw.println();
+
+            // Header chi tiết
+            pw.println("Mã Nguyên Liệu;Tên Nguyên Liệu;Đơn Vị Đóng Gói;Số Lượng Xuất");
+
+            // Dữ liệu chi tiết
+            if (chiTiet != null) {
+                for (ChiTietPhieuXuat ct : chiTiet) {
+                    NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
+                    String tenNL = nl != null ? nl.getTenNL() : ct.getMaNL();
+                    String dvdg = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
+                    String soLuong = String.format("%.2f", ct.getSoLuong());
+
+                    pw.println(escapeCSV(ct.getMaNL()) + ";" + escapeCSV(tenNL) + ";"
+                        + escapeCSV(dvdg) + ";" + soLuong);
+                }
+            }
+
+            pw.flush();
+
+            int open = JOptionPane.showConfirmDialog(this,
+                "✅ Xuất CSV thành công!\nFile: " + file.getAbsolutePath() + "\n\nBạn có muốn mở file không?",
+                "Thành công", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+            if (open == JOptionPane.YES_OPTION) {
+                Desktop.getDesktop().open(file);
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "❌ Lỗi khi xuất file CSV:\n" + ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     // Đã xoá openLichSuPhieuXuat() vì không còn dùng.
+
+    /**
+     * Xuất danh sách phiếu xuất ra file CSV.
+     * Mỗi phiếu xuất sẽ được kèm theo chi tiết nguyên liệu.
+     */
+    private void exportPhieuXuatToCSV() {
+        if (pxModel.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this,
+                "Không có dữ liệu phiếu xuất để xuất!",
+                "Thông báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Lưu file CSV Phiếu Xuất");
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV Files (*.csv)", "csv"));
+        chooser.setSelectedFile(new File("phieu_xuat.csv"));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        File file = chooser.getSelectedFile();
+        // Tự động thêm đuôi .csv nếu chưa có
+        if (!file.getName().toLowerCase().endsWith(".csv")) {
+            file = new File(file.getAbsolutePath() + ".csv");
+        }
+
+        try (PrintWriter pw = new PrintWriter(
+                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+
+            // BOM cho Excel nhận diện UTF-8
+            pw.print("\uFEFF");
+
+            // Header (Dùng dấu chấm phẩy ; để Excel bản Việt Nam tự chia cột và KHÔNG bị lỗi font)
+            pw.println("Mã Phiếu;Ngày Xuất;Lý Do;Nhân Viên;Mã Nguyên Liệu;Tên Nguyên Liệu;Đơn Vị Đóng Gói;Số Lượng Xuất");
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+            // Duyệt tất cả phiếu xuất hiện đang hiển thị trên bảng
+            for (int i = 0; i < pxModel.getRowCount(); i++) {
+                String maPX    = String.valueOf(pxModel.getValueAt(i, 0));
+                String ngayXuat = String.valueOf(pxModel.getValueAt(i, 1));
+                String lyDo    = String.valueOf(pxModel.getValueAt(i, 2));
+                String maNV    = String.valueOf(pxModel.getValueAt(i, 3));
+
+                // Lấy chi tiết phiếu xuất
+                List<ChiTietPhieuXuat> chiTiet = controller.getChiTietByPhieuXuat(maPX);
+
+                if (chiTiet == null || chiTiet.isEmpty()) {
+                    // Phiếu không có chi tiết → vẫn ghi 1 dòng
+                    pw.println(escapeCSV(maPX) + ";" + escapeCSV(ngayXuat) + ";"
+                        + escapeCSV(lyDo) + ";" + escapeCSV(maNV) + ";;;;");
+                } else {
+                    for (ChiTietPhieuXuat ct : chiTiet) {
+                        NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
+                        String tenNL = nl != null ? nl.getTenNL() : ct.getMaNL();
+                        String dvdg  = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
+                        String soLuong = String.format("%.2f", ct.getSoLuong());
+
+                        pw.println(escapeCSV(maPX) + ";" + escapeCSV(ngayXuat) + ";"
+                            + escapeCSV(lyDo) + ";" + escapeCSV(maNV) + ";"
+                            + escapeCSV(ct.getMaNL()) + ";" + escapeCSV(tenNL) + ";"
+                            + escapeCSV(dvdg) + ";" + soLuong);
+                    }
+                }
+            }
+
+            pw.flush();
+
+            int open = JOptionPane.showConfirmDialog(this,
+                "✅ Xuất CSV thành công!\nFile: " + file.getAbsolutePath() + "\n\nBạn có muốn mở file không?",
+                "Thành công", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+            if (open == JOptionPane.YES_OPTION) {
+                Desktop.getDesktop().open(file);
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "❌ Lỗi khi xuất file CSV:\n" + ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Escape giá trị cho CSV: bọc ngoặc kép nếu chứa dấu chấm phẩy, xuống dòng hoặc ngoặc kép.
+     */
+    private String escapeCSV(String value) {
+        if (value == null) return "";
+        if (value.contains(";") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
 
     private JLabel createStyledLabel(String text, boolean bold) {
         JLabel lbl = new JLabel(text);

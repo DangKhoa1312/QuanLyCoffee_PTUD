@@ -30,14 +30,16 @@ public class DatBanDialog extends JDialog {
         ADD, EDIT
     }
 
-    // ── State ────────────────────────────────────────────────────────────────────────
-    private boolean confirmed          = false;
-    private boolean cancelled          = false; // true nếu nhấn "Huỷ đặt bàn"
-    private boolean saved              = false; // true nếu lưu thành công
+    // ── State
+    // ────────────────────────────────────────────────────────────────────────
+    private boolean confirmed = false;
+    private boolean cancelled = false; // true nếu nhấn "Huỷ đặt bàn"
+    private boolean saved = false; // true nếu lưu thành công
     private boolean navigationRequested = false; // true sau khi Xác nhận → chuyển sang trang bàn
-    
+
     // Lưu trạng thái ban đầu để kiểm tra thay đổi (Dirty Checking)
-    private String initTen, initSdt, initMaBan;
+    private String initTen, initSdt;
+    private java.util.List<String> initMaBanList = new java.util.ArrayList<>();
     private int initSoNguoi, initGio, initPhut;
     private java.util.Date initNgay;
 
@@ -52,10 +54,14 @@ public class DatBanDialog extends JDialog {
     private JList<BanItem> lstBan;
     private DefaultListModel<BanItem> banListModel;
     private JComboBox<KhuVucItem> cbKhuVuc;
-    private JLabel lblNoTable, lblSucChua, lblTrangThai;
+    private JLabel lblNoTable, lblSucChua, lblTrangThai, lblSucChuaTong;
     private JButton btnRefreshBan, btnSave, btnXacNhan, btnHuy;
 
-    // ── Colours ──────────────────────────────────────────────────────────────
+    /** Danh sách mã bàn được chọn (kết quả sau khi đóng dialog) */
+    private java.util.List<String> selectedMaBanList = new java.util.ArrayList<>();
+    private java.util.Set<String> currentSelectedBans = new java.util.HashSet<>();
+    private boolean isLoadingBans = false;
+
     private static final Color PRIMARY = new Color(113, 76, 52); // nâu cafe
     private static final Color SUCCESS = new Color(46, 204, 113);
     private static final Color DANGER = new Color(231, 76, 60);
@@ -69,11 +75,15 @@ public class DatBanDialog extends JDialog {
         this.mode = mode;
         this.controller = controller;
 
+        if (datBan.getDsMaBan() != null) {
+            this.currentSelectedBans.addAll(datBan.getDsMaBan());
+        }
+
         initUI();
         fillData();
         if (mode == Mode.EDIT)
             updateStatusBadge();
-        
+
         registerDirtyCheckers();
         checkDirty();
     }
@@ -152,7 +162,7 @@ public class DatBanDialog extends JDialog {
 
         // Số người
         addLabel(form, gbc, "Số người *:", FontAwesome.USERS);
-        spnSoNguoi = new JSpinner(new SpinnerNumberModel(2, 1, 50, 1));
+        spnSoNguoi = new JSpinner(new SpinnerNumberModel(2, 1, 9999, 1));
         spnSoNguoi.setPreferredSize(new Dimension(0, 35));
         addField(form, gbc, spnSoNguoi);
 
@@ -202,16 +212,37 @@ public class DatBanDialog extends JDialog {
         pnlKhuVuc.add(cbKhuVuc, BorderLayout.CENTER);
         card.add(pnlKhuVuc, BorderLayout.NORTH);
 
-        // Danh sách bàn trống
+        // Danh sách bàn (multi-select bằng click đơn — toggle)
         banListModel = new DefaultListModel<>();
         lstBan = new JList<>(banListModel);
         lstBan.setFont(new Font("Roboto", Font.PLAIN, 13));
-        lstBan.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        lstBan.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        lstBan.setSelectionModel(new DefaultListSelectionModel() {
+            @Override
+            public void setSelectionInterval(int index0, int index1) {
+                if (super.isSelectedIndex(index0)) {
+                    super.removeSelectionInterval(index0, index1);
+                } else {
+                    super.addSelectionInterval(index0, index1);
+                }
+            }
+        });
         lstBan.setCellRenderer(new BanCellRenderer());
         lstBan.setFixedCellHeight(45);
+        lstBan.setToolTipText("Click để chọn/bỏ chọn bàn");
         lstBan.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting())
-                updateSucChua();
+            if (isLoadingBans || e.getValueIsAdjusting())
+                return;
+            for (int i = 0; i < banListModel.size(); i++) {
+                String maBan = banListModel.getElementAt(i).ban.getMaBan();
+                if (lstBan.isSelectedIndex(i)) {
+                    currentSelectedBans.add(maBan);
+                } else {
+                    currentSelectedBans.remove(maBan);
+                }
+            }
+            updateSucChua();
+            checkDirty();
         });
 
         // Thông báo hết bàn
@@ -233,18 +264,38 @@ public class DatBanDialog extends JDialog {
         center.setOpaque(false);
         center.add(scroll, BorderLayout.CENTER);
 
-        JPanel bottom = new JPanel(new BorderLayout());
-        bottom.setOpaque(false);
-        bottom.add(lblNoTable, BorderLayout.CENTER);
+        // Panel bottom: hiển thị sức chứa + tổng
+        JPanel pnlSucChua = new JPanel(new GridLayout(2, 1, 0, 2));
+        pnlSucChua.setOpaque(false);
 
-        // Sức chứa
         lblSucChua = new JLabel();
         lblSucChua.setFont(new Font("Roboto", Font.PLAIN, 12));
         lblSucChua.setForeground(new Color(100, 100, 100));
-        bottom.add(lblSucChua, BorderLayout.WEST);
+
+        lblSucChuaTong = new JLabel();
+        lblSucChuaTong.setFont(new Font("Roboto", Font.BOLD, 12));
+        lblSucChuaTong.setForeground(new Color(41, 128, 185));
+
+        pnlSucChua.add(lblSucChua);
+        pnlSucChua.add(lblSucChuaTong);
+
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setOpaque(false);
+        bottom.add(lblNoTable, BorderLayout.CENTER);
+        bottom.add(pnlSucChua, BorderLayout.WEST);
         bottom.add(btnRefreshBan, BorderLayout.EAST);
 
-        center.add(bottom, BorderLayout.SOUTH);
+        // Chú thích click đơn để chọn
+        JLabel lblHint = new JLabel("💡 Click để chọn/bỏ chọn bàn");
+        lblHint.setFont(new Font("Roboto", Font.ITALIC, 11));
+        lblHint.setForeground(new Color(150, 150, 150));
+
+        JPanel southPanel = new JPanel(new BorderLayout(0, 4));
+        southPanel.setOpaque(false);
+        southPanel.add(lblHint, BorderLayout.NORTH);
+        southPanel.add(bottom, BorderLayout.SOUTH);
+
+        center.add(southPanel, BorderLayout.SOUTH);
         card.add(center, BorderLayout.CENTER);
 
         // Load khu vực và bàn
@@ -272,14 +323,15 @@ public class DatBanDialog extends JDialog {
 
         if (mode == Mode.EDIT) {
             TrangThaiDatBan tt = datBan.getTrangThai();
-            boolean coTheHuy    = (tt == TrangThaiDatBan.CHO_XAC_NHAN);
+            boolean coTheHuy = (tt == TrangThaiDatBan.CHO_XAC_NHAN);
             boolean coTheXacNhan = (tt == TrangThaiDatBan.CHO_XAC_NHAN);
 
             // Nút huỷ đặt bàn (chỉ khi CHO_XAC_NHAN)
             btnHuy = new JButton("  Huỷ đặt bàn", IconFontSwing.buildIcon(FontAwesome.BAN, 14, Color.WHITE));
             styleButton(btnHuy, DANGER);
             btnHuy.setEnabled(coTheHuy);
-            if (!coTheHuy) btnHuy.setToolTipText("Không thể huỷ khi trạng thái: " + (tt != null ? tt.displayName() : ""));
+            if (!coTheHuy)
+                btnHuy.setToolTipText("Không thể huỷ khi trạng thái: " + (tt != null ? tt.displayName() : ""));
             btnHuy.addActionListener(e -> handleHuyDatBan());
 
             // Nút xác nhận (chỉ khi CHO_XAC_NHAN)
@@ -346,25 +398,38 @@ public class DatBanDialog extends JDialog {
         initNgay = dateChooser.getDate();
         initGio = (Integer) spnGio.getValue();
         initPhut = (Integer) spnPhut.getValue();
-        initMaBan = datBan.getMaBan();
+        // Track tất cả bàn ban đầu của nhóm
+        initMaBanList.clear();
+        if (datBan.getDsMaBan() != null) {
+            initMaBanList.addAll(datBan.getDsMaBan());
+        }
     }
 
     private boolean isDirty() {
-        if (!txtTenKhach.getText().trim().equals(initTen)) return true;
-        if (!txtSoDienThoai.getText().trim().equals(initSdt)) return true;
-        if (!spnSoNguoi.getValue().equals(initSoNguoi)) return true;
-        if (initNgay != null && !initNgay.equals(dateChooser.getDate())) return true;
-        if (!spnGio.getValue().equals(initGio)) return true;
-        if (!spnPhut.getValue().equals(initPhut)) return true;
-        
-        BanItem selected = lstBan.getSelectedValue();
-        String currentMaBan = (selected != null) ? selected.ban.getMaBan() : initMaBan;
-        if (initMaBan == null && currentMaBan != null) return true;
-        if (initMaBan != null && !initMaBan.equals(currentMaBan)) return true;
-        
+        if (!txtTenKhach.getText().trim().equals(initTen))
+            return true;
+        if (!txtSoDienThoai.getText().trim().equals(initSdt))
+            return true;
+        if (!spnSoNguoi.getValue().equals(initSoNguoi))
+            return true;
+        if (initNgay != null && !initNgay.equals(dateChooser.getDate()))
+            return true;
+        if (!spnGio.getValue().equals(initGio))
+            return true;
+        if (!spnPhut.getValue().equals(initPhut))
+            return true;
+
+        // So sánh danh sách bàn hiện tại vs ban đầu
+        java.util.List<String> currentList = new java.util.ArrayList<>(currentSelectedBans);
+        java.util.Collections.sort(currentList);
+        java.util.List<String> snapList = new java.util.ArrayList<>(initMaBanList);
+        java.util.Collections.sort(snapList);
+        if (!currentList.equals(snapList))
+            return true;
+
         return false;
     }
-    
+
     private void checkDirty() {
         if (btnSave != null && mode == Mode.EDIT) {
             btnSave.setEnabled(isDirty());
@@ -373,22 +438,48 @@ public class DatBanDialog extends JDialog {
 
     private void registerDirtyCheckers() {
         javax.swing.event.DocumentListener dl = new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { checkDirty(); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { checkDirty(); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { checkDirty(); }
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                checkDirty();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                checkDirty();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                checkDirty();
+            }
         };
         txtTenKhach.getDocument().addDocumentListener(dl);
         txtSoDienThoai.getDocument().addDocumentListener(dl);
-        
+
         javax.swing.event.ChangeListener cl = e -> checkDirty();
         spnSoNguoi.addChangeListener(cl);
         spnGio.addChangeListener(cl);
         spnPhut.addChangeListener(cl);
-        
+
+        java.awt.event.FocusAdapter fa = new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                try {
+                    ((javax.swing.JFormattedTextField) e.getSource()).commitEdit();
+                    checkDirty();
+                } catch (Exception ex) {
+                }
+            }
+        };
+        ((JSpinner.DefaultEditor) spnSoNguoi.getEditor()).getTextField().addFocusListener(fa);
+        ((JSpinner.DefaultEditor) spnGio.getEditor()).getTextField().addFocusListener(fa);
+        ((JSpinner.DefaultEditor) spnPhut.getEditor()).getTextField().addFocusListener(fa);
+
         dateChooser.getDateEditor().addPropertyChangeListener("date", e -> checkDirty());
-        
+
         lstBan.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) checkDirty();
+            if (!e.getValueIsAdjusting())
+                checkDirty();
         });
     }
 
@@ -398,28 +489,23 @@ public class DatBanDialog extends JDialog {
         for (KhuVuc kv : dsKV) {
             cbKhuVuc.addItem(new KhuVucItem(kv));
         }
-        // Nếu đang edit và bàn đã chọn, chọn đúng khu vực
-        if (mode == Mode.EDIT && datBan.getMaBan() != null) {
-            selectKhuVucCuaBan();
-        }
-    }
-
-    private void selectKhuVucCuaBan() {
-        // Tìm khu vực của bàn hiện tại và chọn
-        for (int i = 0; i < cbKhuVuc.getItemCount(); i++) {
-            // Sẽ load bàn sau khi đổi khu vực; sau đó select bàn đúng
-        }
-        loadBanTrong();
-        // Select bàn hiện tại trong list
-        for (int i = 0; i < banListModel.size(); i++) {
-            if (banListModel.getElementAt(i).ban.getMaBan().equals(datBan.getMaBan())) {
-                lstBan.setSelectedIndex(i);
-                break;
+        // Nếu đang edit và có danh sách bàn, chọn đúng khu vực
+        if (mode == Mode.EDIT && datBan.getDsMaBan() != null && !datBan.getDsMaBan().isEmpty()) {
+            String firstBan = datBan.getDsMaBan().get(0);
+            entity.Ban b = controller.findBanById(firstBan);
+            if (b != null) {
+                for (int i = 0; i < cbKhuVuc.getItemCount(); i++) {
+                    if (cbKhuVuc.getItemAt(i).kv.getMaKhuVuc().equals(b.getMaKhuVuc())) {
+                        cbKhuVuc.setSelectedIndex(i);
+                        break;
+                    }
+                }
             }
         }
     }
 
     private void loadBanTrong() {
+        isLoadingBans = true;
         banListModel.clear();
         lblNoTable.setVisible(false);
         lblSucChua.setText("");
@@ -433,14 +519,21 @@ public class DatBanDialog extends JDialog {
 
         List<Ban> dsBan = controller.getBanTrongChoKhuVuc(kvItem.kv.getMaKhuVuc(), thoiGianDen, excludeId);
 
-        // Nếu đang EDIT, đảm bảo bàn hiện tại luôn có trong danh sách và được chọn
-        if (mode == Mode.EDIT && datBan.getMaBan() != null) {
-            boolean coTrongDS = dsBan.stream().anyMatch(b -> b.getMaBan().equals(datBan.getMaBan()));
-            if (!coTrongDS) {
-                // Thử lấy thông tin bàn từ database để thêm vào list
-                entity.Ban bht = controller.findBanById(datBan.getMaBan());
-                if (bht != null && bht.getMaKhuVuc().equals(kvItem.kv.getMaKhuVuc())) {
-                    dsBan.add(0, bht); // Thêm vào đầu danh sách
+        // EDIT: đảm bảo tất cả bàn trong nhóm luôn có trong danh sách
+        if (mode == Mode.EDIT) {
+            java.util.List<String> nhomMaBan = new java.util.ArrayList<>();
+            if (datBan.getDsMaBan() != null) {
+                nhomMaBan.addAll(datBan.getDsMaBan());
+            }
+
+            // Loại trừ ID của toàn bộ nhóm để cho phép re-select
+            for (String maBan : nhomMaBan) {
+                boolean coTrongDS = dsBan.stream().anyMatch(b -> b.getMaBan().equals(maBan));
+                if (!coTrongDS) {
+                    entity.Ban bht = controller.findBanById(maBan);
+                    if (bht != null && bht.getMaKhuVuc().equals(kvItem.kv.getMaKhuVuc())) {
+                        dsBan.add(0, bht);
+                    }
                 }
             }
         }
@@ -451,17 +544,15 @@ public class DatBanDialog extends JDialog {
             for (Ban b : dsBan) {
                 banListModel.addElement(new BanItem(b));
             }
-            // Tự động chọn bàn cũ/đang edit
-            String targetMaBan = (mode == Mode.EDIT) ? datBan.getMaBan() : null;
-            if (targetMaBan != null) {
-                for (int i = 0; i < banListModel.size(); i++) {
-                    if (banListModel.getElementAt(i).ban.getMaBan().equals(targetMaBan)) {
-                        lstBan.setSelectedIndex(i);
-                        break;
-                    }
+            // Pre-select các bàn đã chọn
+            for (int i = 0; i < banListModel.size(); i++) {
+                if (currentSelectedBans.contains(banListModel.getElementAt(i).ban.getMaBan())) {
+                    lstBan.addSelectionInterval(i, i);
                 }
             }
         }
+        isLoadingBans = false;
+        updateSucChua();
     }
 
     private LocalDateTime buildThoiGianDen() {
@@ -474,11 +565,11 @@ public class DatBanDialog extends JDialog {
     }
 
     private void updateSucChua() {
-        BanItem item = lstBan.getSelectedValue();
-        if (item != null) {
-            lblSucChua.setText("👥 Sức chứa: " + item.ban.getSucChua() + " người");
-        } else {
+        if (currentSelectedBans.isEmpty()) {
             lblSucChua.setText("");
+            return;
+        } else {
+            lblSucChua.setText("📋 " + currentSelectedBans.size() + " bàn được chọn");
         }
     }
 
@@ -515,9 +606,25 @@ public class DatBanDialog extends JDialog {
         datBan.setSoDienThoai(txtSoDienThoai.getText().trim());
         datBan.setSoLuongNguoi((Integer) spnSoNguoi.getValue());
         datBan.setThoiGianDen(buildThoiGianDen());
-        BanItem selected = lstBan.getSelectedValue();
-        if (selected != null)
-            datBan.setMaBan(selected.ban.getMaBan());
+        // Lưu danh sách bàn đã chọn
+        selectedMaBanList.clear();
+        selectedMaBanList.addAll(currentSelectedBans);
+        datBan.setDsMaBan(selectedMaBanList);
+
+        if (!selectedMaBanList.isEmpty()) {
+            String dsSoBan = selectedMaBanList.stream().map(m -> {
+                entity.Ban b = controller.findBanById(m);
+                return b != null ? b.getSoBan() : m;
+            }).collect(java.util.stream.Collectors.joining(", "));
+            datBan.setDanhSachSoBan(dsSoBan);
+        } else {
+            datBan.setDanhSachSoBan("");
+        }
+    }
+
+    /** Trả về danh sách mã bàn đã chọn (dùng khi thêm nhiều bàn) */
+    public java.util.List<String> getSelectedMaBanList() {
+        return java.util.Collections.unmodifiableList(selectedMaBanList);
     }
 
     private void handleSave() {
@@ -525,7 +632,8 @@ public class DatBanDialog extends JDialog {
             return;
 
         if (!isDirty()) {
-            JOptionPane.showMessageDialog(this, "Không có thay đổi nào để lưu.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Không có thay đổi nào để lưu.", "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
             dispose();
             return;
         }
@@ -537,43 +645,60 @@ public class DatBanDialog extends JDialog {
     }
 
     private void handleXacNhan() {
-        if (!validateInput()) return;
-        
+        if (!validateInput())
+            return;
+
         // 1. Lưu các thay đổi mà người dùng nhập trên form
         applyDataToEntity();
 
         int xn = JOptionPane.showConfirmDialog(this,
                 "<html><b>Xác nhận đặt bàn?</b><br><br>" +
-                "Khách: <b>" + datBan.getTenKhach() + "</b><br>" +
-                "Bàn: <b>" + (datBan.getSoBan() != null ? datBan.getSoBan() : datBan.getMaBan()) + "</b><br>" +
-                "Giờ đến: <b>" + (datBan.getThoiGianDen() != null ?
-                    java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").format(datBan.getThoiGianDen()) : "?") +
-                "</b><br><br>" +
-                "Trạng thái chuyển <b>Đã xác nhận</b> và bàn chuyển sang <b>Có khách</b>.</html>",
+                        "Khách: <b>" + datBan.getTenKhach() + "</b><br>" +
+                        "Bàn: <b>" + datBan.getDanhSachSoBan() + "</b><br>" +
+                        "Giờ đến: <b>"
+                        + (datBan.getThoiGianDen() != null
+                                ? java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")
+                                        .format(datBan.getThoiGianDen())
+                                : "?")
+                        +
+                        "</b><br><br>" +
+                        "Trạng thái chuyển <b>Đã xác nhận</b> và bàn chuyển sang <b>Có khách</b>.</html>",
                 "Xác nhận đặt bàn", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (xn == JOptionPane.YES_OPTION) {
-            // 2. Cập nhật trạng thái ngay trên đối tượng (để ReservationManagementPanel lưu vào DB)
+            // 2. Cập nhật trạng thái ngay trên đối tượng (để ReservationManagementPanel lưu
+            // vào DB)
             datBan.setTrangThai(TrangThaiDatBan.DA_XAC_NHAN);
-            
+
             // 3. Thực hiện xác nhận (controller sẽ chặn nếu bàn đang CO_KHACH)
             boolean ok = controller.xacNhan(datBan.getMaDatBan());
             if (ok) {
-                // Đánh dấu để ReservationManagementPanel gọi controller.sua() lưu lại các sửa đổi vào DB
-                saved = true; 
+                // Đánh dấu để ReservationManagementPanel gọi controller.sua() lưu lại các sửa
+                // đổi vào DB
+                saved = true;
                 confirmed = true;
                 navigationRequested = true; // yêu cầu chuyển sang trang bàn
                 dispose();
             } else {
                 // Khôi phục trạng thái nếu bị chặn
                 datBan.setTrangThai(TrangThaiDatBan.CHO_XAC_NHAN);
-                // Kiểm tra lý do thất bại
-                if (controller.isBanDangCoKhach(datBan.getMaBan())) {
+                // Kiểm tra lý do thất bại (kiểm tra từng bàn)
+                boolean hasKhach = false;
+                if (datBan.getDsMaBan() != null) {
+                    for (String maBan : datBan.getDsMaBan()) {
+                        if (controller.isBanDangCoKhach(maBan)) {
+                            hasKhach = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (hasKhach) {
                     JOptionPane.showMessageDialog(this,
-                        "<html>⛔ <b>Không thể xác nhận!</b><br><br>" +
-                        "Bàn đang <b>phục vụ khách vãng lai</b>.<br>" +
-                        "Vui lòng đợi khách vãng lai thanh toán xong,<br>" +
-                        "hoặc chuyển đặt bàn sang bàn khác.</html>",
-                        "Bàn đang có khách", JOptionPane.WARNING_MESSAGE);
+                            "<html>⛔ <b>Không thể xác nhận!</b><br><br>" +
+                                    "Một hoặc nhiều bàn đang <b>phục vụ khách vãng lai</b>.<br>" +
+                                    "Vui lòng đợi khách vãng lai thanh toán xong,<br>" +
+                                    "hoặc chuyển đặt bàn sang bàn khác.</html>",
+                            "Bàn đang có khách", JOptionPane.WARNING_MESSAGE);
                 } else {
                     JOptionPane.showMessageDialog(this, "Không thể xác nhận. Vui lòng thử lại.", "Lỗi",
                             JOptionPane.ERROR_MESSAGE);
@@ -586,15 +711,15 @@ public class DatBanDialog extends JDialog {
         TrangThaiDatBan tt = datBan.getTrangThai();
         if (tt == TrangThaiDatBan.DA_XAC_NHAN || tt == TrangThaiDatBan.DA_THANH_TOAN) {
             JOptionPane.showMessageDialog(this,
-                "<html>⛔ Không thể huỷ đặt bàn khi đã ở trạng thái <b>" + tt.displayName() + "</b>.<br>" +
-                "Chỉ có thể huỷ khi đang <b>Chờ xác nhận</b>.</html>",
-                "Không thể huỷ", JOptionPane.WARNING_MESSAGE);
+                    "<html>⛔ Không thể huỷ đặt bàn khi đã ở trạng thái <b>" + tt.displayName() + "</b>.<br>" +
+                            "Chỉ có thể huỷ khi đang <b>Chờ xác nhận</b>.</html>",
+                    "Không thể huỷ", JOptionPane.WARNING_MESSAGE);
             return;
         }
         int xn = JOptionPane.showConfirmDialog(this,
                 "<html><b>⚠ Huỷ đặt bàn?</b><br><br>" +
-                "Bạn có chắc muốn huỷ đặt bàn của <b>" + datBan.getTenKhach() + "</b>?<br>" +
-                "Hành động này không thể hoàn tác.</html>",
+                        "Bạn có chắc muốn huỷ đặt bàn của <b>" + datBan.getTenKhach() + "</b>?<br>" +
+                        "Hành động này không thể hoàn tác.</html>",
                 "Xác nhận huỷ", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (xn == JOptionPane.YES_OPTION) {
             boolean ok = controller.huy(datBan.getMaDatBan());
@@ -614,6 +739,19 @@ public class DatBanDialog extends JDialog {
     // VALIDATION
     // ══════════════════════════════════════════════════════════════════════════
     private boolean validateInput() {
+        try {
+            spnSoNguoi.commitEdit();
+        } catch (Exception ignored) {
+        }
+        try {
+            spnGio.commitEdit();
+        } catch (Exception ignored) {
+        }
+        try {
+            spnPhut.commitEdit();
+        } catch (Exception ignored) {
+        }
+
         String ten = txtTenKhach.getText().trim();
         if (ten.isEmpty()) {
             warn("Tên khách không được để trống!", txtTenKhach);
@@ -640,7 +778,8 @@ public class DatBanDialog extends JDialog {
         int m = (Integer) spnPhut.getValue();
         // Validate giờ hành chính (7h–22h)
         if (h < 7 || h >= 22) {
-            JOptionPane.showMessageDialog(this, "Giờ đặt bàn phải trong khung giờ hành chính (7h00 – 22h00)!", "Cảnh báo",
+            JOptionPane.showMessageDialog(this, "Giờ đặt bàn phải trong khung giờ hành chính (7h00 – 22h00)!",
+                    "Cảnh báo",
                     JOptionPane.WARNING_MESSAGE);
             return false;
         }
@@ -652,35 +791,29 @@ public class DatBanDialog extends JDialog {
         }
 
         // Trong chế độ sửa, nếu không chọn bàn mới thì vẫn dùng bàn cũ
-        if (mode == Mode.ADD && lstBan.getSelectedValue() == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn bàn!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+        if (mode == Mode.ADD && currentSelectedBans.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn ít nhất một bàn!", "Cảnh báo",
+                    JOptionPane.WARNING_MESSAGE);
             return false;
         }
-        if (mode == Mode.EDIT && lstBan.getSelectedValue() == null && datBan.getMaBan() == null) {
+        if (mode == Mode.EDIT && currentSelectedBans.isEmpty()
+                && (datBan.getDsMaBan() == null || datBan.getDsMaBan().isEmpty())) {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn bàn!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
             return false;
-        }
-        // Ràng buộc số người với sức chứa của bàn
-        BanItem bi = lstBan.getSelectedValue();
-        if (bi != null) {
-            int soNguoi = (Integer) spnSoNguoi.getValue();
-            if (soNguoi > bi.ban.getSucChua()) {
-                JOptionPane.showMessageDialog(this,
-                        "<html>⚠ Số người (<b>" + soNguoi + "</b>) vượt quá sức chứa của bàn (<b>" + bi.ban.getSucChua() + "</b>).<br>" +
-                        "Vui lòng chọn bàn lớn hơn hoặc giảm số người!</html>",
-                        "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                return false;
-            }
         }
 
-        // Kiểm tra trùng giờ lần cuối
+        // Kiểm tra trùng giờ cho từng bàn được chọn
         String excludeId = mode == Mode.EDIT ? datBan.getMaDatBan() : null;
-        if (bi != null && controller.isTrungGio(bi.ban.getMaBan(), thoiGianDen, excludeId)) {
-            JOptionPane.showMessageDialog(this,
-                    "<html>⚠ Bàn <b>" + bi.ban.getSoBan() + "</b> đã có đặt trong khoảng ±1 giờ.<br>" +
-                            "Vui lòng chọn giờ hoặc bàn khác!</html>",
-                    "Trùng giờ đặt bàn", JOptionPane.WARNING_MESSAGE);
-            return false;
+        for (String maBan : currentSelectedBans) {
+            if (controller.isTrungGio(maBan, thoiGianDen, excludeId)) {
+                entity.Ban b = controller.findBanById(maBan);
+                JOptionPane.showMessageDialog(this,
+                        "<html>⚠ Bàn <b>" + (b != null ? b.getSoBan() : maBan)
+                                + "</b> đã có đặt trong khoảng ±1 giờ.<br>" +
+                                "Vui lòng chọn giờ hoặc bàn khác!</html>",
+                        "Trùng giờ đặt bàn", JOptionPane.WARNING_MESSAGE);
+                return false;
+            }
         }
         return true;
     }
@@ -692,7 +825,8 @@ public class DatBanDialog extends JDialog {
     }
 
     /**
-     * Khoá toàn bộ các component trong một panel (dùng khi trạng thái != CHO_XAC_NHAN)
+     * Khoá toàn bộ các component trong một panel (dùng khi trạng thái !=
+     * CHO_XAC_NHAN)
      */
     private void setCardReadOnly(java.awt.Container container) {
         for (java.awt.Component comp : container.getComponents()) {
@@ -706,10 +840,21 @@ public class DatBanDialog extends JDialog {
     // ══════════════════════════════════════════════════════════════════════════
     // ACCESSORS
     // ══════════════════════════════════════════════════════════════════════════
-    public boolean isConfirmed()          { return confirmed; }
-    public boolean isCancelled()           { return cancelled; }
-    public boolean isSaved()               { return saved; }
-    public boolean isNavigationRequested() { return navigationRequested; }
+    public boolean isConfirmed() {
+        return confirmed;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public boolean isSaved() {
+        return saved;
+    }
+
+    public boolean isNavigationRequested() {
+        return navigationRequested;
+    }
 
     // ══════════════════════════════════════════════════════════════════════════
     // HELPERS
@@ -793,7 +938,7 @@ public class DatBanDialog extends JDialog {
         }
     }
 
-    /** Renderer cho bàn trong JList */
+    /** Renderer cho bàn trong JList (hỗ trợ multi-select với checkbox icon) */
     static class BanCellRenderer extends DefaultListCellRenderer {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value,
@@ -803,13 +948,17 @@ public class DatBanDialog extends JDialog {
                     BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(240, 240, 240)),
                     new EmptyBorder(8, 12, 8, 12)));
             if (isSelected) {
-                lbl.setBackground(new Color(232, 245, 253));
-                lbl.setForeground(new Color(41, 128, 185));
+                lbl.setBackground(new Color(219, 234, 254));
+                lbl.setForeground(new Color(30, 64, 175));
+                lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
+            } else {
+                lbl.setForeground(new Color(50, 50, 50));
+                lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN));
             }
             if (value instanceof BanItem) {
                 BanItem bi = (BanItem) value;
                 String checkIcon = isSelected ? "☑" : "☐";
-                lbl.setText(checkIcon + "  " + bi.ban.getSoBan() + "   —   👥 " + bi.ban.getSucChua() + " người");
+                lbl.setText(checkIcon + "  " + bi.ban.getSoBan());
             }
             return lbl;
         }

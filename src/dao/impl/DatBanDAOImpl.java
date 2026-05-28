@@ -30,7 +30,7 @@ public class DatBanDAOImpl implements DatBanDAO {
                 null,
                 rs.getTimestamp("thoiGianDen") != null ? rs.getTimestamp("thoiGianDen").toLocalDateTime() : null,
                 rs.getTimestamp("thoiGianDat") != null ? rs.getTimestamp("thoiGianDat").toLocalDateTime() : null,
-                rs.getString("maBan"),
+                new ArrayList<>(),
                 rs.getString("maHD"),
                 hienThi);
         
@@ -38,34 +38,65 @@ public class DatBanDAOImpl implements DatBanDAO {
         try { db.setTrangThai(TrangThaiDatBan.valueOf(tt)); }
         catch (Exception e) { db.setTrangThai(TrangThaiDatBan.CHO_XAC_NHAN); }
         
-        // Gán soBan nếu có trong ResultSet (kết quả của JOIN)
-        try {
-            db.setSoBan(rs.getString("soBan"));
-        } catch (SQLException ignored) {}
-        
         return db;
+    }
+
+    private void loadChiTiet(DatBan db) {
+        String sql = "SELECT ct.maBan, b.soBan FROM ChiTietDatBan ct JOIN Ban b ON ct.maBan = b.maBan WHERE ct.maDatBan=?";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setString(1, db.getMaDatBan());
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                db.getDsMaBan().add(rs.getString("maBan"));
+                String cur = db.getDanhSachSoBan();
+                String soBan = rs.getString("soBan");
+                db.setDanhSachSoBan(cur == null ? soBan : cur + ", " + soBan);
+            }
+        } catch (SQLException e) {}
+    }
+
+    private void loadChiTietList(List<DatBan> list) {
+        for (DatBan db : list) loadChiTiet(db);
     }
 
     // ══ BaseDAO: insert ═══════════════════════════════════════════════════════
     @Override
     public boolean insert(DatBan db) {
         String sql = "INSERT INTO DatBan(maDatBan,tenKhach,soDienThoai,soLuongNguoi," +
-                     "trangThai,thoiGianDen,thoiGianDat,maBan,maHD,hienThi) " +
-                     "VALUES(?,?,?,?,?,?,?,?,?,?)";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setString(1, db.getMaDatBan());
-            ps.setString(2, db.getTenKhach());
-            ps.setString(3, db.getSoDienThoai());
-            ps.setInt   (4, db.getSoLuongNguoi());
-            ps.setString(5, db.getTrangThai().name());
-            ps.setTimestamp(6, db.getThoiGianDen() != null ? Timestamp.valueOf(db.getThoiGianDen()) : null);
-            ps.setTimestamp(7, db.getThoiGianDat() != null ? Timestamp.valueOf(db.getThoiGianDat()) : null);
-            ps.setString(8, db.getMaBan());
-            ps.setString(9, db.getMaHD());
-            ps.setBoolean(10, db.isHienThi());
-            return ps.executeUpdate() > 0;
+                     "trangThai,thoiGianDen,thoiGianDat,maHD,hienThi) " +
+                     "VALUES(?,?,?,?,?,?,?,?,?)";
+        try {
+            getConn().setAutoCommit(false);
+            try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+                ps.setString(1, db.getMaDatBan());
+                ps.setString(2, db.getTenKhach());
+                ps.setString(3, db.getSoDienThoai());
+                ps.setInt   (4, db.getSoLuongNguoi());
+                ps.setString(5, db.getTrangThai().name());
+                ps.setTimestamp(6, db.getThoiGianDen() != null ? Timestamp.valueOf(db.getThoiGianDen()) : null);
+                ps.setTimestamp(7, db.getThoiGianDat() != null ? Timestamp.valueOf(db.getThoiGianDat()) : null);
+                ps.setString(8, db.getMaHD());
+                ps.setBoolean(9, db.isHienThi());
+                ps.executeUpdate();
+            }
+            
+            if (db.getDsMaBan() != null) {
+                String sqlCt = "INSERT INTO ChiTietDatBan(maDatBan, maBan) VALUES(?,?)";
+                try (PreparedStatement psCt = getConn().prepareStatement(sqlCt)) {
+                    for (String mb : db.getDsMaBan()) {
+                        psCt.setString(1, db.getMaDatBan());
+                        psCt.setString(2, mb);
+                        psCt.addBatch();
+                    }
+                    psCt.executeBatch();
+                }
+            }
+            getConn().commit();
+            getConn().setAutoCommit(true);
+            return true;
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.insert: " + e.getMessage());
+            try { getConn().rollback(); getConn().setAutoCommit(true); } catch (SQLException ex) {}
         }
         return false;
     }
@@ -74,22 +105,46 @@ public class DatBanDAOImpl implements DatBanDAO {
     @Override
     public boolean update(DatBan db) {
         String sql = "UPDATE DatBan SET tenKhach=?,soDienThoai=?,soLuongNguoi=?," +
-                     "trangThai=?,thoiGianDen=?,thoiGianDat=?,maBan=?,maHD=?,hienThi=? " +
+                     "trangThai=?,thoiGianDen=?,thoiGianDat=?,maHD=?,hienThi=? " +
                      "WHERE maDatBan=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setString(1, db.getTenKhach());
-            ps.setString(2, db.getSoDienThoai());
-            ps.setInt   (3, db.getSoLuongNguoi());
-            ps.setString(4, db.getTrangThai().name());
-            ps.setTimestamp(5, db.getThoiGianDen() != null ? Timestamp.valueOf(db.getThoiGianDen()) : null);
-            ps.setTimestamp(6, db.getThoiGianDat() != null ? Timestamp.valueOf(db.getThoiGianDat()) : null);
-            ps.setString(7, db.getMaBan());
-            ps.setString(8, db.getMaHD());
-            ps.setBoolean(9, db.isHienThi());
-            ps.setString(10, db.getMaDatBan());
-            return ps.executeUpdate() > 0;
+        try {
+            getConn().setAutoCommit(false);
+            try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+                ps.setString(1, db.getTenKhach());
+                ps.setString(2, db.getSoDienThoai());
+                ps.setInt   (3, db.getSoLuongNguoi());
+                ps.setString(4, db.getTrangThai().name());
+                ps.setTimestamp(5, db.getThoiGianDen() != null ? Timestamp.valueOf(db.getThoiGianDen()) : null);
+                ps.setTimestamp(6, db.getThoiGianDat() != null ? Timestamp.valueOf(db.getThoiGianDat()) : null);
+                ps.setString(7, db.getMaHD());
+                ps.setBoolean(8, db.isHienThi());
+                ps.setString(9, db.getMaDatBan());
+                ps.executeUpdate();
+            }
+            
+            try (PreparedStatement psDel = getConn().prepareStatement("DELETE FROM ChiTietDatBan WHERE maDatBan=?")) {
+                psDel.setString(1, db.getMaDatBan());
+                psDel.executeUpdate();
+            }
+
+            if (db.getDsMaBan() != null) {
+                String sqlCt = "INSERT INTO ChiTietDatBan(maDatBan, maBan) VALUES(?,?)";
+                try (PreparedStatement psCt = getConn().prepareStatement(sqlCt)) {
+                    for (String mb : db.getDsMaBan()) {
+                        psCt.setString(1, db.getMaDatBan());
+                        psCt.setString(2, mb);
+                        psCt.addBatch();
+                    }
+                    psCt.executeBatch();
+                }
+            }
+            
+            getConn().commit();
+            getConn().setAutoCommit(true);
+            return true;
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.update: " + e.getMessage());
+            try { getConn().rollback(); getConn().setAutoCommit(true); } catch (SQLException ex) {}
         }
         return false;
     }
@@ -97,7 +152,7 @@ public class DatBanDAOImpl implements DatBanDAO {
     // ══ BaseDAO: delete (xoá thật, chỉ dùng nội bộ) ═════════════════════════
     @Override
     public boolean delete(String maDatBan) {
-        String sql = "UPDATE DatBan SET hienThi=0 WHERE maDatBan=?";
+        String sql = "DELETE FROM DatBan WHERE maDatBan=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maDatBan);
             return ps.executeUpdate() > 0;
@@ -110,11 +165,15 @@ public class DatBanDAOImpl implements DatBanDAO {
     // ══ BaseDAO: findById ════════════════════════════════════════════════════
     @Override
     public DatBan findById(String maDatBan) {
-        String sql = "SELECT db.*, b.soBan FROM DatBan db LEFT JOIN Ban b ON db.maBan = b.maBan WHERE db.maDatBan=?";
+        String sql = "SELECT * FROM DatBan WHERE maDatBan=?";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maDatBan);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return mapRow(rs);
+            if (rs.next()) {
+                DatBan db = mapRow(rs);
+                loadChiTiet(db);
+                return db;
+            }
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findById: " + e.getMessage());
         }
@@ -125,13 +184,14 @@ public class DatBanDAOImpl implements DatBanDAO {
     @Override
     public List<DatBan> findAll() {
         List<DatBan> list = new ArrayList<>();
-        String sql = "SELECT db.*, b.soBan FROM DatBan db LEFT JOIN Ban b ON db.maBan = b.maBan ORDER BY db.thoiGianDen DESC";
+        String sql = "SELECT * FROM DatBan ORDER BY thoiGianDen DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findAll: " + e.getMessage());
         }
+        loadChiTietList(list);
         return list;
     }
 
@@ -139,13 +199,14 @@ public class DatBanDAOImpl implements DatBanDAO {
     @Override
     public List<DatBan> findVisible() {
         List<DatBan> list = new ArrayList<>();
-        String sql = "SELECT db.*, b.soBan FROM DatBan db LEFT JOIN Ban b ON db.maBan = b.maBan WHERE db.hienThi=1 ORDER BY db.maDatBan ASC";
+        String sql = "SELECT * FROM DatBan WHERE hienThi=1 ORDER BY maDatBan ASC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findVisible: " + e.getMessage());
         }
+        loadChiTietList(list);
         return list;
     }
 
@@ -153,13 +214,14 @@ public class DatBanDAOImpl implements DatBanDAO {
     @Override
     public List<DatBan> findHidden() {
         List<DatBan> list = new ArrayList<>();
-        String sql = "SELECT db.*, b.soBan FROM DatBan db LEFT JOIN Ban b ON db.maBan = b.maBan WHERE db.hienThi=0 ORDER BY db.maDatBan ASC";
+        String sql = "SELECT * FROM DatBan WHERE hienThi=0 ORDER BY maDatBan ASC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findHidden: " + e.getMessage());
         }
+        loadChiTietList(list);
         return list;
     }
 
@@ -167,7 +229,7 @@ public class DatBanDAOImpl implements DatBanDAO {
     @Override
     public List<DatBan> findByBan(String maBan) {
         List<DatBan> list = new ArrayList<>();
-        String sql = "SELECT db.*, b.soBan FROM DatBan db LEFT JOIN Ban b ON db.maBan = b.maBan WHERE db.maBan=? AND db.hienThi=1 ORDER BY db.thoiGianDen DESC";
+        String sql = "SELECT d.* FROM DatBan d JOIN ChiTietDatBan ct ON d.maDatBan = ct.maDatBan WHERE ct.maBan=? AND d.hienThi=1 ORDER BY d.thoiGianDen DESC";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maBan);
             ResultSet rs = ps.executeQuery();
@@ -175,6 +237,7 @@ public class DatBanDAOImpl implements DatBanDAO {
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findByBan: " + e.getMessage());
         }
+        loadChiTietList(list);
         return list;
     }
 
@@ -182,15 +245,16 @@ public class DatBanDAOImpl implements DatBanDAO {
     @Override
     public List<DatBan> findConHieuLuc() {
         List<DatBan> list = new ArrayList<>();
-        String sql = "SELECT db.*, b.soBan FROM DatBan db LEFT JOIN Ban b ON db.maBan = b.maBan " +
-                     "WHERE db.trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN','DA_THANH_TOAN') AND db.hienThi=1 " +
-                     "ORDER BY db.thoiGianDen ASC";
+        String sql = "SELECT * FROM DatBan " +
+                     "WHERE trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN','DA_THANH_TOAN') AND hienThi=1 " +
+                     "ORDER BY thoiGianDen ASC";
         try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (SQLException e) {
             System.err.println("DatBanDAOImpl.findConHieuLuc: " + e.getMessage());
         }
+        loadChiTietList(list);
         return list;
     }
 
@@ -252,11 +316,11 @@ public class DatBanDAOImpl implements DatBanDAO {
     @Override
     public boolean isTrungGio(String maBan, LocalDateTime thoiGianDen, String excludeMaDatBan) {
         int khoangCach = utils.AppConfig.getInstance().getInt("KHOANG_CACH_DAT_BAN", 60);
-        String sql = "SELECT COUNT(*) FROM DatBan " +
-                     "WHERE maBan=? " +
-                     "  AND maDatBan<>? " +
-                     "  AND trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN') " +
-                     "  AND ABS(DATEDIFF(MINUTE, thoiGianDen, ?)) < " + khoangCach;
+        String sql = "SELECT COUNT(*) FROM DatBan d JOIN ChiTietDatBan ct ON d.maDatBan = ct.maDatBan " +
+                     "WHERE ct.maBan=? " +
+                     "  AND d.maDatBan<>? " +
+                     "  AND d.trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN') " +
+                     "  AND ABS(DATEDIFF(MINUTE, d.thoiGianDen, ?)) < " + khoangCach;
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, maBan);
             ps.setString(2, excludeMaDatBan != null ? excludeMaDatBan : "");

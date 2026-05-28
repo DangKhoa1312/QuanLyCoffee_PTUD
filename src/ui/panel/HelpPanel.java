@@ -71,14 +71,79 @@ public class HelpPanel extends JPanel {
         gridPanel.setOpaque(false);
         gridPanel.setBorder(new EmptyBorder(10, 25, 25, 25));
         
-        gridPanel.add(createTopicCard("Hướng dẫn sử dụng", FontAwesome.BOOK, "Các thao tác bán hàng, đặt bàn...",
-            "<h2>Hướng dẫn sử dụng hệ thống</h2>" +
+        gridPanel.add(createTopicCard("Hướng dẫn sử dụng", FontAwesome.BOOK, "Các thao tác toàn hệ thống...",
+            "<h2>Hướng dẫn sử dụng hệ thống toàn diện</h2>" +
+            "<h3>1. Đăng nhập</h3>" +
             "<ul>" +
-            "<li><b>Bán hàng:</b> Chọn bàn -> Thêm món -> Thanh toán.</li>" +
-            "<li><b>Đặt bàn:</b> Nhập thông tin khách, chọn thời gian đến, chọn bàn. Hệ thống sẽ giữ bàn.</li>" +
-            "<li><b>Quản lý:</b> Quản lý có thể thêm/sửa/xoá món ăn, danh mục, cấu hình hệ thống.</li>" +
+            "<li><b>Đăng nhập:</b> Sử dụng tên đăng nhập và mật khẩu được cấp bởi quản lý.</li>" +
+            "<li><b>Đăng xuất:</b> Bấm vào góc phải trên cùng có nút đăng xuất, chọn <i>Đăng xuất</i>.</li>" +
             "</ul>" +
-            "<p><i>Lưu ý: Mọi thao tác đều được hệ thống ghi log để đối soát.</i></p>"
+            "<h3>2. Tổng quan (Dashboard)</h3>" +
+            "<ul>" +
+            "<li>Xem nhanh các chỉ số kinh doanh trong ngày: Doanh thu, số lượng đơn hàng, số bàn đang phục vụ.</li>" +
+            "</ul>" +
+            "<h3>3. Nhóm Vận Hành</h3>" +
+            "<ul>" +
+            "<li><b>Bán Hàng:</b> Hỗ trợ đầy đủ các nghiệp vụ tại bàn:" +
+            "   <ul>" +
+            "   <li><i>Gọi món mới:</i> Chọn Khu vực -> Chọn Bàn trống -> Chọn món -> Thêm ghi chú/tuỳ chỉnh Size, Topping -> Bấm <i>Gọi món</i> hoặc <i>Thanh toán</i>.</li>" +
+            "   <li><i>Gọi thêm món:</i> Chọn bàn khách đang phục vụ -> Chọn các món gọi thêm -> Bấm <i>Gọi món</i> để báo bếp chế biến.</li>" +
+            "   <li><i>Chuyển bàn:</i> Chọn bàn đang phục vụ -> Chọn <i>Chuyển bàn</i> -> Chọn khu vực và bàn khách muốn chuyển đến.</li>" +
+            "   <li><i>Ghép bàn:</i> Chọn bàn đang phục vụ -> Chọn <i>Ghép bàn</i> -> Chọn khu vực và bàn khách muốn gộp chung.</li>" +
+            "   <li><i>Tách món:</i> Chọn bàn cần xử lý -> Chọn <i>Tách món</i> -> Chọn món và số lượng cần tách -> Chọn khu vực và bàn cần chuyển đến.</li>" +
+            "   <li><i>Xoá món:</i> (Chỉ áp dụng cho món chưa báo bếp) Chọn món trong đơn hàng -> Nhấn <i>Xoá món</i>.</li>" +
+            "   <li><i>Xử lý sự cố sai món/khách không nhận:</i> Dùng <i>Tách món</i> đưa các món sai sang 1 bàn riêng -> Sang bàn đó chọn <i>Huỷ đơn</i>. Các món này sẽ được đẩy vào <b>Kho Lưu Tạm (Bàn Ma)</b> để nhân viên có thể dễ dàng lấy ra bán lại nếu có khách gọi.</li>" +
+            "   </ul>" +
+            "</li>" +
+            "<li><b>Đặt Bàn:</b> Nhấn <i>+ Tạo Đặt Bàn Mới</i>, nhập thông tin khách, chọn thời gian đến và chọn bàn phù hợp. Hệ thống sẽ giữ bàn (màu vàng). Khi khách hàng đến, chọn phiếu đặt bàn đó và chọn <i>Khách đã tới</i>, sau đó chọn <i>Mở bàn</i> để bắt đầu thực hiện order cho khách.</li>" +
+            "<li><b>Hoá Đơn:</b> Tra cứu lịch sử hoá đơn đã thanh toán. Chọn vào 1 hoá đơn cần xem, hệ thống hiển thị chi tiết hoá đơn và có thể chọn <i>In hoá đơn</i> khi cần xuất hoá đơn lại cho đơn hàng đó.</li>" +
+            "</ul>" +
+            "<h3>4. Nhóm Thiết Lập</h3>" +
+            "<ul>" +
+            "<li><b>Món & Size / Topping:</b>" +
+            "   <ul>" +
+            "   <li><i>Tìm kiếm & Lọc:</i> Có thể tìm kiếm món, lọc theo danh mục món (Coffee, tea,...), trạng thái (đang bán/tạm ngưng).</li>" +
+            "   <li><i>Thêm mới:</i> Chọn nút <i>Thêm món mới</i> -> thiết lập tên món, loại món, thêm ảnh, mô tả và các size của món đó -> Chọn <i>Lưu món</i> để cập nhật.</li>" +
+            "   <li><i>Tuỳ chỉnh:</i> Chọn món cần điều chỉnh -> chọn biểu tượng bút chì -> Hiển thị thông tin chi tiết món để điều chỉnh -> Bấm <i>Lưu</i> để cập nhật lại món sau khi thay đổi.</li>" +
+            "   <li><i>Tạm ngưng:</i> Chọn món cần điều chỉnh -> chọn biểu tượng công tắc -> Xác nhận để có thể tạm ngưng bán món đó.</li>" +
+            "   <li><i>Lưu ý:</i> Thao tác cho Topping hoàn toàn tương tự như quản lý Món & Size.</li>" +
+            "   </ul>" +
+            "</li>" +
+            "<li><b>Công Thức:</b> Định lượng nguyên vật liệu cho từng món uống." +
+            "   <ul>" +
+            "   <li><i>Tìm kiếm:</i> Tìm kiếm món cần điều chỉnh hoặc thiết lập công thức mới.</li>" +
+            "   <li><i>Thiết lập nguyên liệu:</i> Chọn món cần xét nguyên liệu -> Chọn nguyên liệu cấu thành từ kho -> Nhập khối lượng -> Chọn <i>Thêm nguyên liệu</i>.</li>" +
+            "   <li><i>Điều chỉnh định mức:</i> Chọn nguyên liệu của món cần điều chỉnh -> Tuỳ chỉnh lại định mức -> Nhấn <i>Cập nhật</i> để lưu lại thay đổi.</li>" +
+            "   <li><i>Xoá nguyên liệu:</i> Chọn nguyên liệu đó trong công thức và nhấn <i>Xoá nguyên liệu</i>.</li>" +
+            "   </ul>" +
+            "</li>" +
+            "<li><b>Bảng Giá:</b> Cài đặt giá bán sản phẩm." +
+            "   <ul>" +
+            "   <li><i>Cập nhật giá:</i> Chọn bảng giá cần thay đổi -> Có thể sao chép bảng giá gốc để tăng hoặc giảm giá đồng loạt các món thuận tiện.</li>" +
+            "   <li>Cách dùng: Chọn Tạo bảng giá mới -> Chọn Copy từ bảng giá cũ -> Nhập % muốn tăng hoặc giảm -> Lưu.</li>" +
+            "   </ul>" +
+            "</li>" +
+            "<li><b>Sơ Đồ Bàn:</b> Tổ chức không gian quán." +
+            "   <ul>" +
+            "   <li><i>Tạo khu vực:</i> Tạo các khu vực và mô tả khu vực ấy bằng cách: Chọn <i>Tạo khu vực mới</i> -> Nhập tên khu vực và mô tả -> Nhấn <i>Tạo</i> để xuất hiện khu vực mới.</li>" +
+            "   <li><i>Quản lý khu vực & Bàn:</i> Trong khu vực có thể tạo nhiều bàn, cập nhật lại khu vực, hoặc tạm ngưng hoạt động khu vực đó.</li>" +
+            "   </ul>" +
+            "</li>" +
+            "<li><b>Cấu Hình:</b> Thông số chung hệ thống." +
+            "   <ul>" +
+            "   <li><i>Thông tin bill:</i> Cập nhật Tên quán, Địa chỉ, SĐT, Mật khẩu Wifi để tự động in lên hoá đơn.</li>" +
+            "   <li><i>Chính sách:</i> Cài đặt mức thuế VAT, cấu hình tỷ lệ quy đổi điểm tích luỹ thành viên.</li>" +
+            "   </ul>" +
+            "</li>" +
+            "</ul>" +
+            "<h3>5. Nhóm Quản Trị</h3>" +
+            "<ul>" +
+            "<li><b>Nhân Viên:</b> Cấp tài khoản, phân quyền (Nhân viên / Quản lý) và đặt lại mật khẩu.</li>" +
+            "<li><b>Khách Hàng:</b> Quản lý danh sách thành viên, xem điểm tích luỹ và lịch sử mua hàng.</li>" +
+            "<li><b>Khuyến Mãi:</b> Tạo mã giảm giá (Voucher), cài đặt thời hạn và điều kiện tối thiểu.</li>" +
+            "<li><b>Kho Hàng:</b> Quản lý nhập/xuất nguyên vật liệu, theo dõi lượng tồn kho hiện tại.</li>" +
+            "<li><b>Thống Kê:</b> Biểu đồ phân tích doanh thu, lợi nhuận và thống kê top các món ăn bán chạy nhất.</li>" +
+            "</ul>"
         ));
         
         gridPanel.add(createTopicCard("FAQ", FontAwesome.QUESTION_CIRCLE, "Các câu hỏi thường gặp",
@@ -105,8 +170,9 @@ public class HelpPanel extends JPanel {
         gridPanel.add(createTopicCard("Quy định nghiệp vụ", FontAwesome.GAVEL, "Các quy định của quán",
             "<h2>Quy định nghiệp vụ cửa hàng</h2>" +
             "<ul>" +
-            "<li>Nhân viên phải chốt ca trước khi đăng xuất.</li>" +
-            "<li>Tiền thối lại cho khách phải chính xác. Tiền hao hụt cuối ngày nhân viên tự bù.</li>" +
+            "<li>Nhân viên phải thanh toán hết các đơn hàng trước khi đăng xuất.</li>" +
+            "<li>Tiền thối lại cho khách phải chính xác. Tiền hao hụt cuối ngày nhân viên tự bù tiền.</li>" +
+            "<li>Những ly nước cuối ca còn lại trong bàn ma sẽ do nhân viên order ngày hôm đó chịu trách nhiệm và tự bù tiền.</li>" +
             "<li>Giữ bàn cho khách đặt trước tối đa 15 phút. Quá giờ tự động huỷ.</li>" +
             "</ul>"
         ));
@@ -115,8 +181,8 @@ public class HelpPanel extends JPanel {
             "<h2>Liên hệ bộ phận Kỹ thuật / Quản lý</h2>" +
             "<p>Nếu hệ thống gặp sự cố nghiêm trọng không thể tự khắc phục, vui lòng liên hệ:</p>" +
             "<ul>" +
-            "<li><b>Hotline Kỹ thuật:</b> 0909 123 456 (Mr. A)</li>" +
-            "<li><b>Quản lý cửa hàng:</b> 0909 987 654 (Ms. B)</li>" +
+            "<li><b>Hotline Kỹ thuật:</b> 0909 123 456 (Mr. Khoa)</li>" +
+            "<li><b>Quản lý cửa hàng:</b> 0909 987 654 (Ms. Hùng)</li>" +
             "<li><b>Email:</b> hotro@coffee1101.com</li>" +
             "</ul>"
         ));
@@ -124,7 +190,7 @@ public class HelpPanel extends JPanel {
         gridPanel.add(createTopicCard("Về ứng dụng", FontAwesome.INFO_CIRCLE, "Phiên bản và bản quyền",
             "<h2>Hệ thống Quản lý COFFEE 11:01</h2>" +
             "<p><b>Phiên bản:</b> 1.0.0 (Bản phát hành ổn định)</p>" +
-            "<p><b>Phát triển bởi:</b> Nhóm PTUD</p>" +
+            "<p><b>Phát triển bởi:</b> Công ty trách nhiệm hữu hạn 5 anh em</p>" +
             "<p>Bản quyền © 2026 COFFEE 11:01. Mọi quyền được bảo lưu.</p>"
         ));
         

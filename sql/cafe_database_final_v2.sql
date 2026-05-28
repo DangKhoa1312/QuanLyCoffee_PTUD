@@ -19,10 +19,15 @@ GO
 CREATE DATABASE QuanLyQuanCafe COLLATE Vietnamese_CI_AS;
 GO
 
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
 USE QuanLyQuanCafe;
 GO
 
 -- Xoá bảng nếu đã tồn tại (theo thứ tự ngược lại của bảng có khoá ngoại)
+IF OBJECT_ID('ChiTietDatBan', 'U') IS NOT NULL DROP TABLE ChiTietDatBan;
 IF OBJECT_ID('DatBan', 'U') IS NOT NULL DROP TABLE DatBan;
 IF OBJECT_ID('ChiTietHoaDonTopping', 'U') IS NOT NULL DROP TABLE ChiTietHoaDonTopping;
 IF OBJECT_ID('ChiTietHoaDon', 'U') IS NOT NULL DROP TABLE ChiTietHoaDon;
@@ -449,16 +454,24 @@ CREATE TABLE DatBan (
     trangThai    VARCHAR(20)   NOT NULL DEFAULT 'CHO_XAC_NHAN',
     thoiGianDen  DATETIME      NOT NULL,
     thoiGianDat  DATETIME      NOT NULL DEFAULT GETDATE(),
-    maBan        VARCHAR(20)   NOT NULL,
     maHD         VARCHAR(20)   NULL,
     hienThi      BIT           NOT NULL DEFAULT 1,
 
     CONSTRAINT PK_DatBan        PRIMARY KEY (maDatBan),
-    CONSTRAINT FK_DB_Ban        FOREIGN KEY (maBan) REFERENCES Ban(maBan),
     CONSTRAINT FK_DB_HoaDon     FOREIGN KEY (maHD)  REFERENCES HoaDon(maHD),
     CONSTRAINT CHK_DB_TrangThai CHECK (trangThai IN ('CHO_XAC_NHAN','DA_XAC_NHAN','DA_THANH_TOAN','HET_HAN','DA_HUY')),
     CONSTRAINT CHK_DB_SoNguoi  CHECK (soLuongNguoi > 0),
     CONSTRAINT CHK_DB_ThoiGian CHECK (thoiGianDen > thoiGianDat)
+);
+GO
+
+-- 21. ChiTietDatBan (1 DatBan - N Ban)
+CREATE TABLE ChiTietDatBan (
+    maDatBan VARCHAR(20) NOT NULL,
+    maBan VARCHAR(20) NOT NULL,
+    CONSTRAINT PK_ChiTietDatBan PRIMARY KEY (maDatBan, maBan),
+    CONSTRAINT FK_CTDB_DatBan FOREIGN KEY (maDatBan) REFERENCES DatBan(maDatBan) ON DELETE CASCADE,
+    CONSTRAINT FK_CTDB_Ban FOREIGN KEY (maBan) REFERENCES Ban(maBan)
 );
 GO
 

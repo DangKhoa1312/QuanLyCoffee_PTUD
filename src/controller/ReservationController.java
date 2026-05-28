@@ -92,12 +92,12 @@ public class ReservationController {
         db.setTrangThai(TrangThaiDatBan.CHO_XAC_NHAN);
         db.setHienThi(true);
         boolean ok = datBanDAO.insert(db);
-        if (ok) {
-            // Cập nhật bàn thành DA_DAT_TRUOC chỉ nếu đang TRONG
-            // (nếu CO_KHACH hoặc DA_DAT_TRUOC → giữ nguyên, cho phép đặt nhiều slot)
-            Ban ban = banDAO.findById(db.getMaBan());
-            if (ban != null && ban.getTrangThai() == TrangThaiBan.TRONG) {
-                banDAO.updateTrangThai(db.getMaBan(), TrangThaiBan.DA_DAT_TRUOC);
+        if (ok && db.getDsMaBan() != null) {
+            for (String maBan : db.getDsMaBan()) {
+                Ban ban = banDAO.findById(maBan);
+                if (ban != null && ban.getTrangThai() == TrangThaiBan.TRONG) {
+                    banDAO.updateTrangThai(maBan, TrangThaiBan.DA_DAT_TRUOC);
+                }
             }
         }
         return ok;
@@ -109,15 +109,28 @@ public class ReservationController {
      * Cập nhật thông tin đặt bàn (tên, sđt, số người, giờ đến, bàn).
      * Nếu bàn thay đổi: cập nhật trạng thái bàn cũ và bàn mới.
      */
-    public boolean sua(DatBan dbMoi, String maBanCu) {
+    public boolean sua(DatBan dbMoi, java.util.List<String> dsMaBanCu) {
         boolean ok = datBanDAO.update(dbMoi);
-        if (ok && maBanCu != null && !maBanCu.equals(dbMoi.getMaBan())) {
-            // Trả bàn cũ về TRONG nếu không còn đặt hiệu lực nào
-            giaiPhongBanNeuRanh(maBanCu);
-            // Đặt bàn mới thành DA_DAT_TRUOC chỉ khi bàn mới đang TRONG
-            Ban banMoi = banDAO.findById(dbMoi.getMaBan());
-            if (banMoi != null && banMoi.getTrangThai() == TrangThaiBan.TRONG) {
-                banDAO.updateTrangThai(dbMoi.getMaBan(), TrangThaiBan.DA_DAT_TRUOC);
+        if (ok) {
+            java.util.List<String> dsMoi = dbMoi.getDsMaBan() != null ? dbMoi.getDsMaBan() : new java.util.ArrayList<>();
+            
+            // 1. Trả bàn cũ về TRONG nếu không còn đặt hiệu lực nào
+            if (dsMaBanCu != null) {
+                for (String maBanCu : dsMaBanCu) {
+                    if (!dsMoi.contains(maBanCu)) {
+                        giaiPhongBanNeuRanh(maBanCu);
+                    }
+                }
+            }
+            
+            // 2. Đặt bàn mới thành DA_DAT_TRUOC
+            for (String maBanMoi : dsMoi) {
+                if (dsMaBanCu == null || !dsMaBanCu.contains(maBanMoi)) {
+                    Ban banMoi = banDAO.findById(maBanMoi);
+                    if (banMoi != null && banMoi.getTrangThai() == TrangThaiBan.TRONG) {
+                        banDAO.updateTrangThai(maBanMoi, TrangThaiBan.DA_DAT_TRUOC);
+                    }
+                }
             }
         }
         return ok;
@@ -169,15 +182,22 @@ public class ReservationController {
         DatBan db = datBanDAO.findById(maDatBan);
         if (db == null || db.getTrangThai() != TrangThaiDatBan.CHO_XAC_NHAN)
             return false;
-        // Guard: bàn đang CO_KHACH → không cho xác nhận
-        Ban ban = banDAO.findById(db.getMaBan());
-        if (ban != null && ban.getTrangThai() == TrangThaiBan.CO_KHACH) {
-            return false; // Bàn đang phục vụ, không xác nhận được
+        
+        // Guard: kiểm tra xem có bàn nào đang CO_KHACH không
+        if (db.getDsMaBan() != null) {
+            for (String maBan : db.getDsMaBan()) {
+                Ban ban = banDAO.findById(maBan);
+                if (ban != null && ban.getTrangThai() == TrangThaiBan.CO_KHACH) {
+                    return false; // Bàn đang phục vụ, không xác nhận được
+                }
+            }
         }
+        
         boolean ok = datBanDAO.updateTrangThai(maDatBan, TrangThaiDatBan.DA_XAC_NHAN);
-        if (ok) {
-            // Xác nhận → bàn chuyển sang CO_KHACH
-            banDAO.updateTrangThai(db.getMaBan(), TrangThaiBan.CO_KHACH);
+        if (ok && db.getDsMaBan() != null) {
+            for (String maBan : db.getDsMaBan()) {
+                banDAO.updateTrangThai(maBan, TrangThaiBan.CO_KHACH);
+            }
         }
         return ok;
     }
@@ -196,8 +216,10 @@ public class ReservationController {
             return false;
         }
         boolean ok = datBanDAO.updateTrangThai(maDatBan, TrangThaiDatBan.DA_HUY);
-        if (ok) {
-            giaiPhongBanNeuRanh(db.getMaBan());
+        if (ok && db.getDsMaBan() != null) {
+            for (String maBan : db.getDsMaBan()) {
+                giaiPhongBanNeuRanh(maBan);
+            }
         }
         return ok;
     }
@@ -212,7 +234,11 @@ public class ReservationController {
         for (DatBan db : datBanDAO.findConHieuLuc()) {
             if (db.getTrangThai() == TrangThaiDatBan.CHO_XAC_NHAN && db.isQuaHan()) {
                 datBanDAO.updateTrangThai(db.getMaDatBan(), TrangThaiDatBan.HET_HAN);
-                giaiPhongBanNeuRanh(db.getMaBan());
+                if (db.getDsMaBan() != null) {
+                    for (String maBan : db.getDsMaBan()) {
+                        giaiPhongBanNeuRanh(maBan);
+                    }
+                }
             }
         }
     }
@@ -294,6 +320,23 @@ public class ReservationController {
     // ══ HELPER NỘI BỘ ════════════════════════════════════════════════════════
 
     /**
+     * Dùng khi bàn kết thúc phục vụ (thanh toán, chuyển bàn, huỷ đơn hàng).
+     * Trả về DA_DAT_TRUOC nếu có đặt bàn, ngược lại trả về TRONG.
+     */
+    public void resetTrangThaiBan(String maBan) {
+        if (maBan == null || maBan.isEmpty() || "MANG_VE".equals(maBan)) return;
+        long conHieuLuc = datBanDAO.findByBan(maBan).stream()
+                .filter(d -> d.getTrangThai() == TrangThaiDatBan.CHO_XAC_NHAN ||
+                        d.getTrangThai() == TrangThaiDatBan.DA_XAC_NHAN)
+                .count();
+        if (conHieuLuc > 0) {
+            banDAO.updateTrangThai(maBan, TrangThaiBan.DA_DAT_TRUOC);
+        } else {
+            banDAO.updateTrangThai(maBan, TrangThaiBan.TRONG);
+        }
+    }
+
+    /**
      * Nếu bàn không còn đặt hiệu lực nào (CHO_XAC_NHAN, DA_XAC_NHAN) thì
      * cập nhật trạng thái bàn về TRONG.
      * Không động đến bàn đang CO_KHACH.
@@ -314,20 +357,6 @@ public class ReservationController {
         }
     }
 
-    /**
-     * Dùng khi bàn kết thúc phục vụ (thanh toán, chuyển bàn, huỷ đơn hàng).
-     * Trả về DA_DAT_TRUOC nếu có đặt bàn, ngược lại trả về TRONG.
-     */
-    public void resetTrangThaiBan(String maBan) {
-        if (maBan == null || maBan.isEmpty() || "MANG_VE".equals(maBan)) return;
-        long conHieuLuc = datBanDAO.findByBan(maBan).stream()
-                .filter(d -> d.getTrangThai() == TrangThaiDatBan.CHO_XAC_NHAN ||
-                        d.getTrangThai() == TrangThaiDatBan.DA_XAC_NHAN)
-                .count();
-        if (conHieuLuc > 0) {
-            banDAO.updateTrangThai(maBan, TrangThaiBan.DA_DAT_TRUOC);
-        } else {
-            banDAO.updateTrangThai(maBan, TrangThaiBan.TRONG);
-        }
-    }
+
 }
+
