@@ -69,6 +69,12 @@ public class OrderController {
             // Cập nhật trạng thái bàn = CÓ KHÁCH (nếu không phải mang về)
             if (!isMangVe && ban != null) {
                 banDAO.updateTrangThai(ban.getMaBan(), TrangThaiBan.CO_KHACH);
+                
+                // Cập nhật Đặt Bàn (nếu có): đánh dấu đã đến (khách nhận bàn)
+                entity.DatBan datBan = reservationController.findDatBanHienTaiCuaBan(ban.getMaBan());
+                if (datBan != null) {
+                    reservationController.daDen(datBan.getMaDatBan(), dh.getMaDonHang());
+                }
             }
         } else {
             // Update tổng tiền
