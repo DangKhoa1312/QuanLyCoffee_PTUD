@@ -42,6 +42,7 @@ public class AccordionSidebar extends JPanel {
     private final List<SidebarItem> allItems = new ArrayList<>();
 
     private BadgePanel pnlBadgeDatBan;
+    private BadgePanel pnlBadgeBanHang;
     private Timer badgeTimer;
 
     public AccordionSidebar() {
@@ -72,6 +73,10 @@ public class AccordionSidebar extends JPanel {
             DatBanDAO dao = new DatBanDAOImpl();
             long n = dao.findConHieuLuc().stream().filter(d -> TrangThaiDatBan.CHO_XAC_NHAN.equals(d.getTrangThai())).count();
             if (pnlBadgeDatBan != null) pnlBadgeDatBan.setCount((int) n);
+            
+            dao.BanDAO daoBan = new dao.impl.BanDAOImpl();
+            long nBan = daoBan.findByTrangThai(enums.TrangThaiBan.CO_KHACH).size();
+            if (pnlBadgeBanHang != null) pnlBadgeBanHang.setCount((int) nBan);
         } catch (Exception ignored) {}
     }
 
@@ -99,7 +104,12 @@ public class AccordionSidebar extends JPanel {
         pnlMenu.add(createDivider());
 
         AccordionGroup gVH = new AccordionGroup("Vận Hành", true, 0);
-        gVH.addItem(makeItem("Bán Hàng", FontAwesome.SHOPPING_BAG, "BAN_HANG", 1));
+        
+        SidebarItem itmBanHang = makeItem("Bán Hàng", FontAwesome.SHOPPING_BAG, "BAN_HANG", 1);
+        pnlBadgeBanHang = new BadgePanel();
+        itmBanHang.attachBadge(pnlBadgeBanHang);
+        gVH.addItem(itmBanHang);
+        
         SidebarItem itmDatBan = makeItem("Đặt Bàn", FontAwesome.CALENDAR_CHECK_O, "DAT_BAN", 1);
         pnlBadgeDatBan = new BadgePanel();
         itmDatBan.attachBadge(pnlBadgeDatBan);

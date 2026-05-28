@@ -32,7 +32,7 @@ public class ItemOptionDialog extends JDialog {
     private Map<JRadioButton, Size> sizeBtnMap = new HashMap<>();
     private Map<JCheckBox, Topping> toppingBtnMap = new HashMap<>();
 
-    private JSpinner spinSoLuong;
+    private JTextField txtSoLuong;
     private JTextField txtGhiChu;
     private JLabel lblTotal;
 
@@ -149,11 +149,25 @@ public class ItemOptionDialog extends JDialog {
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.weightx = 0.3;
-        spinSoLuong = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1));
-        spinSoLuong.setFont(new Font("Roboto", Font.BOLD, 15));
-        spinSoLuong.setPreferredSize(new Dimension(80, 32));
-        spinSoLuong.addChangeListener(e -> updateTotal());
-        botPanel.add(spinSoLuong, gbc);
+        txtSoLuong = new JTextField("1");
+        txtSoLuong.setFont(new Font("Roboto", Font.BOLD, 15));
+        txtSoLuong.setPreferredSize(new Dimension(80, 32));
+        txtSoLuong.setHorizontalAlignment(JTextField.LEFT); // Đổi về căn trái cho đồng bộ với ô Ghi chú
+        
+        txtSoLuong.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { updateTotal(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { updateTotal(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { updateTotal(); }
+        });
+
+        txtSoLuong.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                validateSoLuong(true);
+            }
+        });
+        
+        botPanel.add(txtSoLuong, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -209,6 +223,35 @@ public class ItemOptionDialog extends JDialog {
         main.add(actionPanel);
 
         setContentPane(main);
+        getRootPane().setDefaultButton(btnAdd);
+    }
+
+    private boolean validateSoLuong(boolean showDialog) {
+        String text = txtSoLuong.getText().trim();
+        if (text.isEmpty()) {
+            if (showDialog) {
+                JOptionPane.showMessageDialog(this, "Số lượng không được để trống.", "Lỗi Nhập Liệu", JOptionPane.ERROR_MESSAGE);
+                txtSoLuong.setText("1");
+            }
+            return false;
+        }
+        try {
+            int sl = Integer.parseInt(text);
+            if (sl <= 0) {
+                if (showDialog) {
+                    JOptionPane.showMessageDialog(this, "Số lượng phải lớn hơn 0.", "Lỗi Nhập Liệu", JOptionPane.ERROR_MESSAGE);
+                    txtSoLuong.setText("1");
+                }
+                return false;
+            }
+            return true;
+        } catch (NumberFormatException e) {
+            if (showDialog) {
+                JOptionPane.showMessageDialog(this, "Số lượng không hợp lệ (không được nhập chữ).", "Lỗi Nhập Liệu", JOptionPane.ERROR_MESSAGE);
+                txtSoLuong.setText("1");
+            }
+            return false;
+        }
     }
 
     private void updateTotal() {
@@ -230,12 +273,23 @@ public class ItemOptionDialog extends JDialog {
             }
         }
 
-        int sl = (Integer) spinSoLuong.getValue();
+        int sl = 1;
+        try {
+            sl = Integer.parseInt(txtSoLuong.getText().trim());
+            if (sl < 0) sl = 0;
+        } catch (NumberFormatException e) {
+            sl = 0;
+        }
         double total = (sizePrice + toppingPrice) * sl;
         lblTotal.setText("Tổng: " + nf.format(total) + "đ");
     }
 
     private void commitAndClose() {
+        if (!validateSoLuong(true)) {
+            txtSoLuong.requestFocus();
+            return; // Dừng lại không thêm món
+        }
+
         if (sizeBtnMap.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Món này chưa có Size nào!", "Lỗi", JOptionPane.WARNING_MESSAGE);
             return;
@@ -251,7 +305,7 @@ public class ItemOptionDialog extends JDialog {
             }
         }
 
-        int sl = (Integer) spinSoLuong.getValue();
+        int sl = Integer.parseInt(txtSoLuong.getText().trim());
         String gc = txtGhiChu.getText().trim();
 
         result = new CartItem(mon, selectedSize, sl, sizePrice, gc);
