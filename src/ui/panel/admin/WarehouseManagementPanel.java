@@ -1104,9 +1104,21 @@ public class WarehouseManagementPanel extends JPanel {
         tableWrapper.add(scroll, BorderLayout.CENTER);
         dlg.add(tableWrapper, BorderLayout.CENTER);
 
-        // Nut dong
+        // Nut xuat CSV + dong
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         btnPanel.setOpaque(false);
+
+        JButton btnExportCSV = new JButton("  Xuất CSV");
+        btnExportCSV.setIcon(IconFontSwing.buildIcon(FontAwesome.FILE_TEXT, 14, Color.WHITE));
+        btnExportCSV.setPreferredSize(new Dimension(140, 35));
+        btnExportCSV.setFont(new Font("Roboto", Font.BOLD, 13));
+        btnExportCSV.setBackground(new Color(39, 174, 96));
+        btnExportCSV.setForeground(Color.WHITE);
+        btnExportCSV.setFocusable(false);
+        btnExportCSV.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnExportCSV.addActionListener(e -> exportSinglePhieuXuatToCSV(maPX, ngayXuat, lyDo, maNV, chiTiet));
+        btnPanel.add(btnExportCSV);
+
         JButton btnClose = new JButton("Đóng");
         btnClose.setPreferredSize(new Dimension(100, 35));
         btnClose.setFont(new Font("Roboto", Font.BOLD, 13));
@@ -1117,6 +1129,71 @@ public class WarehouseManagementPanel extends JPanel {
         dlg.add(btnPanel, BorderLayout.SOUTH);
 
         dlg.setVisible(true);
+    }
+
+    /**
+     * Xuất 1 phiếu xuất riêng lẻ ra file CSV.
+     */
+    private void exportSinglePhieuXuatToCSV(String maPX, String ngayXuat, String lyDo, String maNV,
+                                             List<ChiTietPhieuXuat> chiTiet) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Lưu file CSV Phiếu Xuất " + maPX);
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV Files (*.csv)", "csv"));
+        chooser.setSelectedFile(new File("phieu_xuat_" + maPX + ".csv"));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toLowerCase().endsWith(".csv")) {
+            file = new File(file.getAbsolutePath() + ".csv");
+        }
+
+        try (PrintWriter pw = new PrintWriter(
+                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+
+            // BOM cho Excel nhận diện UTF-8
+            pw.print("\uFEFF");
+
+            // Thông tin phiếu xuất
+            pw.println("PHIẾU XUẤT KHO");
+            pw.println("Mã Phiếu," + escapeCSV(maPX));
+            pw.println("Ngày Xuất," + escapeCSV(ngayXuat));
+            pw.println("Lý Do," + escapeCSV(lyDo));
+            pw.println("Nhân Viên," + escapeCSV(maNV));
+            pw.println();
+
+            // Header chi tiết
+            pw.println("Mã Nguyên Liệu,Tên Nguyên Liệu,Đơn Vị Đóng Gói,Số Lượng Xuất");
+
+            // Dữ liệu chi tiết
+            if (chiTiet != null) {
+                for (ChiTietPhieuXuat ct : chiTiet) {
+                    NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
+                    String tenNL = nl != null ? nl.getTenNL() : ct.getMaNL();
+                    String dvdg = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
+                    String soLuong = String.format("%.2f", ct.getSoLuong());
+
+                    pw.println(escapeCSV(ct.getMaNL()) + "," + escapeCSV(tenNL) + ","
+                        + escapeCSV(dvdg) + "," + soLuong);
+                }
+            }
+
+            pw.flush();
+
+            int open = JOptionPane.showConfirmDialog(this,
+                "✅ Xuất CSV thành công!\nFile: " + file.getAbsolutePath() + "\n\nBạn có muốn mở file không?",
+                "Thành công", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+            if (open == JOptionPane.YES_OPTION) {
+                Desktop.getDesktop().open(file);
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "❌ Lỗi khi xuất file CSV:\n" + ex.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // Đã xoá openLichSuPhieuXuat() vì không còn dùng.
