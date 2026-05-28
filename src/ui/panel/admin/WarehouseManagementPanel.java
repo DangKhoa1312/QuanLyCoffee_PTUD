@@ -1155,16 +1155,16 @@ public class WarehouseManagementPanel extends JPanel {
             // BOM cho Excel nhận diện UTF-8
             pw.print("\uFEFF");
 
-            // Thông tin phiếu xuất
+            // Thông tin phiếu xuất (Dùng dấu chấm phẩy ; để tránh lỗi font)
             pw.println("PHIẾU XUẤT KHO");
-            pw.println("Mã Phiếu," + escapeCSV(maPX));
-            pw.println("Ngày Xuất," + escapeCSV(ngayXuat));
-            pw.println("Lý Do," + escapeCSV(lyDo));
-            pw.println("Nhân Viên," + escapeCSV(maNV));
+            pw.println("Mã Phiếu;" + escapeCSV(maPX));
+            pw.println("Ngày Xuất;" + escapeCSV(ngayXuat));
+            pw.println("Lý Do;" + escapeCSV(lyDo));
+            pw.println("Nhân Viên;" + escapeCSV(maNV));
             pw.println();
 
             // Header chi tiết
-            pw.println("Mã Nguyên Liệu,Tên Nguyên Liệu,Đơn Vị Đóng Gói,Số Lượng Xuất");
+            pw.println("Mã Nguyên Liệu;Tên Nguyên Liệu;Đơn Vị Đóng Gói;Số Lượng Xuất");
 
             // Dữ liệu chi tiết
             if (chiTiet != null) {
@@ -1174,8 +1174,8 @@ public class WarehouseManagementPanel extends JPanel {
                     String dvdg = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
                     String soLuong = String.format("%.2f", ct.getSoLuong());
 
-                    pw.println(escapeCSV(ct.getMaNL()) + "," + escapeCSV(tenNL) + ","
-                        + escapeCSV(dvdg) + "," + soLuong);
+                    pw.println(escapeCSV(ct.getMaNL()) + ";" + escapeCSV(tenNL) + ";"
+                        + escapeCSV(dvdg) + ";" + soLuong);
                 }
             }
 
@@ -1230,8 +1230,8 @@ public class WarehouseManagementPanel extends JPanel {
             // BOM cho Excel nhận diện UTF-8
             pw.print("\uFEFF");
 
-            // Header
-            pw.println("Mã Phiếu,Ngày Xuất,Lý Do,Nhân Viên,Mã Nguyên Liệu,Tên Nguyên Liệu,Đơn Vị Đóng Gói,Số Lượng Xuất");
+            // Header (Dùng dấu chấm phẩy ; để Excel bản Việt Nam tự chia cột và KHÔNG bị lỗi font)
+            pw.println("Mã Phiếu;Ngày Xuất;Lý Do;Nhân Viên;Mã Nguyên Liệu;Tên Nguyên Liệu;Đơn Vị Đóng Gói;Số Lượng Xuất");
 
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -1247,8 +1247,8 @@ public class WarehouseManagementPanel extends JPanel {
 
                 if (chiTiet == null || chiTiet.isEmpty()) {
                     // Phiếu không có chi tiết → vẫn ghi 1 dòng
-                    pw.println(escapeCSV(maPX) + "," + escapeCSV(ngayXuat) + ","
-                        + escapeCSV(lyDo) + "," + escapeCSV(maNV) + ",,,,");
+                    pw.println(escapeCSV(maPX) + ";" + escapeCSV(ngayXuat) + ";"
+                        + escapeCSV(lyDo) + ";" + escapeCSV(maNV) + ";;;;");
                 } else {
                     for (ChiTietPhieuXuat ct : chiTiet) {
                         NguyenLieu nl = controller.getNguyenLieuById(ct.getMaNL());
@@ -1256,10 +1256,10 @@ public class WarehouseManagementPanel extends JPanel {
                         String dvdg  = nl != null && nl.getDonViDongGoi() != null ? nl.getDonViDongGoi() : "";
                         String soLuong = String.format("%.2f", ct.getSoLuong());
 
-                        pw.println(escapeCSV(maPX) + "," + escapeCSV(ngayXuat) + ","
-                            + escapeCSV(lyDo) + "," + escapeCSV(maNV) + ","
-                            + escapeCSV(ct.getMaNL()) + "," + escapeCSV(tenNL) + ","
-                            + escapeCSV(dvdg) + "," + soLuong);
+                        pw.println(escapeCSV(maPX) + ";" + escapeCSV(ngayXuat) + ";"
+                            + escapeCSV(lyDo) + ";" + escapeCSV(maNV) + ";"
+                            + escapeCSV(ct.getMaNL()) + ";" + escapeCSV(tenNL) + ";"
+                            + escapeCSV(dvdg) + ";" + soLuong);
                     }
                 }
             }
@@ -1282,11 +1282,11 @@ public class WarehouseManagementPanel extends JPanel {
     }
 
     /**
-     * Escape giá trị cho CSV: bọc ngoặc kép nếu chứa dấu phẩy, xuống dòng hoặc ngoặc kép.
+     * Escape giá trị cho CSV: bọc ngoặc kép nếu chứa dấu chấm phẩy, xuống dòng hoặc ngoặc kép.
      */
     private String escapeCSV(String value) {
         if (value == null) return "";
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+        if (value.contains(";") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
