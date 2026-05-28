@@ -12,8 +12,13 @@ import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 
 /**
  * ReservationManagementPanel — Quản lý đặt bàn.
@@ -60,6 +65,8 @@ public class ReservationManagementPanel extends JPanel {
     private static final Color GRAY = new Color(149, 165, 166);
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("HH:mm  dd/MM/yyyy");
+
+
 
     // ══════════════════════════════════════════════════════════════════════════
     public ReservationManagementPanel() {
@@ -192,7 +199,7 @@ public class ReservationManagementPanel extends JPanel {
     private JScrollPane buildTableArea() {
         String[] cols = {
                 "Mã Đặt Bàn", "Tên Khách", "SĐT", "Số Người",
-                "Số Bàn", "Giờ Đến", "Giờ Đặt", "Trạng Thái", "_OBJ"
+                "Số Lượng Bàn", "Giờ Đến", "Giờ Đặt", "Trạng Thái", "_OBJ"
         };
         tableModel = new DefaultTableModel(cols, 0) {
             @Override
@@ -261,13 +268,19 @@ public class ReservationManagementPanel extends JPanel {
     private void loadData() {
         tableModel.setRowCount(0);
         List<DatBan> list = dangXemDaAn ? controller.getDanhSachDaAn() : controller.getDanhSachHienThi();
+
         for (DatBan db : list) {
+            String dsBan = db.getDanhSachSoBan();
+            String soBanDisplay = (db.getDsMaBan() != null && db.getDsMaBan().size() > 1) 
+                    ? db.getDsMaBan().size() + " bàn: " + dsBan 
+                    : dsBan;
+
             tableModel.addRow(new Object[] {
                     db.getMaDatBan(),
                     db.getTenKhach(),
                     db.getSoDienThoai(),
                     db.getSoLuongNguoi() + " người",
-                    db.getSoBan() != null ? db.getSoBan() : db.getMaBan(),
+                    soBanDisplay,
                     db.getThoiGianDen() != null ? DT_FMT.format(db.getThoiGianDen()) : "—",
                     db.getThoiGianDat() != null ? DT_FMT.format(db.getThoiGianDat()) : "—",
                     db.getTrangThai(),
@@ -319,8 +332,7 @@ public class ReservationManagementPanel extends JPanel {
 
     private DatBan getSelectedDatBan() {
         int viewRow = table.getSelectedRow();
-        if (viewRow < 0)
-            return null;
+        if (viewRow < 0) return null;
         int modelRow = table.convertRowIndexToModel(viewRow);
         return (DatBan) tableModel.getValueAt(modelRow, 8);
     }
@@ -333,17 +345,31 @@ public class ReservationManagementPanel extends JPanel {
                 (Frame) SwingUtilities.getWindowAncestor(this),
                 newDb, DatBanDialog.Mode.ADD, controller);
         dlg.setVisible(true);
-        if (dlg.isConfirmed()) {
-            boolean ok = controller.them(newDb);
-            if (ok) {
-                loadData();
-                JOptionPane.showMessageDialog(this,
-                        "✅ Đặt bàn cho " + newDb.getTenKhach() + " đã được thêm thành công!",
-                        "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "❌ Không thể thêm đặt bàn. Vui lòng thử lại.",
-                        "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
+
+        if (!dlg.isConfirmed()) return;
+
+        java.util.List<String> dsMaBan = dlg.getSelectedMaBanList();
+
+        if (dsMaBan.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn ít nhất một bàn.",
+                    "Lỗi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        newDb.setDsMaBan(dsMaBan);
+        newDb.setMaDatBan(controller.sinhMaDatBan());
+        
+        boolean ok = controller.them(newDb);
+        if (ok) {
+            loadData();
+            String dsBanMsg = dsMaBan.size() == 1 ? "1 bàn" : dsMaBan.size() + " bàn";
+            JOptionPane.showMessageDialog(this,
+                    "<html>✅ Đã đặt thành công <b>" + dsBanMsg + "</b> cho khách <b>"
+                            + newDb.getTenKhach() + "</b>!</html>",
+                    "Thành công", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "❌ Không thể thêm đặt bàn. Vui lòng thử lại.",
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -354,23 +380,32 @@ public class ReservationManagementPanel extends JPanel {
                     "Chưa chọn", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String maBanCu = db.getMaBan();
+        
+        // Lưu lại ds mã bàn cũ để so sánh cập nhật trạng thái
+        java.util.List<String> dsMaBanCu = new ArrayList<>();
+        if (db.getDsMaBan() != null) dsMaBanCu.addAll(db.getDsMaBan());
+
         DatBanDialog dlg = new DatBanDialog(
                 (Frame) SwingUtilities.getWindowAncestor(this),
                 db, DatBanDialog.Mode.EDIT, controller);
+        // dlg.setNhomDatBan(nhom.records); // KHÔNG CẦN NỮA, db đã tự mang dsMaBan
         dlg.setVisible(true);
+
         if (dlg.isConfirmed()) {
             if (dlg.isSaved()) {
-                boolean ok = controller.sua(db, maBanCu);
+                db.setDsMaBan(dlg.getSelectedMaBanList());
+                boolean ok = controller.sua(db, dsMaBanCu);
                 if (ok && !dlg.isNavigationRequested()) {
                     JOptionPane.showMessageDialog(this, "✅ Cập nhật thành công!", "Thành công",
                             JOptionPane.INFORMATION_MESSAGE);
                 }
             }
             loadData();
-            // Sau Xác nhận → chuyển sang trang Bàn Hàng (KHÔNG hiện thông báo)
             if (dlg.isNavigationRequested() && navigationCallback != null) {
-                navigationCallback.accept(db.getMaBan());
+                // Điều hướng tới bàn đầu tiên trong ds
+                if (db.getDsMaBan() != null && !db.getDsMaBan().isEmpty()) {
+                    navigationCallback.accept(db.getDsMaBan().get(0));
+                }
             }
         }
     }
@@ -382,48 +417,41 @@ public class ReservationManagementPanel extends JPanel {
                     "Chưa chọn", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        String dsBan = db.getDanhSachSoBan();
 
         if (dangXemDaAn) {
-            // Chế độ xem đã ẩn → xoá vĩnh viễn
             int xn = JOptionPane.showConfirmDialog(this,
-                    "<html>⚠ Xoá vĩnh viễn đặt bàn mã <b>" + db.getMaDatBan() + "</b>?<br>" +
-                            "Dữ liệu sẽ bị xoá hoàn toàn, <b>không thể khôi phục</b>!</html>",
+                    "<html>⚠ Xoá vĩnh viễn đặt bàn của <b>" + db.getTenKhach() + "</b>?<br>"
+                    + "Bàn: <b>" + dsBan + "</b><br>"
+                    + "Dữ liệu sẽ bị xoá hoàn toàn, <b>không thể khôi phục</b>!</html>",
                     "Xoá vĩnh viễn", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (xn == JOptionPane.YES_OPTION) {
                 if (controller.xoaVinhVien(db.getMaDatBan())) {
                     loadData();
-                    JOptionPane.showMessageDialog(this, "Đã xoá vĩnh viễn đặt bàn " + db.getMaDatBan() + ".",
-                            "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Không thể xoá vĩnh viễn. Vui lòng thử lại.",
-                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Đã xoá vĩnh viễn.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
             return;
         }
 
-        // Chế độ hiển thị bình thường → ẩn (soft-delete)
-        // Chỉ cho phép ẩn DA_THANH_TOAN, HET_HAN, DA_HUY
+        // Ẩn (soft-delete)
         TrangThaiDatBan tt = db.getTrangThai();
         if (tt == TrangThaiDatBan.CHO_XAC_NHAN || tt == TrangThaiDatBan.DA_XAC_NHAN) {
             JOptionPane.showMessageDialog(this,
-                    "<html>⚠ Không thể ẩn đặt bàn có trạng thái <b>" + tt.displayName() + "</b>.<br>" +
-                            "Chỉ có thể ẩn đặt bàn có trạng thái <b>Đã thanh toán</b>, <b>Hết hạn</b> hoặc <b>Đã huỷ</b>.</html>",
+                    "<html>⚠ Không thể ẩn đặt bàn có trạng thái <b>" + tt.displayName() + "</b>.<br>"
+                    + "Chỉ có thể ẩn khi đã thanh toán, hết hạn hoặc đã huỷ.</html>",
                     "Không thể xoá", JOptionPane.WARNING_MESSAGE);
             return;
         }
         int xn = JOptionPane.showConfirmDialog(this,
-                "<html>Ẩn đặt bàn mã <b>" + db.getMaDatBan() + "</b> (Khách: " + db.getTenKhach() + ")?<br>" +
-                        "Dữ liệu vẫn lưu trên hệ thống, có thể xem lại bằng nút \"Xem đã ẩn\".</html>",
+                "<html>Ẩn đặt bàn của khách <b>" + db.getTenKhach() + "</b>?<br>"
+                + "Bàn: <b>" + dsBan + "</b><br>"
+                + "Dữ liệu vẫn lưu trên hệ thống, có thể xem lại bằng nút &quot;Xem đã ẩn&quot;.</html>",
                 "Xác nhận ẩn", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (xn == JOptionPane.YES_OPTION) {
             if (controller.an(db.getMaDatBan())) {
                 loadData();
-                JOptionPane.showMessageDialog(this, "Đã ẩn đặt bàn " + db.getMaDatBan() + ".",
-                        "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "Không thể ẩn đặt bàn mã " + db.getMaDatBan() + ".",
-                        "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Đã ẩn thành công.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             }
         }
     }

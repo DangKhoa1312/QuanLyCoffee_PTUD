@@ -3,6 +3,9 @@ package entity;
 import enums.TrangThaiDatBan;
 import java.time.LocalDateTime;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DatBan {
     private String          maDatBan;
     private String          tenKhach;
@@ -11,8 +14,8 @@ public class DatBan {
     private TrangThaiDatBan trangThai;
     private LocalDateTime   thoiGianDen;
     private LocalDateTime   thoiGianDat;
-    private String          maBan;       // FK Ban
-    private String          soBan;       // Tên số bàn để hiển thị (lấy từ bảng Ban)
+    private List<String>    dsMaBan = new ArrayList<>(); // FK Ban (Nhiều bàn)
+    private String          danhSachSoBan;               // Tên số bàn để hiển thị (lấy từ bảng Ban)
     private String          maHD;        // FK HoaDon (nullable)
     private boolean         hienThi;     // true = hiển thị, false = đã ẩn (soft-delete)
 
@@ -21,7 +24,7 @@ public class DatBan {
     public DatBan(String maDatBan, String tenKhach, String soDienThoai,
                   int soLuongNguoi, TrangThaiDatBan trangThai,
                   LocalDateTime thoiGianDen, LocalDateTime thoiGianDat,
-                  String maBan, String maHD) {
+                  List<String> dsMaBan, String maHD) {
         this.maDatBan     = maDatBan;
         this.tenKhach     = tenKhach;
         this.soDienThoai  = soDienThoai;
@@ -29,7 +32,9 @@ public class DatBan {
         this.trangThai    = trangThai;
         this.thoiGianDen  = thoiGianDen;
         this.thoiGianDat  = thoiGianDat;
-        this.maBan        = maBan;
+        if (dsMaBan != null) {
+            this.dsMaBan.addAll(dsMaBan);
+        }
         this.maHD         = maHD;
         this.hienThi      = true;
     }
@@ -37,9 +42,9 @@ public class DatBan {
     public DatBan(String maDatBan, String tenKhach, String soDienThoai,
                   int soLuongNguoi, TrangThaiDatBan trangThai,
                   LocalDateTime thoiGianDen, LocalDateTime thoiGianDat,
-                  String maBan, String maHD, boolean hienThi) {
+                  List<String> dsMaBan, String maHD, boolean hienThi) {
         this(maDatBan, tenKhach, soDienThoai, soLuongNguoi, trangThai,
-             thoiGianDen, thoiGianDat, maBan, maHD);
+             thoiGianDen, thoiGianDat, dsMaBan, maHD);
         this.hienThi = hienThi;
     }
 
@@ -64,11 +69,14 @@ public class DatBan {
     public LocalDateTime getThoiGianDat()               { return thoiGianDat; }
     public void          setThoiGianDat(LocalDateTime v){ this.thoiGianDat = v; }
 
-    public String getMaBan()          { return maBan; }
-    public void   setMaBan(String v)  { this.maBan = v; }
+    public List<String> getDsMaBan()          { return dsMaBan; }
+    public void         setDsMaBan(List<String> ds) { 
+        this.dsMaBan.clear();
+        if (ds != null) this.dsMaBan.addAll(ds);
+    }
     
-    public String getSoBan()          { return soBan; }
-    public void   setSoBan(String v)  { this.soBan = v; }
+    public String getDanhSachSoBan()          { return danhSachSoBan; }
+    public void   setDanhSachSoBan(String v)  { this.danhSachSoBan = v; }
 
     public String getMaHD()          { return maHD; }
     public void   setMaHD(String v)  { this.maHD = v; }
@@ -84,7 +92,7 @@ public class DatBan {
 
     @Override
     public String toString() {
-        return "DatBan{" + maDatBan + ", " + tenKhach + ", ban=" + maBan
+        return "DatBan{" + maDatBan + ", " + tenKhach + ", soLuongBan=" + dsMaBan.size()
                 + ", den=" + thoiGianDen + ", " + trangThai + "}";
     }
 }
