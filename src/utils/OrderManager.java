@@ -1,15 +1,17 @@
 package utils;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import dto.CartItem;
 import entity.Ban;
 import entity.DonHang;
 import enums.LoaiDon;
 import enums.TrangThaiDonHang;
-
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Singleton quản lý tất cả đơn hàng tạm thời trên RAM.
@@ -29,6 +31,7 @@ public class OrderManager {
     /** Counter tạo mã đơn hàng tạm (không cần DB) */
     private final AtomicInteger dhCounter = new AtomicInteger(0);
     
+    // File backup để lưu trạng thái tạm thời trong ổ cứng
     private static final String BACKUP_FILE = "orders_backup.dat";
 
     private OrderManager() {
@@ -38,7 +41,7 @@ public class OrderManager {
     public static OrderManager getInstance() {
         return INSTANCE;
     }
-
+    // Lưu trạng thái hiện tại trên RAM xuống file vật lý
     private synchronized void saveStateToDisk() {
         try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(BACKUP_FILE))) {
             oos.writeObject(orders);
@@ -50,9 +53,11 @@ public class OrderManager {
     }
 
     @SuppressWarnings("unchecked")
+    // Nạp trạng thái từ file vật lý lên RAM khi khởi động ứng dụng
     private synchronized void loadStateFromDisk() {
         java.io.File file = new java.io.File(BACKUP_FILE);
         if (!file.exists()) return;
+        // Đọc ngược lại các đối tượng theo đúng thứ tự đã ghi
         try (java.io.ObjectInputStream ois = new java.io.ObjectInputStream(new java.io.FileInputStream(file))) {
             Map<String, DonHang> loadedOrders = (Map<String, DonHang>) ois.readObject();
             Map<String, List<CartItem>> loadedCarts = (Map<String, List<CartItem>>) ois.readObject();

@@ -538,7 +538,7 @@ public class DashboardPanel extends JPanel {
                 }
 
                 if (alertList.isEmpty()) {
-                    lblAlerts.setText("An toàn ✓");
+                    lblAlerts.setText("An toàn");
                     lblAlerts.setForeground(P_GREEN_FG);
                 } else {
                     lblAlerts.setText(alertList.size() + " cảnh báo");
